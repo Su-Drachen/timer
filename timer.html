@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>时间记录器</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#165DFF',
+                    },
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-50 min-h-screen flex flex-col">
+    <header class="bg-primary text-white py-4 shadow-md">
+        <div class="container mx-auto px-4">
+            <h1 class="text-xl font-bold flex items-center">
+                <i class="fa fa-clock-o mr-2"></i>
+                时间记录器
+            </h1>
+        </div>
+    </header>
+
+    <main class="flex-grow container mx-auto px-4 py-8">
+        <div class="max-w-md mx-auto">
+            <div class="bg-white rounded-xl shadow-lg p-6 mb-6">
+                <div class="flex flex-col items-center">
+                    <div class="text-center mb-4">
+                        <p class="text-gray-500 mb-1">当前时间</p>
+                        <p id="current-time" class="text-2xl font-bold text-gray-800">--:--:--</p>
+                    </div>
+
+                    <button id="record-btn" class="bg-primary hover:bg-primary/90 text-white font-medium py-3 px-6 rounded-lg transition-all shadow-md hover:shadow-lg flex items-center">
+                        <i class="fa fa-plus-circle mr-2"></i>
+                        记录当前时间
+                    </button>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-lg font-bold text-gray-800">记录列表</h2>
+                    <button id="download-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-700 py-1 px-3 rounded transition-colors text-sm">
+                        <i class="fa fa-download mr-1"></i>
+                        导出CSV
+                    </button>
+                </div>
+
+                <div id="records-container" class="space-y-2 max-h-60 overflow-y-auto pr-2">
+                    <p class="text-gray-500 text-center py-4">暂无记录</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="bg-gray-800 text-white py-4 mt-auto">
+        <div class="container mx-auto px-4 text-center text-sm">
+            © 2025 时间记录器
+        </div>
+    </footer>
+
+    <script>
+        // 初始化记录数组
+        let records = [];
+
+        // 更新当前时间显示
+        function updateCurrentTime() {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('zh-CN', {
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: false
+            });
+            document.getElementById('current-time').textContent = timeString;
+        }
+
+        // 每秒更新一次时间
+        setInterval(updateCurrentTime, 1000);
+        updateCurrentTime(); // 初始更新
+
+        // 从本地存储加载记录
+        function loadRecords() {
+            const savedRecords = localStorage.getItem('timeRecords');
+            if (savedRecords) {
+                records = JSON.parse(savedRecords);
+                renderRecords();
+            }
+        }
+
+        // 渲染记录列表
+        function renderRecords() {
+            const container = document.getElementById('records-container');
+
+            if (records.length === 0) {
+                container.innerHTML = '<p class="text-gray-500 text-center py-4">暂无记录</p>';
+                return;
+            }
+
+            container.innerHTML = '';
+            records.forEach((record, index) => {
+                const item = document.createElement('div');
+                item.className = 'flex justify-between items-center p-2 border-b border-gray-100 last:border-0';
+                item.innerHTML = `
+                    <span class="text-gray-700">${record.time}</span>
+                    <button class="delete-btn text-red-500 hover:text-red-700 transition-colors" data-index="${index}">
+                        <i class="fa fa-trash-o"></i>
+                    </button>
+                `;
+                container.appendChild(item);
+            });
+
+            // 添加删除按钮事件监听
+            document.querySelectorAll('.delete-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const index = parseInt(this.getAttribute('data-index'));
+                    records.splice(index, 1);
+                    saveRecords();
+                    renderRecords();
+                });
+            });
+        }
+
+        // 添加新记录
+        function addRecord() {
+            const now = new Date();
+            const timeString = now.toLocaleString('zh-CN', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: false
+            });
+
+            records.unshift({ time: timeString }); // 添加到数组开头
+            saveRecords();
+            renderRecords();
+
+            // 添加成功动画
+            const recordBtn = document.getElementById('record-btn');
+            recordBtn.classList.add('bg-green-600');
+            setTimeout(() => {
+                recordBtn.classList.remove('bg-green-600');
+            }, 300);
+        }
+
+        // 保存记录到本地存储
+        function saveRecords() {
+            localStorage.setItem('timeRecords', JSON.stringify(records));
+        }
+
+        // 导出为CSV文件
+        function exportToCsv() {
+            if (records.length === 0) {
+                alert('没有记录可导出');
+                return;
+            }
+
+            // 构建CSV内容
+            let csvContent = "序号,时间\n";
+
+            records.forEach((record, index) => {
+                csvContent += `${records.length - index},${record.time}\n`;
+            });
+
+            // 创建Blob对象
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+
+            // 创建下载链接
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+
+            link.setAttribute('href', url);
+            link.setAttribute('download', `时间记录_${new Date().toISOString().slice(0,10)}.csv`);
+            link.style.visibility = 'hidden';
+
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // 添加事件监听器
+        document.getElementById('record-btn').addEventListener('click', addRecord);
+        document.getElementById('download-btn').addEventListener('click', exportToCsv);
+
+        // 支持按Enter键添加记录（聚焦在按钮上时）
+        document.getElementById('record-btn').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                addRecord();
+            }
+        });
+
+        // 加载已保存的记录
+        loadRecords();
+    </script>
+</body>
+</html>
