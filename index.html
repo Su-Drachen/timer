@@ -6,17 +6,26 @@
     <title>时间记录器</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
         tailwind.config = {
             theme: {
                 extend: {
                     colors: {
                         primary: '#165DFF',
+                        success: '#00B42A',
+                        danger: '#F53F3F',
                     },
                 }
             }
         }
     </script>
+    <style>
+        /* 优化点: 为Toast通知添加过渡效果 */
+        #toast {
+            transition: opacity 0.3s, transform 0.3s;
+        }
+    </style>
 </head>
 <body class="bg-gray-50 min-h-screen flex flex-col">
     <header class="bg-primary text-white py-4 shadow-md">
@@ -28,16 +37,16 @@
         </div>
     </header>
 
-    <main class="flex-grow container mx-auto px-4 py-8">
-        <div class="max-w-md mx-auto">
-            <div class="bg-white rounded-xl shadow-lg p-6 mb-6">
+    <main class="flex-grow container mx-auto px-4 py-6 sm:py-8">
+        <!-- 优化点: 增加一个外层div用于更好的间距控制 -->
+        <div class="max-w-xl mx-auto space-y-6"> 
+            <div class="bg-white rounded-xl shadow-lg p-6">
                 <div class="flex flex-col items-center">
                     <div class="text-center mb-4">
                         <p class="text-gray-500 mb-1">当前时间</p>
-                        <p id="current-time" class="text-2xl font-bold text-gray-800">--:--:--</p>
+                        <p id="current-time" class="text-2xl sm:text-3xl font-bold text-gray-800">--:--:--</p>
                     </div>
-
-                    <button id="record-btn" class="bg-primary hover:bg-primary/90 text-white font-medium py-3 px-6 rounded-lg transition-all shadow-md hover:shadow-lg flex items-center">
+                    <button id="record-btn" class="bg-primary hover:bg-primary/90 text-white font-medium py-3 px-6 rounded-lg transition-all shadow-md hover:shadow-lg flex items-center w-full sm:w-auto justify-center">
                         <i class="fa fa-plus-circle mr-2"></i>
                         记录当前时间
                     </button>
@@ -45,20 +54,54 @@
             </div>
 
             <div class="bg-white rounded-xl shadow-lg p-6">
-                <div class="flex justify-between items-center mb-4">
+                <!-- 优化点: 改进记录列表头部的响应式布局 -->
+                <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 gap-4">
                     <h2 class="text-lg font-bold text-gray-800">记录列表</h2>
-                    <button id="download-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-700 py-1 px-3 rounded transition-colors text-sm">
-                        <i class="fa fa-download mr-1"></i>
-                        导出CSV
-                    </button>
+                    <div class="flex items-center gap-2">
+                        <button id="import-btn" class="flex-1 sm:flex-none bg-gray-200 hover:bg-gray-300 text-gray-700 py-2 px-3 rounded transition-colors text-sm flex items-center justify-center">
+                            <i class="fa fa-upload mr-1"></i>
+                            导入CSV
+                        </button>
+                        <button id="download-btn" class="flex-1 sm:flex-none bg-gray-200 hover:bg-gray-300 text-gray-700 py-2 px-3 rounded transition-colors text-sm flex items-center justify-center">
+                            <i class="fa fa-download mr-1"></i>
+                            导出CSV
+                        </button>
+                    </div>
                 </div>
-
-                <div id="records-container" class="space-y-2 max-h-60 overflow-y-auto pr-2">
+                <div id="records-container" class="space-y-2 max-h-64 overflow-y-auto pr-2">
                     <p class="text-gray-500 text-center py-4">暂无记录</p>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <h2 class="text-lg font-bold text-gray-800 mb-4">数据统计</h2>
+                <div class="space-y-6">
+                    <div>
+                        <h3 class="text-md font-semibold text-gray-700 mb-2">本年总览</h3>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-sm text-left text-gray-600">
+                                <thead class="text-xs text-gray-700 uppercase bg-gray-100">
+                                    <tr><th scope="col" class="px-4 py-2">项目</th><th scope="col" class="px-4 py-2">数值</th></tr>
+                                </thead>
+                                <tbody id="summary-tbody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 class="text-md font-semibold text-gray-700 mb-2">本年每月记录趋势</h3>
+                        <canvas id="records-chart"></canvas>
+                    </div>
                 </div>
             </div>
         </div>
     </main>
+
+    <input type="file" id="csv-file-input" class="hidden" accept=".csv">
+
+    <!-- 优化点: 添加Toast通知容器 -->
+    <div id="toast" class="fixed bottom-5 right-5 bg-gray-800 text-white py-3 px-5 rounded-lg shadow-xl opacity-0 translate-y-10 z-50">
+        <p id="toast-message"></p>
+    </div>
 
     <footer class="bg-gray-800 text-white py-4 mt-auto">
         <div class="container mx-auto px-4 text-center text-sm">
@@ -67,139 +110,221 @@
     </footer>
 
     <script>
-        // 初始化记录数组
         let records = [];
+        let recordsChart = null;
 
-        // 更新当前时间显示
+        // --- 优化点: Toast通知函数 ---
+        function showToast(message, type = 'info') {
+            const toast = document.getElementById('toast');
+            const toastMessage = document.getElementById('toast-message');
+
+            toastMessage.textContent = message;
+
+            // 根据类型设置颜色
+            toast.classList.remove('bg-success', 'bg-danger', 'bg-gray-800');
+            if (type === 'success') {
+                toast.classList.add('bg-success');
+            } else if (type === 'error') {
+                toast.classList.add('bg-danger');
+            } else {
+                toast.classList.add('bg-gray-800');
+            }
+
+            // 显示Toast
+            toast.classList.remove('opacity-0', 'translate-y-10');
+            
+            // 3秒后自动隐藏
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-10');
+            }, 3000);
+        }
+
         function updateCurrentTime() {
             const now = new Date();
-            const timeString = now.toLocaleTimeString('zh-CN', {
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit',
-                hour12: false
-            });
+            const timeString = now.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
             document.getElementById('current-time').textContent = timeString;
         }
 
-        // 每秒更新一次时间
-        setInterval(updateCurrentTime, 1000);
-        updateCurrentTime(); // 初始更新
-
-        // 从本地存储加载记录
         function loadRecords() {
             const savedRecords = localStorage.getItem('timeRecords');
             if (savedRecords) {
                 records = JSON.parse(savedRecords);
-                renderRecords();
             }
+            renderRecords();
         }
 
-        // 渲染记录列表
         function renderRecords() {
             const container = document.getElementById('records-container');
+            records.sort((a, b) => new Date(b.time.replace(/\//g, '-')) - new Date(a.time.replace(/\//g, '-')));
 
             if (records.length === 0) {
                 container.innerHTML = '<p class="text-gray-500 text-center py-4">暂无记录</p>';
-                return;
-            }
-
-            container.innerHTML = '';
-            records.forEach((record, index) => {
-                const item = document.createElement('div');
-                item.className = 'flex justify-between items-center p-2 border-b border-gray-100 last:border-0';
-                item.innerHTML = `
-                    <span class="text-gray-700">${record.time}</span>
-                    <button class="delete-btn text-red-500 hover:text-red-700 transition-colors" data-index="${index}">
-                        <i class="fa fa-trash-o"></i>
-                    </button>
-                `;
-                container.appendChild(item);
-            });
-
-            // 添加删除按钮事件监听
-            document.querySelectorAll('.delete-btn').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    const index = parseInt(this.getAttribute('data-index'));
-                    records.splice(index, 1);
-                    saveRecords();
-                    renderRecords();
+            } else {
+                container.innerHTML = '';
+                records.forEach((record, index) => {
+                    const item = document.createElement('div');
+                    item.className = 'flex justify-between items-center p-2 border-b border-gray-100 last:border-0';
+                    item.innerHTML = `
+                        <span class="text-gray-700 text-sm sm:text-base">${record.time}</span>
+                        <button class="delete-btn text-red-500 hover:text-red-700 transition-colors p-1" data-index="${index}">
+                            <i class="fa fa-trash-o fa-lg"></i>
+                        </button>
+                    `;
+                    container.appendChild(item);
                 });
-            });
+
+                document.querySelectorAll('.delete-btn').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const index = parseInt(this.getAttribute('data-index'));
+                        records.splice(index, 1);
+                        saveRecords();
+                        renderRecords();
+                        showToast('记录已删除', 'info');
+                    });
+                });
+            }
+            updateStatistics();
         }
 
-        // 添加新记录
         function addRecord() {
             const now = new Date();
-            const timeString = now.toLocaleString('zh-CN', {
-                year: 'numeric',
-                month: '2-digit',
-                day: '2-digit',
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit',
-                hour12: false
-            });
-
-            records.unshift({ time: timeString }); // 添加到数组开头
+            const timeString = now.toLocaleString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+            records.unshift({ time: timeString });
             saveRecords();
             renderRecords();
-
-            // 添加成功动画
-            const recordBtn = document.getElementById('record-btn');
-            recordBtn.classList.add('bg-green-600');
-            setTimeout(() => {
-                recordBtn.classList.remove('bg-green-600');
-            }, 300);
+            showToast('记录成功！', 'success');
         }
 
-        // 保存记录到本地存储
         function saveRecords() {
             localStorage.setItem('timeRecords', JSON.stringify(records));
         }
 
-        // 导出为CSV文件
         function exportToCsv() {
             if (records.length === 0) {
-                alert('没有记录可导出');
+                // 优化点: 使用Toast替换alert
+                showToast('没有记录可导出', 'error');
                 return;
             }
-
-            // 构建CSV内容
             let csvContent = "序号,时间\n";
-
-            records.forEach((record, index) => {
-                csvContent += `${records.length - index},${record.time}\n`;
+            const sortedRecords = [...records].sort((a, b) => new Date(b.time.replace(/\//g, '-')) - new Date(a.time.replace(/\//g, '-')));
+            sortedRecords.forEach((record, index) => {
+                csvContent += `${sortedRecords.length - index},"${record.time}"\n`;
             });
-
-            // 创建Blob对象
             const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-
-            // 创建下载链接
             const link = document.createElement('a');
             const url = URL.createObjectURL(blob);
-
             link.setAttribute('href', url);
             link.setAttribute('download', `时间记录_${new Date().toISOString().slice(0,10)}.csv`);
-            link.style.visibility = 'hidden';
-
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
+
+            // 优化点: 为移动端导出提供友好提示
+            showToast('文件已生成。若未自动下载，请检查浏览器下载或分享菜单。', 'info');
         }
 
-        // 添加事件监听器
+        function importFromCsv(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const text = e.target.result;
+                const lines = text.trim().split('\n');
+                if (lines.length <= 1) {
+                    showToast('文件为空或格式不正确。', 'error');
+                    return;
+                }
+                const newRecords = lines.slice(1).map(line => {
+                    const parts = line.split(',');
+                    if (parts.length >= 2) {
+                        const time = parts[1].replace(/"/g, '').trim();
+                        if (time) return { time: time };
+                    }
+                    return null;
+                }).filter(record => record !== null);
+
+                if (newRecords.length === 0) {
+                    showToast('未在文件中找到有效的记录。', 'error');
+                    return;
+                }
+                const existingTimes = new Set(records.map(r => r.time));
+                const uniqueNewRecords = newRecords.filter(r => !existingTimes.has(r.time));
+                records = records.concat(uniqueNewRecords);
+                saveRecords();
+                renderRecords();
+                showToast(`成功导入 ${uniqueNewRecords.length} 条新记录！`, 'success');
+            };
+            reader.onerror = () => showToast('读取文件时发生错误！', 'error');
+            reader.readAsText(file);
+            event.target.value = null;
+        }
+        
+        function updateStatistics() {
+            const currentYear = new Date().getFullYear();
+            const currentYearRecords = records.filter(r => new Date(r.time.replace(/\//g, '-')).getFullYear() === currentYear);
+            const monthlyCounts = Array(12).fill(0);
+            currentYearRecords.forEach(r => {
+                const month = new Date(r.time.replace(/\//g, '-')).getMonth();
+                monthlyCounts[month]++;
+            });
+            const totalCountThisYear = currentYearRecords.length;
+            renderChart(monthlyCounts);
+            renderSummary(totalCountThisYear, currentYear);
+        }
+        
+        function renderSummary(total, year) {
+            document.getElementById('summary-tbody').innerHTML = `
+                <tr class="bg-white border-b">
+                    <td class="px-4 py-2 font-medium text-gray-900 whitespace-nowrap">${year}年 总记录次数</td>
+                    <td class="px-4 py-2">${total} 次</td>
+                </tr>
+            `;
+        }
+
+        function renderChart(data) {
+            const ctx = document.getElementById('records-chart').getContext('2d');
+            const labels = ['一', '二', '三', '四', '五', '六', '七', '八', '九', '十', '十一', '十二']; // 优化点: 简化图表标签，更适合小屏幕
+            if (recordsChart) {
+                recordsChart.destroy();
+            }
+            recordsChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: '每月记录次数',
+                        data: data,
+                        backgroundColor: 'rgba(22, 93, 255, 0.2)',
+                        borderColor: '#165DFF',
+                        borderWidth: 2,
+                        tension: 0.2,
+                        fill: true,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } },
+                    plugins: { legend: { display: false } } // 优化点: 隐藏图例，节省手机屏幕空间
+                }
+            });
+        }
+        
+        // --- Event Listeners ---
         document.getElementById('record-btn').addEventListener('click', addRecord);
         document.getElementById('download-btn').addEventListener('click', exportToCsv);
+        
+        const importBtn = document.getElementById('import-btn');
+        const fileInput = document.getElementById('csv-file-input');
+        importBtn.addEventListener('click', () => fileInput.click());
+        fileInput.addEventListener('change', importFromCsv);
 
-        // 支持按Enter键添加记录（聚焦在按钮上时）
-        document.getElementById('record-btn').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                addRecord();
-            }
-        });
-
-        // 加载已保存的记录
+        document.getElementById('record-btn').addEventListener('keypress', function(e) { if (e.key === 'Enter') addRecord(); });
+        
+        // --- Initial Load ---
+        setInterval(updateCurrentTime, 1000);
+        updateCurrentTime();
         loadRecords();
     </script>
 </body>
