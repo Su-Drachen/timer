@@ -23,15 +23,13 @@
     <style>
         .hidden { display: none; }
         #toast { transition: opacity 0.3s, transform 0.3s; }
-        /* 【新增】防止点击模态框内部时关闭模态框 */
-        .modal-content {
-            pointer-events: auto;
-        }
-        .modal-overlay {
-            pointer-events: none;
-        }
-        .modal-overlay > * {
-            pointer-events: auto;
+        .modal-content { pointer-events: auto; }
+        .modal-overlay { pointer-events: none; }
+        .modal-overlay > * { pointer-events: auto; }
+        /* 【新增】禁用按钮的样式 */
+        button:disabled {
+            cursor: not-allowed;
+            opacity: 0.7;
         }
     </style>
 </head>
@@ -149,7 +147,6 @@
                 </div>
             </div>
 
-            <!-- 【新增功能块】跳转到统计页面 -->
             <div class="bg-white rounded-xl shadow-lg p-6">
                 <div class="flex items-center justify-between">
                     <div>
@@ -162,7 +159,19 @@
                     </a>
                 </div>
             </div>
-            <!-- 【新增功能块结束】 -->
+
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h2 class="text-lg font-bold text-gray-800">成就系统</h2>
+                        <p class="text-sm text-gray-500 mt-1">查看所有成就获得。</p>
+                    </div>
+                    <a href="./page2.html" class="bg-success hover:bg-success/90 text-white font-medium py-2 px-4 rounded-lg transition-all shadow-md flex items-center">
+                        前往
+                        <i class="fa fa-arrow-right ml-2"></i>
+                    </a>
+                </div>
+            </div>
 
         </div>
     </main>
@@ -190,7 +199,7 @@
         // --- 全局变量 ---
         let records = [];
         let recordsChart = null;
-        let saveTimeout;
+        // 【移除】saveTimeout 变量
 
         // --- 配置管理函数 ---
         function loadConfig() {
@@ -253,8 +262,11 @@
             }
         }
 
+        // 【优化】重构 saveRecordsToGist，使其在失败时抛出错误
         async function saveRecordsToGist() {
-            if (!config.GIST_ID) return;
+            if (!config.GIST_ID) {
+                throw new Error("配置不完整，无法保存。");
+            }
             try {
                 const response = await fetch(`https://api.github.com/gists/${config.GIST_ID}`, {
                     method: 'PATCH',
@@ -265,41 +277,77 @@
                     const errorData = await response.json();
                     throw new Error(`保存失败: ${errorData.message}`);
                 }
-                showToast("数据已成功保存到云端！", "success");
+                return true; // 表示成功
             } catch (error) {
                 console.error("保存记录失败:", error);
-                showToast(error.message, "error");
+                throw error; // 将错误继续抛出，以便调用者可以捕获
             }
         }
 
-        function debouncedSave() {
-            clearTimeout(saveTimeout);
-            saveTimeout = setTimeout(saveRecordsToGist, 1500);
-        }
+        // 【移除】debouncedSave 函数
 
         // --- 数据操作函数 ---
-        function addRecord() {
+        // 【优化】将 addRecord 改为 async 函数，并处理加载状态
+        async function handleAddRecord() {
+            const recordBtn = document.getElementById('record-btn');
+            const originalBtnContent = recordBtn.innerHTML;
+
             const remark = prompt("请输入本次记录的备注（可选）：", "");
             if (remark === null) {
                 showToast("操作已取消", "info");
                 return;
             }
-            const now = new Date();
-            const timeString = now.toLocaleString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }).replace(/\//g, '/'); // 确保格式一致
-            records.unshift({ time: timeString, remark: remark.trim() });
-            renderRecords();
-            debouncedSave();
-        }
 
-        function deleteRecord(index) {
-            if (confirm('确定要删除这条记录吗？')) {
-                records.splice(index, 1);
+            const now = new Date();
+            const timeString = now.toLocaleString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }).replace(/\//g, '/');
+            records.unshift({ time: timeString, remark: remark.trim() });
+            renderRecords(); // 先更新UI
+
+            recordBtn.disabled = true;
+            recordBtn.innerHTML = '<i class="fa fa-spinner fa-spin mr-2"></i>正在保存...';
+
+            try {
+                await saveRecordsToGist();
+                showToast("数据已成功保存到云端！", "success");
+            } catch (error) {
+                showToast(error.message, "error");
+                // 保存失败，回滚操作
+                records.shift();
                 renderRecords();
-                debouncedSave();
+            } finally {
+                recordBtn.disabled = false;
+                recordBtn.innerHTML = originalBtnContent;
             }
         }
 
-        // 【新增】打开编辑模态框的函数
+        // 【优化】将 deleteRecord 改为 async 函数，并处理加载状态
+        async function handleDeleteRecord(index) {
+            if (!confirm('确定要删除这条记录吗？')) {
+                return;
+            }
+
+            const deleteBtn = document.querySelector(`.delete-btn[data-index="${index}"]`);
+            if(deleteBtn) {
+                deleteBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i>';
+                deleteBtn.disabled = true;
+            }
+
+            const deletedRecord = records[index]; // 备份以便回滚
+
+            records.splice(index, 1);
+            renderRecords(); // 先更新UI
+
+            try {
+                await saveRecordsToGist();
+                showToast('记录已成功删除', 'success');
+            } catch (error) {
+                showToast(`删除失败: ${error.message}`, 'error');
+                // 回滚
+                records.splice(index, 0, deletedRecord);
+                renderRecords();
+            }
+        }
+
         function openEditModal(index) {
             const record = records[index];
             document.getElementById('edit-index').value = index;
@@ -308,65 +356,94 @@
             document.getElementById('edit-modal-overlay').classList.remove('hidden');
         }
 
-        // 【新增】关闭编辑模态框的函数
         function closeEditModal() {
             document.getElementById('edit-modal-overlay').classList.add('hidden');
         }
 
-        // 【新增】保存编辑后记录的函数
-        function handleEditSave(event) {
+        // 【优化】将 handleEditSave 改为 async 函数，并处理加载状态
+        async function handleEditSave(event) {
             event.preventDefault();
+            const submitBtn = document.querySelector('#edit-form button[type="submit"]');
+            const originalBtnText = submitBtn.textContent;
+
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fa fa-spinner fa-spin mr-2"></i>保存中...';
+
             const index = document.getElementById('edit-index').value;
             const newTime = document.getElementById('edit-time').value.trim();
             const newRemark = document.getElementById('edit-remark').value.trim();
 
             if (!newTime) {
                 showToast('时间不能为空', 'error');
+                submitBtn.disabled = false;
+                submitBtn.textContent = originalBtnText;
                 return;
             }
 
-            // 更新记录
+            const oldRecord = { ...records[index] }; // 备份
             records[index] = { time: newTime, remark: newRemark };
+            renderRecords(); // 先更新UI
 
-            closeEditModal();
-            renderRecords();
-            debouncedSave();
-            showToast('记录已更新', 'success');
+            try {
+                await saveRecordsToGist();
+                showToast('记录已更新', 'success');
+                closeEditModal();
+            } catch (error) {
+                showToast(`更新失败: ${error.message}`, 'error');
+                records[index] = oldRecord; // 回滚
+                renderRecords();
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = originalBtnText;
+            }
         }
 
-
+        // 【优化】使导入操作也支持异步保存和反馈
         function importFromCsv(event) {
             const file = event.target.files[0];
             if (!file) return;
+
             const reader = new FileReader();
-            reader.onload = function(e) {
-                const fileRecords = e.target.result.trim().split('\n').slice(1).map(line => {
-                    const parts = line.split(',');
-                    if (parts.length >= 2) {
-                        const time = parts[1].replace(/"/g, '').trim();
-                        const remark = parts.slice(2).join(',').replace(/^"|"$/g, '').replace(/""/g, '"').trim();
-                        if (time) return { time: time, remark: remark };
+            reader.onload = async function(e) {
+                showToast('正在解析和合并数据...', 'info');
+                const originalRecords = JSON.parse(JSON.stringify(records)); // 深拷贝备份
+
+                try {
+                    const fileRecords = e.target.result.trim().split('\n').slice(1).map(line => {
+                        const parts = line.split(',');
+                        if (parts.length >= 2) {
+                            const time = parts[1].replace(/"/g, '').trim();
+                            const remark = parts.slice(2).join(',').replace(/^"|"$/g, '').replace(/""/g, '"').trim();
+                            if (time) return { time: time, remark: remark };
+                        }
+                        return null;
+                    }).filter(Boolean);
+
+                    const combinedRecordsMap = new Map();
+                    records.forEach(r => combinedRecordsMap.set(r.time, r));
+                    const originalCount = combinedRecordsMap.size;
+                    fileRecords.forEach(r => { if (!combinedRecordsMap.has(r.time)) combinedRecordsMap.set(r.time, r); });
+
+                    const newTotalRecords = Array.from(combinedRecordsMap.values());
+                    const addedCount = newTotalRecords.length - originalCount;
+
+                    if (addedCount > 0) {
+                        records = newTotalRecords;
+                        renderRecords();
+                        showToast('合并完成，正在保存到云端...', 'info');
+                        await saveRecordsToGist();
+                        showToast(`导入并保存成功！新增了 ${addedCount} 条记录。`, 'success');
+                    } else {
+                        showToast('数据已是最新，无需导入。', 'info');
                     }
-                    return null;
-                }).filter(Boolean);
-
-                const combinedRecordsMap = new Map();
-                records.forEach(r => combinedRecordsMap.set(r.time, r));
-                const originalCount = combinedRecordsMap.size;
-                fileRecords.forEach(r => { if (!combinedRecordsMap.has(r.time)) combinedRecordsMap.set(r.time, r); });
-                const newTotalRecords = Array.from(combinedRecordsMap.values());
-
-                if (newTotalRecords.length > originalCount) {
-                    records = newTotalRecords;
+                } catch (error) {
+                    showToast(`导入或保存失败: ${error.message}`, 'error');
+                    records = originalRecords; // 回滚
                     renderRecords();
-                    debouncedSave();
-                    showToast(`合并完成！新增了 ${newTotalRecords.length - originalCount} 条记录。`, 'success');
-                } else {
-                    showToast('数据已是最新，无需导入。', 'info');
                 }
             };
             reader.readAsText(file);
-            event.target.value = null;
+            event.target.value = null; // 允许再次选择同一个文件
         }
 
         function exportToCsv() {
@@ -418,7 +495,8 @@
                     container.appendChild(item);
                 });
 
-                document.querySelectorAll('.delete-btn').forEach(btn => btn.addEventListener('click', function() { deleteRecord(parseInt(this.getAttribute('data-index'))); }));
+                // 【优化】绑定事件到新的 async 函数
+                document.querySelectorAll('.delete-btn').forEach(btn => btn.addEventListener('click', function() { handleDeleteRecord(parseInt(this.getAttribute('data-index'))); }));
                 document.querySelectorAll('.edit-btn').forEach(btn => btn.addEventListener('click', function() { openEditModal(parseInt(this.getAttribute('data-index'))); }));
             }
             updateStatistics();
@@ -465,7 +543,8 @@
                 loadRecordsFromGist();
             }
 
-            document.getElementById('record-btn').addEventListener('click', addRecord);
+            // 【优化】绑定事件到新的 async 函数
+            document.getElementById('record-btn').addEventListener('click', handleAddRecord);
             document.getElementById('download-btn').addEventListener('click', exportToCsv);
             document.getElementById('import-btn').addEventListener('click', () => document.getElementById('csv-file-input').click());
             document.getElementById('csv-file-input').addEventListener('change', importFromCsv);
