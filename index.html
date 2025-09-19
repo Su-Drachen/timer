@@ -89,7 +89,7 @@
                         </button>
                     </div>
                 </div>
-                <div id="records-container" class="space-y-2 max-h-64 overflow-y-auto pr-2">
+                <div id="records-container" class="space-y-2 max-h-80 overflow-y-auto pr-2"> <!-- 增加了列表最大高度 -->
                     <p class="text-gray-500 text-center py-4">正在检查配置...</p>
                 </div>
             </div>
@@ -228,10 +228,22 @@
         }
 
         // --- 数据操作函数 ---
+
+        // 【修改】增加备注功能
         function addRecord() {
+            const remark = prompt("请输入本次记录的备注（可选）：", "");
+
+            // 如果用户点击了“取消”按钮，prompt会返回null
+            if (remark === null) {
+                showToast("操作已取消", "info");
+                return; // 提前退出函数，不添加记录
+            }
+
             const now = new Date();
             const timeString = now.toLocaleString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
-            records.unshift({ time: timeString });
+
+            // 【修改】记录对象增加 remark 字段
+            records.unshift({ time: timeString, remark: remark.trim() });
             renderRecords();
             debouncedSave();
         }
@@ -242,6 +254,7 @@
             debouncedSave();
         }
 
+        // 【修改】导入功能，兼容备注
         function importFromCsv(event) {
             const file = event.target.files[0];
             if (!file) return;
@@ -249,7 +262,12 @@
             reader.onload = function(e) {
                 const fileRecords = e.target.result.trim().split('\n').slice(1).map(line => {
                     const parts = line.split(',');
-                    if (parts.length >= 2) { const time = parts[1].replace(/"/g, '').trim(); if (time) return { time }; }
+                    if (parts.length >= 2) {
+                        const time = parts[1].replace(/"/g, '').trim();
+                        // 【新增】解析备注，将第三个之后的所有部分都作为备注，以处理备注中的逗号
+                        const remark = parts.slice(2).join(',').replace(/^"|"$/g, '').replace(/""/g, '"').trim();
+                        if (time) return { time: time, remark: remark };
+                    }
                     return null;
                 }).filter(Boolean);
 
@@ -272,11 +290,18 @@
             event.target.value = null;
         }
 
+        // 【修改】导出功能，增加备注列
         function exportToCsv() {
             if (records.length === 0) { showToast('没有记录可导出', 'error'); return; }
-            let csvContent = "序号,时间\n";
+            // 【修改】CSV表头增加“备注”
+            let csvContent = "序号,时间,备注\n";
             const sortedRecords = [...records].sort((a, b) => new Date(b.time.replace(/\//g, '-')) - new Date(a.time.replace(/\//g, '-')));
-            sortedRecords.forEach((record, index) => { csvContent += `${sortedRecords.length - index},"${record.time}"\n`; });
+            sortedRecords.forEach((record, index) => {
+                // 【新增】处理备注中的双引号，防止格式错乱
+                const remarkText = record.remark ? record.remark.replace(/"/g, '""') : '';
+                // 【修改】行数据增加备注
+                csvContent += `${sortedRecords.length - index},"${record.time}","${remarkText}"\n`;
+            });
             const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement('a');
             link.href = URL.createObjectURL(blob);
@@ -287,6 +312,8 @@
         }
 
         // --- UI渲染与统计函数 ---
+
+        // 【修改】渲染列表，显示备注
         function renderRecords() {
             const container = document.getElementById('records-container');
             records.sort((a, b) => new Date(b.time.replace(/\//g, '-')) - new Date(a.time.replace(/\//g, '-')));
@@ -296,8 +323,22 @@
                 container.innerHTML = '';
                 records.forEach((record, index) => {
                     const item = document.createElement('div');
-                    item.className = 'flex justify-between items-center p-2 border-b border-gray-100 last:border-0';
-                    item.innerHTML = `<span class="text-gray-700 text-sm sm:text-base">${record.time}</span><button class="delete-btn text-red-500 hover:text-red-700 transition-colors p-1" data-index="${index}"><i class="fa fa-trash-o fa-lg"></i></button>`;
+                    item.className = 'flex justify-between items-center p-2.5 border-b border-gray-100 last:border-0 hover:bg-gray-50 rounded-md';
+
+                    // 【修改】更新列表项的HTML结构以显示备注
+                    // 使用flex布局，左侧显示时间和备注，右侧是删除按钮
+                    // truncate类可以在备注过长时显示省略号
+                    item.innerHTML = `
+                        <div class="flex-1 min-w-0 mr-2">
+                            <p class="text-gray-800 text-sm sm:text-base font-medium">${record.time}</p>
+                            <p class="text-gray-500 text-xs sm:text-sm truncate" title="${record.remark || ''}">
+                                ${record.remark || '无备注'}
+                            </p>
+                        </div>
+                        <button class="delete-btn text-red-400 hover:text-red-600 transition-colors p-1 flex-shrink-0" data-index="${index}">
+                            <i class="fa fa-trash-o fa-lg"></i>
+                        </button>
+                    `;
                     container.appendChild(item);
                 });
                 document.querySelectorAll('.delete-btn').forEach(btn => btn.addEventListener('click', function() { deleteRecord(parseInt(this.getAttribute('data-index'))); }));
@@ -305,6 +346,7 @@
             updateStatistics();
         }
 
+        // 统计函数不受影响，无需修改
         function updateStatistics() {
             const currentYear = new Date().getFullYear();
             const currentYearRecords = records.filter(r => new Date(r.time.replace(/\//g, '-')).getFullYear() === currentYear);
