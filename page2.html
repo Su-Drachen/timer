@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>成就与徽章 - 私人时间记录器</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#165DFF',
+                        success: '#00B42A',
+                        danger: '#F53F3F',
+                        gold: '#F7BA1E',
+                    },
+                }
+            }
+        }
+    </script>
+    <style>
+        .hidden { display: none; }
+        #toast { transition: opacity 0.3s, transform 0.3s; }
+
+        /* 徽章样式 */
+        .achievement-card {
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .achievement-card.locked {
+            filter: grayscale(90%);
+            opacity: 0.7;
+        }
+        .achievement-card:not(.locked):hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+        }
+        .progress-bar-bg {
+            background-color: #e5e7eb; /* gray-200 */
+        }
+        .progress-bar-fill {
+            transition: width 0.5s ease-in-out;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen flex flex-col">
+
+    <header class="bg-primary text-white py-4 shadow-md">
+        <div class="container mx-auto px-4">
+            <h1 class="text-xl font-bold flex items-center">
+                <i class="fa fa-trophy mr-2"></i>
+                成就与徽章
+            </h1>
+        </div>
+    </header>
+
+    <main class="flex-grow container mx-auto px-4 py-6 sm:py-8">
+        <div class="max-w-5xl mx-auto">
+
+            <div class="mb-6">
+                <a href="./index.html" class="inline-flex items-center text-primary hover:underline">
+                    <i class="fa fa-arrow-left mr-2"></i>
+                    返回主页
+                </a>
+            </div>
+
+            <!-- 总体成就进度条 -->
+            <div id="overall-progress-container" class="bg-white p-6 rounded-xl shadow-lg mb-8 hidden">
+                <div class="flex justify-between items-center mb-2">
+                    <h2 class="text-lg font-semibold text-gray-800">总成就进度</h2>
+                    <span id="overall-progress-text" class="font-bold text-primary">0 / 0 (0%)</span>
+                </div>
+                <div class="w-full progress-bar-bg rounded-full h-4 shadow-inner">
+                    <div id="overall-progress-bar" class="progress-bar-fill bg-primary h-4 rounded-full" style="width: 0%;"></div>
+                </div>
+            </div>
+
+            <div id="achievements-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- 徽章将由JS动态生成于此 -->
+                <p id="loading-message" class="text-gray-500 text-center py-10 md:col-span-2 lg:col-span-3">正在检查您的成就进度...</p>
+            </div>
+
+        </div>
+    </main>
+
+    <div id="toast" class="fixed bottom-5 right-5 bg-gray-800 text-white py-3 px-5 rounded-lg shadow-xl opacity-0 translate-y-10 z-50">
+        <p id="toast-message"></p>
+    </div>
+
+    <footer class="bg-gray-800 text-white py-4 mt-auto">
+        <div class="container mx-auto px-4 text-center text-sm">
+            © 私人时间记录器
+        </div>
+    </footer>
+
+    <script>
+        // --- 全局配置与状态 ---
+        let config = {};
+        let records = [];
+
+        // --- DOM 元素引用 ---
+        const DOMElements = {
+            grid: null,
+            loadingMessage: null,
+            toast: null,
+            toastMessage: null,
+            overallProgress: {
+                container: null,
+                text: null,
+                bar: null,
+            }
+        };
+
+        // --- 核心函数 (与主页复用) ---
+        function loadConfig() {
+            const savedConfig = localStorage.getItem('timeRecorderConfig');
+            if (savedConfig) {
+                config = JSON.parse(savedConfig);
+                return true;
+            } else {
+                DOMElements.grid.innerHTML = `
+                    <div class="md:col-span-2 lg:col-span-3 text-center bg-white p-8 rounded-xl shadow-lg">
+                        <h2 class="text-lg font-bold text-danger mb-2">配置未找到</h2>
+                        <p class="text-gray-600">请先返回主页完成GitHub Gist的配置。</p>
+                        <a href="./index.html" class="mt-4 inline-block bg-primary text-white font-medium py-2 px-4 rounded-lg">返回主页</a>
+                    </div>
+                `;
+                return false;
+            }
+        }
+
+        function showToast(message, type = 'info') {
+            const { toast, toastMessage } = DOMElements;
+            toastMessage.textContent = message;
+            toast.className = 'fixed bottom-5 right-5 text-white py-3 px-5 rounded-lg shadow-xl opacity-0 translate-y-10 z-50'; // Reset classes
+            if (type === 'success') toast.classList.add('bg-success');
+            else if (type === 'error') toast.classList.add('bg-danger');
+            else toast.classList.add('bg-gray-800');
+            toast.classList.remove('opacity-0', 'translate-y-10');
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-10');
+            }, 3000);
+        }
+
+        async function loadRecordsFromGist() {
+            if (!config.GIST_ID) return;
+            showToast("正在同步数据...", "info");
+            try {
+                const response = await fetch(`https://gist.githubusercontent.com/${config.GITHUB_USERNAME}/${config.GIST_ID}/raw/records.json?t=${new Date().getTime()}`);
+                if (!response.ok) throw new Error(`无法加载Gist: ${response.statusText}`);
+                const data = await response.json();
+                records = Array.isArray(data) ? data : [];
+                showToast("数据同步成功！", "success");
+                AchievementSystem.init(records);
+            } catch (error) {
+                console.error("加载记录失败:", error);
+                showToast("同步失败，请检查配置或网络。", "error");
+                DOMElements.loadingMessage.textContent = '数据加载失败，请刷新页面重试。';
+            }
+        }
+
+        /**
+         * 成就系统核心逻辑
+         */
+        const AchievementSystem = {
+            processedRecords: [],
+            unlockedCount: 0,
+
+            createTieredAchievements(base, tiers) {
+                return tiers.map((tier, index) => ({
+                    ...base,
+                    id: `${base.id}-${index + 1}`,
+                    title: `${base.title} ${index + 1}级`,
+                    description: base.description.replace('{goal}', tier),
+                    goal: tier,
+                }));
+            },
+
+            getDefinitions() {
+                const definitions = [
+                    // --- 数量类成就 ---
+                    ...this.createTieredAchievements({
+                        id: 'total-records', title: '初试牛刀', description: '累计完成 {goal} 条时间记录。',
+                        icon: 'fa-pencil-square-o', color: 'bg-blue-500',
+                        calculate: (recs) => recs.length,
+                    }, [1, 10, 50, 100, 250, 500, 1000]),
+
+                    // --- 毅力类成就 ---
+                    ...this.createTieredAchievements({
+                        id: 'consecutive-days', title: '持之以恒', description: '连续记录 {goal} 天。',
+                        icon: 'fa-calendar-check-o', color: 'bg-red-500',
+                        calculate: (recs) => {
+                            if (recs.length < 2) return recs.length;
+                            const uniqueDays = [...new Set(recs.map(r => r.date.toISOString().split('T')[0]))].sort();
+                            if (uniqueDays.length === 0) return 0;
+                            let longest = 0, current = 1;
+                            for (let i = 1; i < uniqueDays.length; i++) {
+                                const prev = new Date(uniqueDays[i-1]);
+                                const curr = new Date(uniqueDays[i]);
+                                const diffDays = (curr - prev) / (1000 * 60 * 60 * 24);
+                                if (diffDays === 1) current++;
+                                else { longest = Math.max(longest, current); current = 1; }
+                            }
+                            return Math.max(longest, current);
+                        }
+                    }, [1, 3, 5, 7, 9, 11]),
+
+                    // --- 【新增】传奇机长 成就 ---
+                    {
+                        id: 'legendary-aviator', title: '传奇机长', description: '连续记录21天。',
+                        icon: 'fa-plane', goal: 21, color: 'bg-sky-600',
+                        calculate: (recs) => { // 与“持之以恒”使用相同的健壮计算逻辑
+                            if (recs.length < 2) return recs.length;
+                            const uniqueDays = [...new Set(recs.map(r => r.date.toISOString().split('T')[0]))].sort();
+                            if (uniqueDays.length === 0) return 0;
+                            let longest = 0, current = 1;
+                            for (let i = 1; i < uniqueDays.length; i++) {
+                                const prev = new Date(uniqueDays[i-1]);
+                                const curr = new Date(uniqueDays[i]);
+                                const diffDays = (curr - prev) / (1000 * 60 * 60 * 24);
+                                if (diffDays === 1) current++;
+                                else { longest = Math.max(longest, current); current = 1; }
+                            }
+                            return Math.max(longest, current);
+                        }
+                    },
+
+                    // --- 时间类成就 ---
+                    { id: 'early-bird', title: '闻鸡起舞', description: '在早上5-8点记录超过20次。', icon: 'fa-sun-o', goal: 20, color: 'bg-orange-400', calculate: recs => recs.filter(r => r.date.getHours() >= 5 && r.date.getHours() < 8).length },
+                    { id: 'night-owl', title: '夜猫子', description: '在午夜后(0-4点)记录超过20次。', icon: 'fa-moon-o', goal: 20, color: 'bg-indigo-500', calculate: recs => recs.filter(r => r.date.getHours() >= 0 && r.date.getHours() < 4).length },
+
+                    // --- 星期类成就 ---
+                    { id: 'workday-warrior', title: '工作日战士', description: '在周一至周五累计记录100次。', icon: 'fa-briefcase', goal: 100, color: 'bg-cyan-500', calculate: recs => recs.filter(r => r.date.getDay() >= 1 && r.date.getDay() <= 5).length },
+                    { id: 'weekend-winner', title: '周末赢家', description: '在周末累计记录50次。', icon: 'fa-glass', goal: 50, color: 'bg-purple-500', calculate: recs => recs.filter(r => r.date.getDay() === 0 || r.date.getDay() === 6).length },
+
+                    // --- 强度类成就 ---
+                    ...this.createTieredAchievements({
+                        id: 'daily-burst', title: '日积月累', description: '单日最高记录数达到 {goal} 条。',
+                        icon: 'fa-star', color: 'bg-amber-500',
+                        calculate: recs => {
+                            const counts = recs.reduce((acc, r) => {
+                                const day = r.date.toISOString().split('T')[0];
+                                acc[day] = (acc[day] || 0) + 1;
+                                return acc;
+                            }, {});
+                            return Object.keys(counts).length > 0 ? Math.max(...Object.values(counts)) : 0;
+                        }
+                    }, [3, 5, 10]),
+
+                    // --- 内容类成就 ---
+                    ...this.createTieredAchievements({
+                        id: 'long-note', title: '长篇大论', description: '备注多于50个字符的记录达到 {goal} 条。',
+                        icon: 'fa-file-text-o', color: 'bg-emerald-500',
+                        calculate: recs => recs.filter(r => (r.remark || '').length > 50).length
+                    }, [10, 50]),
+                    { id: 'diversifier', title: '生活多彩', description: '记录过10种以上不同的事情 (基于备注首词)。', icon: 'fa-sitemap', goal: 10, color: 'bg-pink-500', calculate: recs => new Set(recs.map(r => (r.remark || '').split(' ')[0])).size },
+
+                    // --- 特殊日期/模式类成就 ---
+                    { id: 'time-traveler', title: '跨年记录者', description: '在两个不同的年份都有记录。', icon: 'fa-history', goal: 2, color: 'bg-stone-500', calculate: recs => new Set(recs.map(r => r.date.getFullYear())).size },
+                    ...this.createTieredAchievements({
+                        id: 'monthly-records', title: '月度常客', description: '在 {goal} 个不同月份有过记录。',
+                        icon: 'fa-calendar-plus-o', color: 'bg-teal-700',
+                        calculate: recs => new Set(recs.map(r => `${r.date.getFullYear()}-${r.date.getMonth()}`)).size
+                    }, [3, 6, 12]),
+
+                    // --- 【新增】养生呢 成就 ---
+                    {
+                        id: 'health-conscious', title: '养生呢', description: '两次连续记录的间隔时间超过15天。',
+                        icon: 'fa-leaf', goal: 1, color: 'bg-green-600',
+                        calculate: recs => {
+                            if (recs.length < 2) return 0;
+                            // 创建一个按时间升序排列的记录副本
+                            const sortedRecs = [...recs].sort((a, b) => a.date - b.date);
+                            let gapCount = 0;
+                            for (let i = 1; i < sortedRecs.length; i++) {
+                                const prevDate = sortedRecs[i - 1].date;
+                                const currDate = sortedRecs[i].date;
+                                const diffDays = (currDate - prevDate) / (1000 * 60 * 60 * 24);
+                                if (diffDays > 15) {
+                                    gapCount++; // 计算发生了多少次，即使目标只是1次
+                                }
+                            }
+                            return gapCount;
+                        }
+                    },
+                ];
+
+                // --- 元成就 (依赖于其他成就的解锁状态) ---
+                const metaAchievements = [
+                    ...this.createTieredAchievements({
+                        id: 'meta-unlocker', title: '成就猎人', description: '解锁 {goal} 个其他成就。',
+                        icon: 'fa-trophy', color: 'bg-gold',
+                        calculate: (recs, unlocked) => unlocked
+                    }, [10, 25])
+                ];
+
+                let allDefs = [...definitions, ...metaAchievements];
+
+                allDefs.push({
+                    id: 'meta-master', title: '成就大师', description: '解锁所有其他成就！',
+                    icon: 'fa-diamond', color: 'bg-black', goal: allDefs.length,
+                    calculate: (recs, unlocked) => unlocked
+                });
+
+                return allDefs;
+            },
+
+            init(records) {
+                this.processedRecords = records.map(r => ({
+                    ...r,
+                    date: new Date(r.time.replace(/\//g, '-'))
+                }));
+                this.render();
+            },
+
+            updateOverallProgress(unlocked, total) {
+                const { container, text, bar } = DOMElements.overallProgress;
+                if (!container || !text || !bar) return;
+                const percentage = total > 0 ? (unlocked / total) * 100 : 0;
+                text.textContent = `${unlocked} / ${total} (${Math.floor(percentage)}%)`;
+                bar.style.width = `${percentage}%`;
+                container.classList.remove('hidden');
+            },
+
+            render() {
+                DOMElements.grid.innerHTML = '';
+                const definitions = this.getDefinitions();
+                const totalAchievements = definitions.length;
+                let calculatedResults = [];
+                this.unlockedCount = 0;
+
+                definitions.forEach(ach => {
+                    if (ach.id.startsWith('meta-')) return;
+                    const currentValue = ach.calculate(this.processedRecords);
+                    const isUnlocked = currentValue >= ach.goal;
+                    if (isUnlocked) this.unlockedCount++;
+                    calculatedResults.push({ ...ach, currentValue, isUnlocked });
+                });
+
+                definitions.forEach(ach => {
+                    if (!ach.id.startsWith('meta-')) return;
+                    const currentValue = ach.calculate(this.processedRecords, this.unlockedCount);
+                    const isUnlocked = currentValue >= ach.goal;
+                    calculatedResults.push({ ...ach, currentValue, isUnlocked });
+                });
+
+                this.unlockedCount = calculatedResults.filter(r => r.isUnlocked).length;
+
+                calculatedResults.sort((a,b) => (b.isUnlocked - a.isUnlocked) || a.title.localeCompare(b.title)).forEach(res => {
+                    const card = this.createAchievementCard(res);
+                    DOMElements.grid.appendChild(card);
+                });
+
+                this.updateOverallProgress(this.unlockedCount, totalAchievements);
+            },
+
+            createAchievementCard(data) {
+                const { title, description, icon, color, goal, currentValue, isUnlocked } = data;
+                const progressPercent = Math.min(Math.floor((currentValue / goal) * 100), 100);
+
+                const card = document.createElement('div');
+                card.className = `achievement-card bg-white rounded-xl shadow-lg p-6 flex flex-col items-center text-center ${isUnlocked ? '' : 'locked'}`;
+
+                let progressText;
+                if (isUnlocked) {
+                    progressText = `<p class="text-sm font-semibold text-success mt-2"><i class="fa fa-check-circle"></i> 已解锁</p>`;
+                } else {
+                    progressText = `<p class="text-sm text-gray-500 mt-2">进度: ${currentValue} / ${goal}</p>`;
+                }
+
+                card.innerHTML = `
+                    <div class="relative mb-4">
+                        <div class="w-20 h-20 rounded-full flex items-center justify-center ${isUnlocked ? (color === 'bg-gold' ? 'bg-yellow-400' : color) : 'bg-gray-300'}">
+                            <i class="fa ${icon} text-4xl text-white"></i>
+                        </div>
+                        ${isUnlocked ? `<div class="absolute -top-2 -right-2 text-gold text-3xl animate-pulse"><i class="fa fa-trophy"></i></div>` : ''}
+                    </div>
+                    <h3 class="text-lg font-bold text-gray-800">${title}</h3>
+                    <p class="text-sm text-gray-600 my-2 h-10">${description}</p>
+
+                    <div class="w-full progress-bar-bg rounded-full h-2.5 mt-auto">
+                        <div class="progress-bar-fill ${isUnlocked ? (color === 'bg-gold' ? 'bg-yellow-400' : color) : 'bg-primary'} h-2.5 rounded-full" style="width: ${progressPercent}%"></div>
+                    </div>
+                    ${progressText}
+                `;
+                return card;
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            DOMElements.grid = document.getElementById('achievements-grid');
+            DOMElements.loadingMessage = document.getElementById('loading-message');
+            DOMElements.toast = document.getElementById('toast');
+            DOMElements.toastMessage = document.getElementById('toast-message');
+            DOMElements.overallProgress.container = document.getElementById('overall-progress-container');
+            DOMElements.overallProgress.text = document.getElementById('overall-progress-text');
+            DOMElements.overallProgress.bar = document.getElementById('overall-progress-bar');
+
+            const hasConfig = loadConfig();
+            if (hasConfig) {
+                loadRecordsFromGist();
+            }
+        });
+    </script>
+</body>
+</html>
