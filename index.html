@@ -3,6 +3,421 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>私人时间记录器 (本地版)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#165DFF',
+                        success: '#00B42A',
+                        danger: '#F53F3F',
+                    },
+                }
+            }
+        }
+    </script>
+    <style>
+        .hidden { display: none; }
+        #toast { transition: opacity 0.3s, transform 0.3s; }
+        .modal-content { pointer-events: auto; }
+        .modal-overlay { pointer-events: none; }
+        .modal-overlay > * { pointer-events: auto; }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen flex flex-col">
+
+    <!-- 编辑记录模态框 -->
+    <div id="edit-modal-overlay" class="fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center z-50 p-4 hidden modal-overlay">
+        <div class="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md modal-content">
+            <h2 class="text-xl font-bold text-gray-800 mb-6">编辑记录</h2>
+            <form id="edit-form" class="space-y-4">
+                <input type="hidden" id="edit-index">
+                <div>
+                    <label for="edit-time" class="block text-sm font-medium text-gray-700">时间</label>
+                    <input type="text" id="edit-time" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary" required>
+                    <p class="text-xs text-gray-500 mt-1">格式: YYYY/MM/DD HH:MM:SS</p>
+                </div>
+                <div>
+                    <label for="edit-remark" class="block text-sm font-medium text-gray-700">备注</label>
+                    <textarea id="edit-remark" rows="3" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary"></textarea>
+                </div>
+                <div class="flex justify-end gap-3 pt-4">
+                    <button type="button" id="cancel-edit-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-4 rounded-lg transition-all">取消</button>
+                    <button type="submit" class="bg-primary hover:bg-primary/90 text-white font-medium py-2 px-4 rounded-lg transition-all shadow-md">保存更改</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 应用主界面 -->
+    <header class="bg-primary text-white py-4 shadow-md">
+        <div class="container mx-auto px-4">
+            <h1 class="text-xl font-bold flex items-center">
+                <i class="fa fa-clock-o mr-2"></i>
+                本地时间记录器
+            </h1>
+        </div>
+    </header>
+
+    <main class="flex-grow container mx-auto px-4 py-6 sm:py-8">
+        <div class="max-w-xl mx-auto space-y-6">
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <div class="flex flex-col items-center">
+                    <div class="text-center mb-4">
+                        <p class="text-gray-500 mb-1">当前时间</p>
+                        <p id="current-time" class="text-2xl sm:text-3xl font-bold text-gray-800">--:--:--</p>
+                    </div>
+                    <button id="record-btn" class="bg-primary hover:bg-primary/90 text-white font-medium py-3 px-6 rounded-lg transition-all shadow-md hover:shadow-lg flex items-center w-full sm:w-auto justify-center">
+                        <i class="fa fa-plus-circle mr-2"></i>
+                        记录当前时间
+                    </button>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 gap-4">
+                    <h2 class="text-lg font-bold text-gray-800">记录列表</h2>
+                    <div class="flex items-center gap-2">
+                        <button id="import-btn" class="flex-1 sm:flex-none bg-gray-200 hover:bg-gray-300 text-gray-700 py-2 px-3 rounded transition-colors text-sm flex items-center justify-center">
+                            <i class="fa fa-upload mr-1"></i>
+                            导入CSV
+                        </button>
+                        <button id="download-btn" class="flex-1 sm:flex-none bg-gray-200 hover:bg-gray-300 text-gray-700 py-2 px-3 rounded transition-colors text-sm flex items-center justify-center">
+                            <i class="fa fa-download mr-1"></i>
+                            导出CSV
+                        </button>
+                    </div>
+                </div>
+                <div id="records-container" class="space-y-2 max-h-80 overflow-y-auto pr-2">
+                    <p class="text-gray-500 text-center py-4">暂无记录</p>
+                </div>
+            </div>
+
+<!--            <div class="bg-white rounded-xl shadow-lg p-6">-->
+<!--                <h2 class="text-lg font-bold text-gray-800 mb-4">数据统计</h2>-->
+<!--                <div class="space-y-6">-->
+<!--                    <div>-->
+<!--                        <h3 class="text-md font-semibold text-gray-700 mb-2">本年总览</h3>-->
+<!--                        <div class="overflow-x-auto">-->
+<!--                            <table class="w-full text-sm text-left text-gray-600">-->
+<!--                                <thead class="text-xs text-gray-700 uppercase bg-gray-100">-->
+<!--                                    <tr><th scope="col" class="px-4 py-2">项目</th><th scope="col" class="px-4 py-2">数值</th></tr>-->
+<!--                                </thead>-->
+<!--                                <tbody id="summary-tbody"></tbody>-->
+<!--                            </table>-->
+<!--                        </div>-->
+<!--                    </div>-->
+<!--                    <div>-->
+<!--                        <h3 class="text-md font-semibold text-gray-700 mb-2">本年每月记录趋势</h3>-->
+<!--                        <canvas id="records-chart"></canvas>-->
+<!--                    </div>-->
+<!--                </div>-->
+<!--            </div>-->
+
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h2 class="text-lg font-bold text-gray-800">词条分析</h2>
+                        <p class="text-sm text-gray-500 mt-1">查看所有备注词条的出现频率排行。</p>
+                    </div>
+                    <a href="./page1.html" class="bg-success hover:bg-success/90 text-white font-medium py-2 px-4 rounded-lg transition-all shadow-md flex items-center">
+                        前往
+                        <i class="fa fa-arrow-right ml-2"></i>
+                    </a>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h2 class="text-lg font-bold text-gray-800">成就系统</h2>
+                        <p class="text-sm text-gray-500 mt-1">查看所有成就获得。</p>
+                    </div>
+                    <a href="./page2.html" class="bg-success hover:bg-success/90 text-white font-medium py-2 px-4 rounded-lg transition-all shadow-md flex items-center">
+                        前往
+                        <i class="fa fa-arrow-right ml-2"></i>
+                    </a>
+                </div>
+            </div>
+
+<!--            <div class="bg-white rounded-xl shadow-lg p-6">-->
+<!--                <div class="flex items-center justify-between">-->
+<!--                    <div>-->
+<!--                        <h2 class="text-lg font-bold text-gray-800">进阶网页</h2>-->
+<!--                        <p class="text-sm text-gray-500 mt-1">这是免费使用版本在此进阶专用版。</p>-->
+<!--                    </div>-->
+<!--                    <a href="./page3.html" class="bg-success hover:bg-success/90 text-white font-medium py-2 px-4 rounded-lg transition-all shadow-md flex items-center">-->
+<!--                        前往-->
+<!--                        <i class="fa fa-arrow-right ml-2"></i>-->
+<!--                    </a>-->
+<!--                </div>-->
+<!--            </div>-->
+
+        </div>
+    </main>
+
+    <input type="file" id="csv-file-input" class="hidden" accept=".csv">
+
+    <div id="toast" class="fixed bottom-5 right-5 bg-gray-800 text-white py-3 px-5 rounded-lg shadow-xl opacity-0 translate-y-10 z-50">
+        <p id="toast-message"></p>
+    </div>
+
+<!--    <footer class="bg-gray-800 text-white py-4 mt-auto">-->
+<!--        <div class="container mx-auto px-4 text-center text-sm">-->
+<!--            © 私人时间记录器-->
+<!--        </div>-->
+<!--    </footer>-->
+
+    <script>
+        // --- 全局变量 ---
+        let records = [];
+        let recordsChart = null;
+
+        // --- 本地存储核心函数 ---
+        function loadRecordsFromLocal() {
+            const savedRecords = localStorage.getItem('timeRecords');
+            if (savedRecords) {
+                try {
+                    records = JSON.parse(savedRecords);
+                } catch (e) {
+                    console.error("解析本地数据失败:", e);
+                    records = [];
+                }
+            } else {
+                records = [];
+            }
+            renderRecords();
+        }
+
+        function saveRecordsToLocal() {
+            localStorage.setItem('timeRecords', JSON.stringify(records));
+        }
+
+        // --- 工具函数 ---
+        function showToast(message, type = 'info') {
+            const toast = document.getElementById('toast');
+            const toastMessage = document.getElementById('toast-message');
+            toastMessage.textContent = message;
+            toast.classList.remove('bg-success', 'bg-danger', 'bg-gray-800');
+            if (type === 'success') toast.classList.add('bg-success');
+            else if (type === 'error') toast.classList.add('bg-danger');
+            else toast.classList.add('bg-gray-800');
+            toast.classList.remove('opacity-0', 'translate-y-10');
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-10');
+            }, 3000);
+        }
+
+        function updateCurrentTime() {
+            const now = new Date();
+            document.getElementById('current-time').textContent = now.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+        }
+
+        // --- 数据操作函数 ---
+        function handleAddRecord() {
+            const remark = prompt("请输入本次记录的备注（可选）：", "");
+            if (remark === null) {
+                showToast("操作已取消", "info");
+                return;
+            }
+            const now = new Date();
+            const timeString = now.toLocaleString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }).replace(/\//g, '/');
+            records.unshift({ time: timeString, remark: remark.trim() });
+            renderRecords();
+            saveRecordsToLocal();
+            showToast("记录已添加", "success");
+        }
+
+        function handleDeleteRecord(index) {
+            if (!confirm('确定要删除这条记录吗？')) {
+                return;
+            }
+            records.splice(index, 1);
+            renderRecords();
+            saveRecordsToLocal();
+            showToast('记录已成功删除', 'success');
+        }
+
+        function openEditModal(index) {
+            const record = records[index];
+            document.getElementById('edit-index').value = index;
+            document.getElementById('edit-time').value = record.time;
+            document.getElementById('edit-remark').value = record.remark || '';
+            document.getElementById('edit-modal-overlay').classList.remove('hidden');
+        }
+
+        function closeEditModal() {
+            document.getElementById('edit-modal-overlay').classList.add('hidden');
+        }
+
+        function handleEditSave(event) {
+            event.preventDefault();
+            const index = document.getElementById('edit-index').value;
+            const newTime = document.getElementById('edit-time').value.trim();
+            const newRemark = document.getElementById('edit-remark').value.trim();
+
+            if (!newTime) {
+                showToast('时间不能为空', 'error');
+                return;
+            }
+            records[index] = { time: newTime, remark: newRemark };
+            renderRecords();
+            saveRecordsToLocal();
+            showToast('记录已更新', 'success');
+            closeEditModal();
+        }
+
+        function importFromCsv(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const fileRecords = e.target.result.trim().split('\n').slice(1).map(line => {
+                        const parts = line.split(',');
+                        if (parts.length >= 2) {
+                            const time = parts[1].replace(/"/g, '').trim();
+                            const remark = parts.slice(2).join(',').replace(/^"|"$/g, '').replace(/""/g, '"').trim();
+                            if (time) return { time: time, remark: remark };
+                        }
+                        return null;
+                    }).filter(Boolean);
+
+                    const combinedRecordsMap = new Map();
+                    records.forEach(r => combinedRecordsMap.set(r.time, r));
+                    const originalCount = combinedRecordsMap.size;
+                    fileRecords.forEach(r => { if (!combinedRecordsMap.has(r.time)) combinedRecordsMap.set(r.time, r); });
+
+                    const newTotalRecords = Array.from(combinedRecordsMap.values());
+                    const addedCount = newTotalRecords.length - originalCount;
+
+                    if (addedCount > 0) {
+                        records = newTotalRecords;
+                        renderRecords();
+                        saveRecordsToLocal();
+                        showToast(`导入成功！新增了 ${addedCount} 条记录。`, 'success');
+                    } else {
+                        showToast('数据已是最新，无需导入。', 'info');
+                    }
+                } catch (error) {
+                    showToast(`导入失败: ${error.message}`, 'error');
+                }
+            };
+            reader.readAsText(file);
+            event.target.value = null; // 允许再次选择同一个文件
+        }
+
+        function exportToCsv() {
+            if (records.length === 0) { showToast('没有记录可导出', 'error'); return; }
+            let csvContent = "序号,时间,备注\n";
+            const sortedRecords = [...records].sort((a, b) => new Date(b.time.replace(/\//g, '-')) - new Date(a.time.replace(/\//g, '-')));
+            sortedRecords.forEach((record, index) => {
+                const remarkText = record.remark ? record.remark.replace(/"/g, '""') : '';
+                csvContent += `${sortedRecords.length - index},"${record.time}","${remarkText}"\n`;
+            });
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.setAttribute('download', `时间记录_${new Date().toISOString().slice(0,10)}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // --- UI渲染与统计函数 ---
+        function renderRecords() {
+            const container = document.getElementById('records-container');
+            records.sort((a, b) => new Date(b.time.replace(/\//g, '-')) - new Date(a.time.replace(/\//g, '-')));
+
+            if (records.length === 0) {
+                container.innerHTML = '<p class="text-gray-500 text-center py-4">暂无记录</p>';
+            } else {
+                container.innerHTML = '';
+                records.forEach((record, index) => {
+                    const item = document.createElement('div');
+                    item.className = 'flex justify-between items-center p-2.5 border-b border-gray-100 last:border-0 hover:bg-gray-50 rounded-md';
+                    item.innerHTML = `
+                        <div class="flex-1 min-w-0 mr-2">
+                            <p class="text-gray-800 text-sm sm:text-base font-medium">${record.time}</p>
+                            <p class="text-gray-500 text-xs sm:text-sm truncate" title="${record.remark || ''}">
+                                ${record.remark || '无备注'}
+                            </p>
+                        </div>
+                        <div class="flex items-center flex-shrink-0">
+                            <button class="edit-btn text-blue-400 hover:text-blue-600 transition-colors p-1 mr-2" data-index="${index}" title="编辑">
+                                <i class="fa fa-pencil fa-lg"></i>
+                            </button>
+                            <button class="delete-btn text-red-400 hover:text-red-600 transition-colors p-1" data-index="${index}" title="删除">
+                                <i class="fa fa-trash-o fa-lg"></i>
+                            </button>
+                        </div>
+                    `;
+                    container.appendChild(item);
+                });
+
+                document.querySelectorAll('.delete-btn').forEach(btn => btn.addEventListener('click', function() { handleDeleteRecord(parseInt(this.getAttribute('data-index'))); }));
+                document.querySelectorAll('.edit-btn').forEach(btn => btn.addEventListener('click', function() { openEditModal(parseInt(this.getAttribute('data-index'))); }));
+            }
+            updateStatistics();
+        }
+
+        function updateStatistics() {
+            const currentYear = new Date().getFullYear();
+            const currentYearRecords = records.filter(r => new Date(r.time.replace(/\//g, '-')).getFullYear() === currentYear);
+            renderChart(currentYearRecords);
+            renderSummary(currentYearRecords.length, currentYear);
+        }
+
+        function renderSummary(total, year) {
+            document.getElementById('summary-tbody').innerHTML = `<tr class="bg-white border-b"><td class="px-4 py-2 font-medium text-gray-900 whitespace-nowrap">${year}年 总记录次数</td><td class="px-4 py-2">${total} 次</td></tr>`;
+        }
+
+        function renderChart(yearRecords) {
+            const monthlyCounts = Array(12).fill(0);
+            yearRecords.forEach(r => { monthlyCounts[new Date(r.time.replace(/\//g, '-')).getMonth()]++; });
+            const ctx = document.getElementById('records-chart').getContext('2d');
+            const labels = ['一月', '二月', '三月', '四月', '五月', '六月', '七月', '八月', '九月', '十月', '十一月', '十二月'];
+            if (recordsChart) recordsChart.destroy();
+            recordsChart = new Chart(ctx, {
+                type: 'line',
+                data: { labels, datasets: [{ label: '每月记录次数', data: monthlyCounts, backgroundColor: 'rgba(22, 93, 255, 0.2)', borderColor: '#165DFF', borderWidth: 2, tension: 0.2, fill: true }] },
+                options: { responsive: true, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }, plugins: { legend: { display: false } } }
+            });
+        }
+
+        // --- 初始化与事件监听 ---
+        document.addEventListener('DOMContentLoaded', () => {
+            loadRecordsFromLocal();
+
+            document.getElementById('record-btn').addEventListener('click', handleAddRecord);
+            document.getElementById('download-btn').addEventListener('click', exportToCsv);
+            document.getElementById('import-btn').addEventListener('click', () => document.getElementById('csv-file-input').click());
+            document.getElementById('csv-file-input').addEventListener('change', importFromCsv);
+
+            document.getElementById('edit-form').addEventListener('submit', handleEditSave);
+            document.getElementById('cancel-edit-btn').addEventListener('click', closeEditModal);
+            document.getElementById('edit-modal-overlay').addEventListener('click', (event) => {
+                if (event.target === event.currentTarget) {
+                    closeEditModal();
+                }
+            });
+
+            updateCurrentTime();
+            setInterval(updateCurrentTime, 1000);
+        });
+    </script>
+</body>
+</html>
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>私人时间记录器</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
