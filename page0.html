@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>时间记录器 Pro - 更进一步</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #121212;
+            --card-color: #1e1e1e;
+            --text-color: #e0e0e0;
+            --text-muted-color: #888888;
+            --accent-gradient: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+            --border-color: rgba(255, 255, 255, 0.1);
+        }
+
+        *, *::before, *::after {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', 'Noto Sans SC', sans-serif;
+            margin: 0;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        .container {
+            max-width: 960px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* --- 动画效果 --- */
+        .animate-on-scroll {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: opacity 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94), transform 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+        .animate-on-scroll.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* --- 头部 Hero Section --- */
+        .hero {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            min-height: 80vh;
+            padding: 100px 20px;
+            background-color: #000;
+            position: relative;
+            overflow: hidden;
+        }
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0;
+            width: 200%; height: 200%;
+            background: linear-gradient(115deg, rgba(106, 17, 203, 0.3), rgba(37, 117, 252, 0.3), transparent 50%);
+            animation: rotate-gradient 20s linear infinite;
+        }
+        @keyframes rotate-gradient {
+            0% { transform: translate(-50%, -50%) rotate(0deg); }
+            100% { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+
+        .hero-content {
+            z-index: 1;
+        }
+
+        .hero h1 {
+            font-size: clamp(2.5rem, 8vw, 5rem);
+            font-weight: 800;
+            margin: 0;
+            line-height: 1.1;
+            letter-spacing: -0.03em;
+            background: linear-gradient(90deg, #ffffff, #c7c7c7);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero h1 .pro-badge {
+            font-size: 0.4em;
+            font-weight: 500;
+            padding: 0.5em 1.2em;
+            border-radius: 2em;
+            background: var(--accent-gradient);
+            -webkit-text-fill-color: white;
+            display: inline-block;
+            vertical-align: middle;
+            margin-left: 0.3em;
+            letter-spacing: normal;
+        }
+
+        .hero p {
+            font-size: clamp(1rem, 3vw, 1.5rem);
+            max-width: 700px;
+            margin: 20px auto 0;
+            color: var(--text-muted-color);
+            font-weight: 400;
+        }
+
+        /* --- 内容 Section --- */
+        .section {
+            padding: 120px 0;
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 80px;
+        }
+
+        .section-header h2 {
+            font-size: clamp(2rem, 5vw, 3rem);
+            font-weight: 700;
+            margin-bottom: 15px;
+        }
+
+        .section-header p {
+            font-size: 1.1rem;
+            color: var(--text-muted-color);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        /* --- 功能网格 --- */
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 30px;
+        }
+
+        .feature-card {
+            background-color: var(--card-color);
+            padding: 35px;
+            border-radius: 16px;
+            border: 1px solid var(--border-color);
+            transition: transform 0.3s ease, border-color 0.3s ease;
+        }
+        .feature-card:hover {
+            transform: translateY(-5px);
+            border-color: rgba(37, 117, 252, 0.5);
+        }
+
+        .feature-icon {
+            margin-bottom: 20px;
+        }
+        .feature-icon svg {
+            width: 48px;
+            height: 48px;
+            stroke: #2575fc;
+            stroke-width: 1.5;
+        }
+
+        .feature-card h3 {
+            font-size: 1.5rem;
+            margin: 0 0 10px 0;
+            font-weight: 500;
+        }
+
+        .feature-card p {
+            font-size: 1rem;
+            color: var(--text-muted-color);
+            line-height: 1.7;
+        }
+
+        /* --- 升级 CTA --- */
+        .cta-section {
+            background: var(--card-color);
+            border-radius: 20px;
+            padding: 60px 40px;
+            text-align: center;
+            border: 1px solid var(--border-color);
+        }
+
+        .cta-section h2 {
+            font-size: clamp(1.8rem, 4vw, 2.5rem);
+            margin-bottom: 40px;
+        }
+
+        .btn {
+            background: var(--accent-gradient);
+            color: white;
+            padding: 18px 45px;
+            text-decoration: none;
+            font-size: 1.1rem;
+            font-weight: 500;
+            border-radius: 50px;
+            transition: all 0.3s ease;
+            display: inline-block;
+            border: none;
+            cursor: pointer;
+        }
+
+        .btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 10px 30px rgba(37, 117, 252, 0.3);
+        }
+
+        .cta-steps {
+            margin-top: 40px;
+            color: var(--text-muted-color);
+            font-size: 0.9rem;
+        }
+
+        /* --- 页脚 --- */
+        footer {
+            text-align: center;
+            padding: 50px 20px;
+            font-size: 0.9rem;
+            color: var(--text-muted-color);
+            border-top: 1px solid var(--border-color);
+        }
+        footer a {
+            color: var(--text-color);
+            text-decoration: none;
+            font-weight: 500;
+        }
+        footer a:hover {
+            color: #2575fc;
+        }
+
+    </style>
+</head>
+<body>
+
+    <header class="hero">
+        <div class="hero-content">
+            <h1 class="animate-on-scroll">时间记录器<span class="pro-badge">Pro</span></h1>
+            <p class="animate-on-scroll" style="transition-delay: 0.2s;">从记录到精通，释放时间的全部潜力。</p>
+        </div>
+    </header>
+
+    <main>
+        <section class="section">
+            <div class="container">
+                <div class="section-header animate-on-scroll">
+                    <h2>Pro, 为专业而生。</h2>
+                    <p>解锁一系列强大功能，专为追求极致效率与深度洞察的你而设计。</p>
+                </div>
+
+                <div class="features-grid">
+                    <div class="feature-card animate-on-scroll" style="transition-delay: 0.1s;">
+                        <div class="feature-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"></path></svg>
+                        </div>
+                        <h3>多端云同步</h3>
+                        <p>数据在云端实时同步，跨设备无缝衔接。独家一键导入功能，让升级体验平滑如丝。</p>
+                    </div>
+
+                    <div class="feature-card animate-on-scroll" style="transition-delay: 0.2s;">
+                        <div class="feature-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20v-6M6 20v-10M18 20V4"></path></svg>
+                        </div>
+                        <h3>深度数据洞察</h3>
+                        <p>解锁强大的词条分析引擎，将您的记录转化为直观的可视化图表，助您洞悉时间背后的秘密。</p>
+                    </div>
+
+                    <div class="feature-card animate-on-scroll" style="transition-delay: 0.3s;">
+                        <div class="feature-icon">
+                           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V6a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h5a2 2 0 0 0 2-2v-2"></path><path d="M20.54 12.46a5 5 0 0 0-7.07 0l-1.72 1.72a5 5 0 0 0 7.07 7.07l1.72-1.72a5 5 0 0 0 0-7.07z"></path></svg>
+                        </div>
+                        <h3>游戏化成就系统</h3>
+                        <p>独一无二的成就系统，将记录变成一场充满挑战与惊喜的游戏。点亮徽章，见证您的每一次成长。</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="section">
+            <div class="container">
+                 <div class="cta-section animate-on-scroll">
+                    <h2>立即升级至 Pro 版</h2>
+                    <a href="https://space.bilibili.com/1006715501" target="_blank" class="btn">前往 B 站联系 UP 主</a>
+                    <p class="cta-steps">私信发送 “时间记录器进阶”，UP 主将引导您完成升级。</p>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>由 <a href="https://space.bilibili.com/1006715501" target="_blank">白菜卷_</a> 倾力打造 | &copy; 2024 时间记录器</p>
+            <p style="font-size: 0.8rem; margin-top:15px;">标准版承诺永久免费、无广告。若您付费购买了标准版，请联系卖家退款。</p>
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const observer = new IntersectionObserver(entries => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('visible');
+                        observer.unobserve(entry.target);
+                    }
+                });
+            }, {
+                threshold: 0.1
+            });
+
+            document.querySelectorAll('.animate-on-scroll').forEach(element => {
+                observer.observe(element);
+            });
+        });
+    </script>
+
+</body>
+</html>
