@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>私人时间记录器 (本地版)</title>
+    <title>私人时间记录器 (整合版)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -26,459 +26,60 @@
         .modal-content { pointer-events: auto; }
         .modal-overlay { pointer-events: none; }
         .modal-overlay > * { pointer-events: auto; }
-    </style>
-</head>
-<body class="bg-gray-50 min-h-screen flex flex-col">
-
-    <!-- 编辑记录模态框 -->
-    <div id="edit-modal-overlay" class="fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center z-50 p-4 hidden modal-overlay">
-        <div class="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md modal-content">
-            <h2 class="text-xl font-bold text-gray-800 mb-6">编辑记录</h2>
-            <form id="edit-form" class="space-y-4">
-                <input type="hidden" id="edit-index">
-                <div>
-                    <label for="edit-time" class="block text-sm font-medium text-gray-700">时间</label>
-                    <input type="text" id="edit-time" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary" required>
-                    <p class="text-xs text-gray-500 mt-1">格式: YYYY/MM/DD HH:MM:SS</p>
-                </div>
-                <div>
-                    <label for="edit-remark" class="block text-sm font-medium text-gray-700">备注</label>
-                    <textarea id="edit-remark" rows="3" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary"></textarea>
-                </div>
-                <div class="flex justify-end gap-3 pt-4">
-                    <button type="button" id="cancel-edit-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-4 rounded-lg transition-all">取消</button>
-                    <button type="submit" class="bg-primary hover:bg-primary/90 text-white font-medium py-2 px-4 rounded-lg transition-all shadow-md">保存更改</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- 应用主界面 -->
-    <header class="bg-primary text-white py-4 shadow-md">
-        <div class="container mx-auto px-4">
-            <h1 class="text-xl font-bold flex items-center">
-                <i class="fa fa-clock-o mr-2"></i>
-                本地时间记录器
-            </h1>
-        </div>
-    </header>
-
-    <main class="flex-grow container mx-auto px-4 py-6 sm:py-8">
-        <div class="max-w-xl mx-auto space-y-6">
-            <div class="bg-white rounded-xl shadow-lg p-6">
-                <div class="flex flex-col items-center">
-                    <div class="text-center mb-4">
-                        <p class="text-gray-500 mb-1">当前时间</p>
-                        <p id="current-time" class="text-2xl sm:text-3xl font-bold text-gray-800">--:--:--</p>
-                    </div>
-                    <button id="record-btn" class="bg-primary hover:bg-primary/90 text-white font-medium py-3 px-6 rounded-lg transition-all shadow-md hover:shadow-lg flex items-center w-full sm:w-auto justify-center">
-                        <i class="fa fa-plus-circle mr-2"></i>
-                        记录当前时间
-                    </button>
-                </div>
-            </div>
-
-            <div class="bg-white rounded-xl shadow-lg p-6">
-                <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 gap-4">
-                    <h2 class="text-lg font-bold text-gray-800">记录列表</h2>
-                    <div class="flex items-center gap-2">
-                        <button id="import-btn" class="flex-1 sm:flex-none bg-gray-200 hover:bg-gray-300 text-gray-700 py-2 px-3 rounded transition-colors text-sm flex items-center justify-center">
-                            <i class="fa fa-upload mr-1"></i>
-                            导入CSV
-                        </button>
-                        <button id="download-btn" class="flex-1 sm:flex-none bg-gray-200 hover:bg-gray-300 text-gray-700 py-2 px-3 rounded transition-colors text-sm flex items-center justify-center">
-                            <i class="fa fa-download mr-1"></i>
-                            导出CSV
-                        </button>
-                    </div>
-                </div>
-                <div id="records-container" class="space-y-2 max-h-80 overflow-y-auto pr-2">
-                    <p class="text-gray-500 text-center py-4">暂无记录</p>
-                </div>
-            </div>
-
-<!--            <div class="bg-white rounded-xl shadow-lg p-6">-->
-<!--                <h2 class="text-lg font-bold text-gray-800 mb-4">数据统计</h2>-->
-<!--                <div class="space-y-6">-->
-<!--                    <div>-->
-<!--                        <h3 class="text-md font-semibold text-gray-700 mb-2">本年总览</h3>-->
-<!--                        <div class="overflow-x-auto">-->
-<!--                            <table class="w-full text-sm text-left text-gray-600">-->
-<!--                                <thead class="text-xs text-gray-700 uppercase bg-gray-100">-->
-<!--                                    <tr><th scope="col" class="px-4 py-2">项目</th><th scope="col" class="px-4 py-2">数值</th></tr>-->
-<!--                                </thead>-->
-<!--                                <tbody id="summary-tbody"></tbody>-->
-<!--                            </table>-->
-<!--                        </div>-->
-<!--                    </div>-->
-<!--                    <div>-->
-<!--                        <h3 class="text-md font-semibold text-gray-700 mb-2">本年每月记录趋势</h3>-->
-<!--                        <canvas id="records-chart"></canvas>-->
-<!--                    </div>-->
-<!--                </div>-->
-<!--            </div>-->
-
-            <div class="bg-white rounded-xl shadow-lg p-6">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <h2 class="text-lg font-bold text-gray-800">词条分析</h2>
-                        <p class="text-sm text-gray-500 mt-1">查看所有备注词条的出现频率排行。</p>
-                    </div>
-                    <a href="./page1.html" class="bg-success hover:bg-success/90 text-white font-medium py-2 px-4 rounded-lg transition-all shadow-md flex items-center">
-                        前往
-                        <i class="fa fa-arrow-right ml-2"></i>
-                    </a>
-                </div>
-            </div>
-
-            <div class="bg-white rounded-xl shadow-lg p-6">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <h2 class="text-lg font-bold text-gray-800">成就系统</h2>
-                        <p class="text-sm text-gray-500 mt-1">查看所有成就获得。</p>
-                    </div>
-                    <a href="./page2.html" class="bg-success hover:bg-success/90 text-white font-medium py-2 px-4 rounded-lg transition-all shadow-md flex items-center">
-                        前往
-                        <i class="fa fa-arrow-right ml-2"></i>
-                    </a>
-                </div>
-            </div>
-
-<!--            <div class="bg-white rounded-xl shadow-lg p-6">-->
-<!--                <div class="flex items-center justify-between">-->
-<!--                    <div>-->
-<!--                        <h2 class="text-lg font-bold text-gray-800">进阶网页</h2>-->
-<!--                        <p class="text-sm text-gray-500 mt-1">这是免费使用版本在此进阶专用版。</p>-->
-<!--                    </div>-->
-<!--                    <a href="./page3.html" class="bg-success hover:bg-success/90 text-white font-medium py-2 px-4 rounded-lg transition-all shadow-md flex items-center">-->
-<!--                        前往-->
-<!--                        <i class="fa fa-arrow-right ml-2"></i>-->
-<!--                    </a>-->
-<!--                </div>-->
-<!--            </div>-->
-
-        </div>
-    </main>
-
-    <input type="file" id="csv-file-input" class="hidden" accept=".csv">
-
-    <div id="toast" class="fixed bottom-5 right-5 bg-gray-800 text-white py-3 px-5 rounded-lg shadow-xl opacity-0 translate-y-10 z-50">
-        <p id="toast-message"></p>
-    </div>
-
-<!--    <footer class="bg-gray-800 text-white py-4 mt-auto">-->
-<!--        <div class="container mx-auto px-4 text-center text-sm">-->
-<!--            © 私人时间记录器-->
-<!--        </div>-->
-<!--    </footer>-->
-
-    <script>
-        // --- 全局变量 ---
-        let records = [];
-        let recordsChart = null;
-
-        // --- 本地存储核心函数 ---
-        function loadRecordsFromLocal() {
-            const savedRecords = localStorage.getItem('timeRecords');
-            if (savedRecords) {
-                try {
-                    records = JSON.parse(savedRecords);
-                } catch (e) {
-                    console.error("解析本地数据失败:", e);
-                    records = [];
-                }
-            } else {
-                records = [];
-            }
-            renderRecords();
+        button:disabled { cursor: not-allowed; opacity: 0.7; }
+        /* 标签页样式 */
+        .tab-btn {
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            font-weight: 500;
+            transition: all 0.2s;
+            border: 2px solid transparent;
         }
-
-        function saveRecordsToLocal() {
-            localStorage.setItem('timeRecords', JSON.stringify(records));
+        .tab-btn.active {
+            background-color: #165DFF;
+            color: white;
+            border-color: #165DFF;
         }
-
-        // --- 工具函数 ---
-        function showToast(message, type = 'info') {
-            const toast = document.getElementById('toast');
-            const toastMessage = document.getElementById('toast-message');
-            toastMessage.textContent = message;
-            toast.classList.remove('bg-success', 'bg-danger', 'bg-gray-800');
-            if (type === 'success') toast.classList.add('bg-success');
-            else if (type === 'error') toast.classList.add('bg-danger');
-            else toast.classList.add('bg-gray-800');
-            toast.classList.remove('opacity-0', 'translate-y-10');
-            setTimeout(() => {
-                toast.classList.add('opacity-0', 'translate-y-10');
-            }, 3000);
-        }
-
-        function updateCurrentTime() {
-            const now = new Date();
-            document.getElementById('current-time').textContent = now.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
-        }
-
-        // --- 数据操作函数 ---
-        function handleAddRecord() {
-            const remark = prompt("请输入本次记录的备注（可选）：", "");
-            if (remark === null) {
-                showToast("操作已取消", "info");
-                return;
-            }
-            const now = new Date();
-            const timeString = now.toLocaleString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }).replace(/\//g, '/');
-            records.unshift({ time: timeString, remark: remark.trim() });
-            renderRecords();
-            saveRecordsToLocal();
-            showToast("记录已添加", "success");
-        }
-
-        function handleDeleteRecord(index) {
-            if (!confirm('确定要删除这条记录吗？')) {
-                return;
-            }
-            records.splice(index, 1);
-            renderRecords();
-            saveRecordsToLocal();
-            showToast('记录已成功删除', 'success');
-        }
-
-        function openEditModal(index) {
-            const record = records[index];
-            document.getElementById('edit-index').value = index;
-            document.getElementById('edit-time').value = record.time;
-            document.getElementById('edit-remark').value = record.remark || '';
-            document.getElementById('edit-modal-overlay').classList.remove('hidden');
-        }
-
-        function closeEditModal() {
-            document.getElementById('edit-modal-overlay').classList.add('hidden');
-        }
-
-        function handleEditSave(event) {
-            event.preventDefault();
-            const index = document.getElementById('edit-index').value;
-            const newTime = document.getElementById('edit-time').value.trim();
-            const newRemark = document.getElementById('edit-remark').value.trim();
-
-            if (!newTime) {
-                showToast('时间不能为空', 'error');
-                return;
-            }
-            records[index] = { time: newTime, remark: newRemark };
-            renderRecords();
-            saveRecordsToLocal();
-            showToast('记录已更新', 'success');
-            closeEditModal();
-        }
-
-        function importFromCsv(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                try {
-                    const fileRecords = e.target.result.trim().split('\n').slice(1).map(line => {
-                        const parts = line.split(',');
-                        if (parts.length >= 2) {
-                            const time = parts[1].replace(/"/g, '').trim();
-                            const remark = parts.slice(2).join(',').replace(/^"|"$/g, '').replace(/""/g, '"').trim();
-                            if (time) return { time: time, remark: remark };
-                        }
-                        return null;
-                    }).filter(Boolean);
-
-                    const combinedRecordsMap = new Map();
-                    records.forEach(r => combinedRecordsMap.set(r.time, r));
-                    const originalCount = combinedRecordsMap.size;
-                    fileRecords.forEach(r => { if (!combinedRecordsMap.has(r.time)) combinedRecordsMap.set(r.time, r); });
-
-                    const newTotalRecords = Array.from(combinedRecordsMap.values());
-                    const addedCount = newTotalRecords.length - originalCount;
-
-                    if (addedCount > 0) {
-                        records = newTotalRecords;
-                        renderRecords();
-                        saveRecordsToLocal();
-                        showToast(`导入成功！新增了 ${addedCount} 条记录。`, 'success');
-                    } else {
-                        showToast('数据已是最新，无需导入。', 'info');
-                    }
-                } catch (error) {
-                    showToast(`导入失败: ${error.message}`, 'error');
-                }
-            };
-            reader.readAsText(file);
-            event.target.value = null; // 允许再次选择同一个文件
-        }
-
-        function exportToCsv() {
-            if (records.length === 0) { showToast('没有记录可导出', 'error'); return; }
-            let csvContent = "序号,时间,备注\n";
-            const sortedRecords = [...records].sort((a, b) => new Date(b.time.replace(/\//g, '-')) - new Date(a.time.replace(/\//g, '-')));
-            sortedRecords.forEach((record, index) => {
-                const remarkText = record.remark ? record.remark.replace(/"/g, '""') : '';
-                csvContent += `${sortedRecords.length - index},"${record.time}","${remarkText}"\n`;
-            });
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(blob);
-            link.setAttribute('download', `时间记录_${new Date().toISOString().slice(0,10)}.csv`);
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        }
-
-        // --- UI渲染与统计函数 ---
-        function renderRecords() {
-            const container = document.getElementById('records-container');
-            records.sort((a, b) => new Date(b.time.replace(/\//g, '-')) - new Date(a.time.replace(/\//g, '-')));
-
-            if (records.length === 0) {
-                container.innerHTML = '<p class="text-gray-500 text-center py-4">暂无记录</p>';
-            } else {
-                container.innerHTML = '';
-                records.forEach((record, index) => {
-                    const item = document.createElement('div');
-                    item.className = 'flex justify-between items-center p-2.5 border-b border-gray-100 last:border-0 hover:bg-gray-50 rounded-md';
-                    item.innerHTML = `
-                        <div class="flex-1 min-w-0 mr-2">
-                            <p class="text-gray-800 text-sm sm:text-base font-medium">${record.time}</p>
-                            <p class="text-gray-500 text-xs sm:text-sm truncate" title="${record.remark || ''}">
-                                ${record.remark || '无备注'}
-                            </p>
-                        </div>
-                        <div class="flex items-center flex-shrink-0">
-                            <button class="edit-btn text-blue-400 hover:text-blue-600 transition-colors p-1 mr-2" data-index="${index}" title="编辑">
-                                <i class="fa fa-pencil fa-lg"></i>
-                            </button>
-                            <button class="delete-btn text-red-400 hover:text-red-600 transition-colors p-1" data-index="${index}" title="删除">
-                                <i class="fa fa-trash-o fa-lg"></i>
-                            </button>
-                        </div>
-                    `;
-                    container.appendChild(item);
-                });
-
-                document.querySelectorAll('.delete-btn').forEach(btn => btn.addEventListener('click', function() { handleDeleteRecord(parseInt(this.getAttribute('data-index'))); }));
-                document.querySelectorAll('.edit-btn').forEach(btn => btn.addEventListener('click', function() { openEditModal(parseInt(this.getAttribute('data-index'))); }));
-            }
-            updateStatistics();
-        }
-
-        function updateStatistics() {
-            const currentYear = new Date().getFullYear();
-            const currentYearRecords = records.filter(r => new Date(r.time.replace(/\//g, '-')).getFullYear() === currentYear);
-            renderChart(currentYearRecords);
-            renderSummary(currentYearRecords.length, currentYear);
-        }
-
-        function renderSummary(total, year) {
-            document.getElementById('summary-tbody').innerHTML = `<tr class="bg-white border-b"><td class="px-4 py-2 font-medium text-gray-900 whitespace-nowrap">${year}年 总记录次数</td><td class="px-4 py-2">${total} 次</td></tr>`;
-        }
-
-        function renderChart(yearRecords) {
-            const monthlyCounts = Array(12).fill(0);
-            yearRecords.forEach(r => { monthlyCounts[new Date(r.time.replace(/\//g, '-')).getMonth()]++; });
-            const ctx = document.getElementById('records-chart').getContext('2d');
-            const labels = ['一月', '二月', '三月', '四月', '五月', '六月', '七月', '八月', '九月', '十月', '十一月', '十二月'];
-            if (recordsChart) recordsChart.destroy();
-            recordsChart = new Chart(ctx, {
-                type: 'line',
-                data: { labels, datasets: [{ label: '每月记录次数', data: monthlyCounts, backgroundColor: 'rgba(22, 93, 255, 0.2)', borderColor: '#165DFF', borderWidth: 2, tension: 0.2, fill: true }] },
-                options: { responsive: true, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }, plugins: { legend: { display: false } } }
-            });
-        }
-
-        // --- 初始化与事件监听 ---
-        document.addEventListener('DOMContentLoaded', () => {
-            loadRecordsFromLocal();
-
-            document.getElementById('record-btn').addEventListener('click', handleAddRecord);
-            document.getElementById('download-btn').addEventListener('click', exportToCsv);
-            document.getElementById('import-btn').addEventListener('click', () => document.getElementById('csv-file-input').click());
-            document.getElementById('csv-file-input').addEventListener('change', importFromCsv);
-
-            document.getElementById('edit-form').addEventListener('submit', handleEditSave);
-            document.getElementById('cancel-edit-btn').addEventListener('click', closeEditModal);
-            document.getElementById('edit-modal-overlay').addEventListener('click', (event) => {
-                if (event.target === event.currentTarget) {
-                    closeEditModal();
-                }
-            });
-
-            updateCurrentTime();
-            setInterval(updateCurrentTime, 1000);
-        });
-    </script>
-</body>
-</html>
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>私人时间记录器</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        primary: '#165DFF',
-                        success: '#00B42A',
-                        danger: '#F53F3F',
-                    },
-                }
-            }
-        }
-    </script>
-    <style>
-        .hidden { display: none; }
-        #toast { transition: opacity 0.3s, transform 0.3s; }
-        .modal-content { pointer-events: auto; }
-        .modal-overlay { pointer-events: none; }
-        .modal-overlay > * { pointer-events: auto; }
-        /* 【新增】禁用按钮的样式 */
-        button:disabled {
-            cursor: not-allowed;
-            opacity: 0.7;
+        .tab-btn:not(.active) {
+            background-color: #e5e7eb;
+            color: #4b5563;
         }
     </style>
 </head>
 <body class="bg-gray-50 min-h-screen flex flex-col">
 
-    <!-- 配置界面 -->
-    <div id="config-overlay" class="fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center z-50 p-4 hidden">
+    <!-- ==== 全局模态框和提示 ==== -->
+
+    <!-- Gist 配置模态框 -->
+    <div id="gist-config-overlay" class="fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center z-50 p-4 hidden">
         <div class="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md">
-            <h2 class="text-xl font-bold text-gray-800 mb-4">首次使用配置</h2>
-            <p class="text-gray-600 mb-6 text-sm">您的配置信息将仅保存在当前浏览器中，不会上传。请填入您的GitHub Gist信息以同步数据。</p>
-            <form id="config-form" class="space-y-4">
+            <h2 class="text-xl font-bold text-gray-800 mb-4">首次使用配置 (云同步版)</h2>
+            <p class="text-gray-600 mb-6 text-sm">您的配置信息将仅保存在当前浏览器中。请填入您的GitHub Gist信息以同步数据。</p>
+            <form id="gist-config-form" class="space-y-4">
                 <div>
-                    <label for="username" class="block text-sm font-medium text-gray-700">GitHub 用户名</label>
-                    <input type="text" id="username" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary" required>
+                    <label for="gist-username" class="block text-sm font-medium text-gray-700">GitHub 用户名</label>
+                    <input type="text" id="gist-username" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary" required>
                 </div>
                 <div>
-                    <label for="gistId" class="block text-sm font-medium text-gray-700">Gist ID</label>
-                    <input type="text" id="gistId" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary" required>
+                    <label for="gist-gistId" class="block text-sm font-medium text-gray-700">Gist ID</label>
+                    <input type="text" id="gist-gistId" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary" required>
                 </div>
                 <div>
-                    <label for="pat" class="block text-sm font-medium text-gray-700">个人访问令牌 (PAT)</label>
-                    <input type="password" id="pat" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary" required>
+                    <label for="gist-pat" class="block text-sm font-medium text-gray-700">个人访问令牌 (PAT)</label>
+                    <input type="password" id="gist-pat" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary" required>
                 </div>
                 <button type="submit" class="w-full bg-primary hover:bg-primary/90 text-white font-medium py-2 px-4 rounded-lg transition-all shadow-md">保存并开始使用</button>
             </form>
         </div>
     </div>
 
-    <!-- 编辑记录模态框 -->
+    <!-- 通用编辑模态框 (由JS动态填充内容) -->
     <div id="edit-modal-overlay" class="fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center z-50 p-4 hidden modal-overlay">
         <div class="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md modal-content">
             <h2 class="text-xl font-bold text-gray-800 mb-6">编辑记录</h2>
             <form id="edit-form" class="space-y-4">
                 <input type="hidden" id="edit-index">
+                <input type="hidden" id="edit-version"> <!-- 用于区分是local还是gist -->
                 <div>
                     <label for="edit-time" class="block text-sm font-medium text-gray-700">时间</label>
                     <input type="text" id="edit-time" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary" required>
@@ -496,106 +97,173 @@
         </div>
     </div>
 
+    <input type="file" id="csv-file-input" class="hidden" accept=".csv">
+    <div id="toast" class="fixed bottom-5 right-5 bg-gray-800 text-white py-3 px-5 rounded-lg shadow-xl opacity-0 translate-y-10 z-50">
+        <p id="toast-message"></p>
+    </div>
 
-    <!-- 应用主界面 -->
+    <!-- ==== 页面主体结构 ==== -->
     <header class="bg-primary text-white py-4 shadow-md">
         <div class="container mx-auto px-4">
             <h1 class="text-xl font-bold flex items-center">
                 <i class="fa fa-clock-o mr-2"></i>
-                私人时间记录器
+                私人时间记录器 (整合版)
             </h1>
         </div>
     </header>
 
     <main class="flex-grow container mx-auto px-4 py-6 sm:py-8">
-        <div class="max-w-xl mx-auto space-y-6">
-            <div class="bg-white rounded-xl shadow-lg p-6">
-                <div class="flex flex-col items-center">
-                    <div class="text-center mb-4">
-                        <p class="text-gray-500 mb-1">当前时间</p>
-                        <p id="current-time" class="text-2xl sm:text-3xl font-bold text-gray-800">--:--:--</p>
-                    </div>
-                    <button id="record-btn" class="bg-primary hover:bg-primary/90 text-white font-medium py-3 px-6 rounded-lg transition-all shadow-md hover:shadow-lg flex items-center w-full sm:w-auto justify-center">
-                        <i class="fa fa-plus-circle mr-2"></i>
-                        记录当前时间
-                    </button>
-                </div>
-            </div>
 
-            <div class="bg-white rounded-xl shadow-lg p-6">
-                <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 gap-4">
-                    <h2 class="text-lg font-bold text-gray-800">记录列表</h2>
-                    <div class="flex items-center gap-2">
-                        <button id="import-btn" class="flex-1 sm:flex-none bg-gray-200 hover:bg-gray-300 text-gray-700 py-2 px-3 rounded transition-colors text-sm flex items-center justify-center">
-                            <i class="fa fa-upload mr-1"></i>
-                            导入CSV
-                        </button>
-                        <button id="download-btn" class="flex-1 sm:flex-none bg-gray-200 hover:bg-gray-300 text-gray-700 py-2 px-3 rounded transition-colors text-sm flex items-center justify-center">
-                            <i class="fa fa-download mr-1"></i>
-                            导出CSV
+        <!-- 标签页切换 -->
+        <div class="max-w-xl mx-auto mb-6 flex justify-center gap-4">
+            <button id="tab-local" class="tab-btn active">本地版</button>
+            <button id="tab-gist" class="tab-btn">云同步版</button>
+        </div>
+
+        <!-- 本地版内容 -->
+        <div id="content-local">
+            <div class="max-w-xl mx-auto space-y-6">
+                <div class="bg-white rounded-xl shadow-lg p-6">
+                    <div class="flex flex-col items-center">
+                        <div class="text-center mb-4">
+                            <p class="text-gray-500 mb-1">当前时间</p>
+                            <p id="local-current-time" class="text-2xl sm:text-3xl font-bold text-gray-800">--:--:--</p>
+                        </div>
+                        <button id="local-record-btn" class="bg-primary hover:bg-primary/90 text-white font-medium py-3 px-6 rounded-lg transition-all shadow-md hover:shadow-lg flex items-center w-full sm:w-auto justify-center">
+                            <i class="fa fa-plus-circle mr-2"></i>
+                            记录当前时间
                         </button>
                     </div>
                 </div>
-                <div id="records-container" class="space-y-2 max-h-80 overflow-y-auto pr-2">
-                    <p class="text-gray-500 text-center py-4">正在检查配置...</p>
-                </div>
-            </div>
 
-            <div class="bg-white rounded-xl shadow-lg p-6">
-                <h2 class="text-lg font-bold text-gray-800 mb-4">数据统计</h2>
-                <div class="space-y-6">
-                    <div>
-                        <h3 class="text-md font-semibold text-gray-700 mb-2">本年总览</h3>
-                        <div class="overflow-x-auto">
-                            <table class="w-full text-sm text-left text-gray-600">
-                                <thead class="text-xs text-gray-700 uppercase bg-gray-100">
-                                    <tr><th scope="col" class="px-4 py-2">项目</th><th scope="col" class="px-4 py-2">数值</th></tr>
-                                </thead>
-                                <tbody id="summary-tbody"></tbody>
-                            </table>
+                <div class="bg-white rounded-xl shadow-lg p-6">
+                    <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 gap-4">
+                        <h2 class="text-lg font-bold text-gray-800">记录列表 (本地)</h2>
+                        <div class="flex items-center gap-2">
+                            <button id="local-import-btn" class="flex-1 sm:flex-none bg-gray-200 hover:bg-gray-300 text-gray-700 py-2 px-3 rounded transition-colors text-sm flex items-center justify-center">
+                                <i class="fa fa-upload mr-1"></i> 导入CSV
+                            </button>
+                            <button id="local-download-btn" class="flex-1 sm:flex-none bg-gray-200 hover:bg-gray-300 text-gray-700 py-2 px-3 rounded transition-colors text-sm flex items-center justify-center">
+                                <i class="fa fa-download mr-1"></i> 导出CSV
+                            </button>
                         </div>
                     </div>
-                    <div>
-                        <h3 class="text-md font-semibold text-gray-700 mb-2">本年每月记录趋势</h3>
-                        <canvas id="records-chart"></canvas>
+                    <div id="local-records-container" class="space-y-2 max-h-80 overflow-y-auto pr-2">
+                        <p class="text-gray-500 text-center py-4">暂无记录</p>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-lg p-6">
+                    <h2 class="text-lg font-bold text-gray-800 mb-4">数据统计 (本地)</h2>
+                    <div class="space-y-6">
+                        <div>
+                            <h3 class="text-md font-semibold text-gray-700 mb-2">本年总览</h3>
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-sm text-left text-gray-600">
+                                    <thead class="text-xs text-gray-700 uppercase bg-gray-100">
+                                        <tr><th scope="col" class="px-4 py-2">项目</th><th scope="col" class="px-4 py-2">数值</th></tr>
+                                    </thead>
+                                    <tbody id="local-summary-tbody"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div>
+                            <h3 class="text-md font-semibold text-gray-700 mb-2">本年每月记录趋势</h3>
+                            <canvas id="local-records-chart"></canvas>
+                        </div>
                     </div>
                 </div>
             </div>
-
-            <div class="bg-white rounded-xl shadow-lg p-6">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <h2 class="text-lg font-bold text-gray-800">词条分析</h2>
-                        <p class="text-sm text-gray-500 mt-1">查看所有备注词条的出现频率排行。</p>
-                    </div>
-                    <a href="./page1.html" class="bg-success hover:bg-success/90 text-white font-medium py-2 px-4 rounded-lg transition-all shadow-md flex items-center">
-                        前往
-                        <i class="fa fa-arrow-right ml-2"></i>
-                    </a>
-                </div>
-            </div>
-
-            <div class="bg-white rounded-xl shadow-lg p-6">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <h2 class="text-lg font-bold text-gray-800">成就系统</h2>
-                        <p class="text-sm text-gray-500 mt-1">查看所有成就获得。</p>
-                    </div>
-                    <a href="./page2.html" class="bg-success hover:bg-success/90 text-white font-medium py-2 px-4 rounded-lg transition-all shadow-md flex items-center">
-                        前往
-                        <i class="fa fa-arrow-right ml-2"></i>
-                    </a>
-                </div>
-            </div>
-
         </div>
-    </main>
 
-    <input type="file" id="csv-file-input" class="hidden" accept=".csv">
+        <!-- 云同步版内容 -->
+        <div id="content-gist" class="hidden">
+            <div class="max-w-xl mx-auto space-y-6">
+                <div class="bg-white rounded-xl shadow-lg p-6">
+                    <div class="flex flex-col items-center">
+                        <div class="text-center mb-4">
+                            <p class="text-gray-500 mb-1">当前时间</p>
+                            <p id="gist-current-time" class="text-2xl sm:text-3xl font-bold text-gray-800">--:--:--</p>
+                        </div>
+                        <button id="gist-record-btn" class="bg-primary hover:bg-primary/90 text-white font-medium py-3 px-6 rounded-lg transition-all shadow-md hover:shadow-lg flex items-center w-full sm:w-auto justify-center">
+                            <i class="fa fa-plus-circle mr-2"></i>
+                            记录当前时间
+                        </button>
+                    </div>
+                </div>
 
-    <div id="toast" class="fixed bottom-5 right-5 bg-gray-800 text-white py-3 px-5 rounded-lg shadow-xl opacity-0 translate-y-10 z-50">
-        <p id="toast-message"></p>
+                <div class="bg-white rounded-xl shadow-lg p-6">
+                    <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 gap-4">
+                        <h2 class="text-lg font-bold text-gray-800">记录列表 (云同步)</h2>
+                        <div class="flex items-center gap-2">
+                            <button id="gist-import-btn" class="flex-1 sm:flex-none bg-gray-200 hover:bg-gray-300 text-gray-700 py-2 px-3 rounded transition-colors text-sm flex items-center justify-center">
+                                <i class="fa fa-upload mr-1"></i> 导入CSV
+                            </button>
+                            <button id="gist-download-btn" class="flex-1 sm:flex-none bg-gray-200 hover:bg-gray-300 text-gray-700 py-2 px-3 rounded transition-colors text-sm flex items-center justify-center">
+                                <i class="fa fa-download mr-1"></i> 导出CSV
+                            </button>
+                        </div>
+                    </div>
+                    <div id="gist-records-container" class="space-y-2 max-h-80 overflow-y-auto pr-2">
+                        <p class="text-gray-500 text-center py-4">正在检查配置...</p>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-lg p-6">
+                    <h2 class="text-lg font-bold text-gray-800 mb-4">数据统计 (云同步)</h2>
+                    <div class="space-y-6">
+                        <div>
+                            <h3 class="text-md font-semibold text-gray-700 mb-2">本年总览</h3>
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-sm text-left text-gray-600">
+                                    <thead class="text-xs text-gray-700 uppercase bg-gray-100">
+                                        <tr><th scope="col" class="px-4 py-2">项目</th><th scope="col" class="px-4 py-2">数值</th></tr>
+                                    </thead>
+                                    <tbody id="gist-summary-tbody"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div>
+                            <h3 class="text-md font-semibold text-gray-700 mb-2">本年每月记录趋势</h3>
+                            <canvas id="gist-records-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 两个版本共用的卡片 -->
+<div class="max-w-xl mx-auto space-y-6 mt-6">
+    <div class="bg-white rounded-xl shadow-lg p-6">
+        <div class="flex items-center justify-between">
+            <div>
+                <h2 class="text-lg font-bold text-gray-800">词条分析</h2>
+                <p class="text-sm text-gray-500 mt-1">查看所有备注词条的出现频率排行。</p>
+            </div>
+            <!-- 修改这里 -->
+            <a href="./page1.html" target="_blank" rel="noopener noreferrer" class="bg-success hover:bg-success/90 text-white font-medium py-2 px-4 rounded-lg transition-all shadow-md flex items-center">
+                前往
+                <i class="fa fa-arrow-right ml-2"></i>
+            </a>
+        </div>
     </div>
+    <div class="bg-white rounded-xl shadow-lg p-6">
+        <div class="flex items-center justify-between">
+            <div>
+                <h2 class="text-lg font-bold text-gray-800">成就系统</h2>
+                <p class="text-sm text-gray-500 mt-1">查看所有成就获得。</p>
+            </div>
+            <!-- 修改这里 -->
+            <a href="./page2.html" target="_blank" rel="noopener noreferrer" class="bg-success hover:bg-success/90 text-white font-medium py-2 px-4 rounded-lg transition-all shadow-md flex items-center">
+                前往
+                <i class="fa fa-arrow-right ml-2"></i>
+            </a>
+        </div>
+    </div>
+
+</div>
+
+    </main>
 
     <footer class="bg-gray-800 text-white py-4 mt-auto">
         <div class="container mx-auto px-4 text-center text-sm">
@@ -603,378 +271,498 @@
         </div>
     </footer>
 
-    <script>
-        // --- 配置变量 ---
-        let config = {
-            GITHUB_USERNAME: "",
-            GIST_ID: "",
-            GITHUB_PAT: ""
-        };
+<script>
+// --- 全局工具函数 ---
+function showToast(message, type = 'info') {
+    const toast = document.getElementById('toast');
+    const toastMessage = document.getElementById('toast-message');
+    toastMessage.textContent = message;
+    toast.classList.remove('bg-success', 'bg-danger', 'bg-gray-800');
+    if (type === 'success') toast.classList.add('bg-success');
+    else if (type === 'error') toast.classList.add('bg-danger');
+    else toast.classList.add('bg-gray-800');
+    toast.classList.remove('opacity-0', 'translate-y-10');
+    setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-y-10');
+    }, 3000);
+}
 
-        // --- 全局变量 ---
-        let records = [];
-        let recordsChart = null;
-        // 【移除】saveTimeout 变量
+function updateAllCurrentTime() {
+    const now = new Date();
+    const timeString = now.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+    document.getElementById('local-current-time').textContent = timeString;
+    document.getElementById('gist-current-time').textContent = timeString;
+}
 
-        // --- 配置管理函数 ---
-        function loadConfig() {
-            const savedConfig = localStorage.getItem('timeRecorderConfig');
-            if (savedConfig) {
-                config = JSON.parse(savedConfig);
-                document.getElementById('config-overlay').classList.add('hidden');
-                return true;
+function openEditModal(version, index) {
+    const app = version === 'local' ? localApp : gistApp;
+    const record = app.records[index];
+    document.getElementById('edit-version').value = version;
+    document.getElementById('edit-index').value = index;
+    document.getElementById('edit-time').value = record.time;
+    document.getElementById('edit-remark').value = record.remark || '';
+    document.getElementById('edit-modal-overlay').classList.remove('hidden');
+}
+
+function closeEditModal() {
+    document.getElementById('edit-modal-overlay').classList.add('hidden');
+}
+
+
+// --- 本地版 (Local) 应用逻辑 ---
+const localApp = {
+    records: [],
+    recordsChart: null,
+
+    init() {
+        this.loadRecordsFromLocal();
+        document.getElementById('local-record-btn').addEventListener('click', () => this.handleAddRecord());
+        document.getElementById('local-download-btn').addEventListener('click', () => this.exportToCsv());
+        document.getElementById('local-import-btn').addEventListener('click', () => document.getElementById('csv-file-input').click());
+    },
+
+    loadRecordsFromLocal() {
+        const savedRecords = localStorage.getItem('timeRecords');
+        this.records = savedRecords ? JSON.parse(savedRecords) : [];
+        this.renderRecords();
+    },
+
+    saveRecordsToLocal() {
+        localStorage.setItem('timeRecords', JSON.stringify(this.records));
+    },
+
+    handleAddRecord() {
+        const remark = prompt("请输入本次记录的备注（可选）：", "");
+        if (remark === null) return showToast("操作已取消", "info");
+
+        const now = new Date();
+        const timeString = now.toLocaleString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }).replace(/\//g, '/');
+        this.records.unshift({ time: timeString, remark: remark.trim() });
+        this.renderRecords();
+        this.saveRecordsToLocal();
+        showToast("记录已添加 (本地)", "success");
+    },
+
+    handleDeleteRecord(index) {
+        if (!confirm('确定要删除这条本地记录吗？')) return;
+        this.records.splice(index, 1);
+        this.renderRecords();
+        this.saveRecordsToLocal();
+        showToast('本地记录已删除', 'success');
+    },
+
+    handleEditSave(index, newTime, newRemark) {
+        if (!newTime) return showToast('时间不能为空', 'error');
+        this.records[index] = { time: newTime, remark: newRemark };
+        this.renderRecords();
+        this.saveRecordsToLocal();
+        showToast('本地记录已更新', 'success');
+        closeEditModal();
+    },
+
+    importFromCsv(csvContent) {
+        try {
+            const fileRecords = csvContent.trim().split('\n').slice(1).map(line => {
+                const parts = line.split(',');
+                if (parts.length < 2) return null;
+                const time = parts[1].replace(/"/g, '').trim();
+                const remark = parts.slice(2).join(',').replace(/^"|"$/g, '').replace(/""/g, '"').trim();
+                return time ? { time, remark } : null;
+            }).filter(Boolean);
+
+            const combinedRecordsMap = new Map(this.records.map(r => [r.time, r]));
+            const originalCount = combinedRecordsMap.size;
+            fileRecords.forEach(r => combinedRecordsMap.set(r.time, r));
+
+            const newTotalRecords = Array.from(combinedRecordsMap.values());
+            const addedCount = newTotalRecords.length - originalCount;
+
+            if (addedCount > 0) {
+                this.records = newTotalRecords;
+                this.renderRecords();
+                this.saveRecordsToLocal();
+                showToast(`本地导入成功！新增了 ${addedCount} 条记录。`, 'success');
             } else {
-                document.getElementById('config-overlay').classList.remove('hidden');
-                return false;
+                showToast('本地数据已是最新，无需导入。', 'info');
             }
+        } catch (error) {
+            showToast(`导入失败: ${error.message}`, 'error');
         }
+    },
 
-        function saveConfig(username, gistId, pat) {
-            config = { GITHUB_USERNAME: username, GIST_ID: gistId, GITHUB_PAT: pat };
-            localStorage.setItem('timeRecorderConfig', JSON.stringify(config));
-            document.getElementById('config-overlay').classList.add('hidden');
-            loadRecordsFromGist();
-        }
-
-        // --- 工具函数 ---
-        function showToast(message, type = 'info') {
-            const toast = document.getElementById('toast');
-            const toastMessage = document.getElementById('toast-message');
-            toastMessage.textContent = message;
-            toast.classList.remove('bg-success', 'bg-danger', 'bg-gray-800');
-            if (type === 'success') toast.classList.add('bg-success');
-            else if (type === 'error') toast.classList.add('bg-danger');
-            else toast.classList.add('bg-gray-800');
-            toast.classList.remove('opacity-0', 'translate-y-10');
-            setTimeout(() => {
-                toast.classList.add('opacity-0', 'translate-y-10');
-            }, 3000);
-        }
-
-        function updateCurrentTime() {
-            const now = new Date();
-            document.getElementById('current-time').textContent = now.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
-        }
-
-        // --- Gist API 核心函数 ---
-        async function loadRecordsFromGist() {
-            if (!config.GIST_ID) {
-                document.getElementById('records-container').innerHTML = '<p class="text-gray-500 text-center py-4">请先完成配置</p>';
-                return;
-            }
-            showToast("正在从云端同步数据...", "info");
-            try {
-                const response = await fetch(`https://gist.githubusercontent.com/${config.GITHUB_USERNAME}/${config.GIST_ID}/raw/records.json?t=${new Date().getTime()}`);
-                if (!response.ok) throw new Error(`无法加载Gist: ${response.statusText}`);
-                const data = await response.json();
-                records = Array.isArray(data) ? data : [];
-                renderRecords();
-                showToast("数据同步成功！", "success");
-            } catch (error) {
-                console.error("加载记录失败:", error);
-                showToast("同步失败，请检查配置或网络。", "error");
-                renderRecords();
-            }
-        }
-
-        // 【优化】重构 saveRecordsToGist，使其在失败时抛出错误
-        async function saveRecordsToGist() {
-            if (!config.GIST_ID) {
-                throw new Error("配置不完整，无法保存。");
-            }
-            try {
-                const response = await fetch(`https://api.github.com/gists/${config.GIST_ID}`, {
-                    method: 'PATCH',
-                    headers: { 'Authorization': `token ${config.GITHUB_PAT}`, 'Accept': 'application/vnd.github.v3+json' },
-                    body: JSON.stringify({ files: { 'records.json': { content: JSON.stringify(records, null, 2) } } })
-                });
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(`保存失败: ${errorData.message}`);
-                }
-                return true; // 表示成功
-            } catch (error) {
-                console.error("保存记录失败:", error);
-                throw error; // 将错误继续抛出，以便调用者可以捕获
-            }
-        }
-
-        // 【移除】debouncedSave 函数
-
-        // --- 数据操作函数 ---
-        // 【优化】将 addRecord 改为 async 函数，并处理加载状态
-        async function handleAddRecord() {
-            const recordBtn = document.getElementById('record-btn');
-            const originalBtnContent = recordBtn.innerHTML;
-
-            const remark = prompt("请输入本次记录的备注（可选）：", "");
-            if (remark === null) {
-                showToast("操作已取消", "info");
-                return;
-            }
-
-            const now = new Date();
-            const timeString = now.toLocaleString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }).replace(/\//g, '/');
-            records.unshift({ time: timeString, remark: remark.trim() });
-            renderRecords(); // 先更新UI
-
-            recordBtn.disabled = true;
-            recordBtn.innerHTML = '<i class="fa fa-spinner fa-spin mr-2"></i>正在保存...';
-
-            try {
-                await saveRecordsToGist();
-                showToast("数据已成功保存到云端！", "success");
-            } catch (error) {
-                showToast(error.message, "error");
-                // 保存失败，回滚操作
-                records.shift();
-                renderRecords();
-            } finally {
-                recordBtn.disabled = false;
-                recordBtn.innerHTML = originalBtnContent;
-            }
-        }
-
-        // 【优化】将 deleteRecord 改为 async 函数，并处理加载状态
-        async function handleDeleteRecord(index) {
-            if (!confirm('确定要删除这条记录吗？')) {
-                return;
-            }
-
-            const deleteBtn = document.querySelector(`.delete-btn[data-index="${index}"]`);
-            if(deleteBtn) {
-                deleteBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i>';
-                deleteBtn.disabled = true;
-            }
-
-            const deletedRecord = records[index]; // 备份以便回滚
-
-            records.splice(index, 1);
-            renderRecords(); // 先更新UI
-
-            try {
-                await saveRecordsToGist();
-                showToast('记录已成功删除', 'success');
-            } catch (error) {
-                showToast(`删除失败: ${error.message}`, 'error');
-                // 回滚
-                records.splice(index, 0, deletedRecord);
-                renderRecords();
-            }
-        }
-
-        function openEditModal(index) {
-            const record = records[index];
-            document.getElementById('edit-index').value = index;
-            document.getElementById('edit-time').value = record.time;
-            document.getElementById('edit-remark').value = record.remark || '';
-            document.getElementById('edit-modal-overlay').classList.remove('hidden');
-        }
-
-        function closeEditModal() {
-            document.getElementById('edit-modal-overlay').classList.add('hidden');
-        }
-
-        // 【优化】将 handleEditSave 改为 async 函数，并处理加载状态
-        async function handleEditSave(event) {
-            event.preventDefault();
-            const submitBtn = document.querySelector('#edit-form button[type="submit"]');
-            const originalBtnText = submitBtn.textContent;
-
-            submitBtn.disabled = true;
-            submitBtn.innerHTML = '<i class="fa fa-spinner fa-spin mr-2"></i>保存中...';
-
-            const index = document.getElementById('edit-index').value;
-            const newTime = document.getElementById('edit-time').value.trim();
-            const newRemark = document.getElementById('edit-remark').value.trim();
-
-            if (!newTime) {
-                showToast('时间不能为空', 'error');
-                submitBtn.disabled = false;
-                submitBtn.textContent = originalBtnText;
-                return;
-            }
-
-            const oldRecord = { ...records[index] }; // 备份
-            records[index] = { time: newTime, remark: newRemark };
-            renderRecords(); // 先更新UI
-
-            try {
-                await saveRecordsToGist();
-                showToast('记录已更新', 'success');
-                closeEditModal();
-            } catch (error) {
-                showToast(`更新失败: ${error.message}`, 'error');
-                records[index] = oldRecord; // 回滚
-                renderRecords();
-            } finally {
-                submitBtn.disabled = false;
-                submitBtn.textContent = originalBtnText;
-            }
-        }
-
-        // 【优化】使导入操作也支持异步保存和反馈
-        function importFromCsv(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            const reader = new FileReader();
-            reader.onload = async function(e) {
-                showToast('正在解析和合并数据...', 'info');
-                const originalRecords = JSON.parse(JSON.stringify(records)); // 深拷贝备份
-
-                try {
-                    const fileRecords = e.target.result.trim().split('\n').slice(1).map(line => {
-                        const parts = line.split(',');
-                        if (parts.length >= 2) {
-                            const time = parts[1].replace(/"/g, '').trim();
-                            const remark = parts.slice(2).join(',').replace(/^"|"$/g, '').replace(/""/g, '"').trim();
-                            if (time) return { time: time, remark: remark };
-                        }
-                        return null;
-                    }).filter(Boolean);
-
-                    const combinedRecordsMap = new Map();
-                    records.forEach(r => combinedRecordsMap.set(r.time, r));
-                    const originalCount = combinedRecordsMap.size;
-                    fileRecords.forEach(r => { if (!combinedRecordsMap.has(r.time)) combinedRecordsMap.set(r.time, r); });
-
-                    const newTotalRecords = Array.from(combinedRecordsMap.values());
-                    const addedCount = newTotalRecords.length - originalCount;
-
-                    if (addedCount > 0) {
-                        records = newTotalRecords;
-                        renderRecords();
-                        showToast('合并完成，正在保存到云端...', 'info');
-                        await saveRecordsToGist();
-                        showToast(`导入并保存成功！新增了 ${addedCount} 条记录。`, 'success');
-                    } else {
-                        showToast('数据已是最新，无需导入。', 'info');
-                    }
-                } catch (error) {
-                    showToast(`导入或保存失败: ${error.message}`, 'error');
-                    records = originalRecords; // 回滚
-                    renderRecords();
-                }
-            };
-            reader.readAsText(file);
-            event.target.value = null; // 允许再次选择同一个文件
-        }
-
-        function exportToCsv() {
-            if (records.length === 0) { showToast('没有记录可导出', 'error'); return; }
-            let csvContent = "序号,时间,备注\n";
-            const sortedRecords = [...records].sort((a, b) => new Date(b.time.replace(/\//g, '-')) - new Date(a.time.replace(/\//g, '-')));
-            sortedRecords.forEach((record, index) => {
-                const remarkText = record.remark ? record.remark.replace(/"/g, '""') : '';
-                csvContent += `${sortedRecords.length - index},"${record.time}","${remarkText}"\n`;
-            });
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(blob);
-            link.setAttribute('download', `时间记录_${new Date().toISOString().slice(0,10)}.csv`);
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        }
-
-        // --- UI渲染与统计函数 ---
-        function renderRecords() {
-            const container = document.getElementById('records-container');
-            records.sort((a, b) => new Date(b.time.replace(/\//g, '-')) - new Date(a.time.replace(/\//g, '-')));
-
-            if (records.length === 0 && config.GIST_ID) {
-                container.innerHTML = '<p class="text-gray-500 text-center py-4">暂无记录</p>';
-            } else if (records.length > 0) {
-                container.innerHTML = '';
-                records.forEach((record, index) => {
-                    const item = document.createElement('div');
-                    item.className = 'flex justify-between items-center p-2.5 border-b border-gray-100 last:border-0 hover:bg-gray-50 rounded-md';
-
-                    item.innerHTML = `
-                        <div class="flex-1 min-w-0 mr-2">
-                            <p class="text-gray-800 text-sm sm:text-base font-medium">${record.time}</p>
-                            <p class="text-gray-500 text-xs sm:text-sm truncate" title="${record.remark || ''}">
-                                ${record.remark || '无备注'}
-                            </p>
-                        </div>
-                        <div class="flex items-center flex-shrink-0">
-                            <button class="edit-btn text-blue-400 hover:text-blue-600 transition-colors p-1 mr-2" data-index="${index}" title="编辑">
-                                <i class="fa fa-pencil fa-lg"></i>
-                            </button>
-                            <button class="delete-btn text-red-400 hover:text-red-600 transition-colors p-1" data-index="${index}" title="删除">
-                                <i class="fa fa-trash-o fa-lg"></i>
-                            </button>
-                        </div>
-                    `;
-                    container.appendChild(item);
-                });
-
-                // 【优化】绑定事件到新的 async 函数
-                document.querySelectorAll('.delete-btn').forEach(btn => btn.addEventListener('click', function() { handleDeleteRecord(parseInt(this.getAttribute('data-index'))); }));
-                document.querySelectorAll('.edit-btn').forEach(btn => btn.addEventListener('click', function() { openEditModal(parseInt(this.getAttribute('data-index'))); }));
-            }
-            updateStatistics();
-        }
-
-        function updateStatistics() {
-            const currentYear = new Date().getFullYear();
-            const currentYearRecords = records.filter(r => new Date(r.time.replace(/\//g, '-')).getFullYear() === currentYear);
-            renderChart(currentYearRecords);
-            renderSummary(currentYearRecords.length, currentYear);
-        }
-
-        function renderSummary(total, year) {
-            document.getElementById('summary-tbody').innerHTML = `<tr class="bg-white border-b"><td class="px-4 py-2 font-medium text-gray-900 whitespace-nowrap">${year}年 总记录次数</td><td class="px-4 py-2">${total} 次</td></tr>`;
-        }
-
-        function renderChart(yearRecords) {
-            const monthlyCounts = Array(12).fill(0);
-            yearRecords.forEach(r => { monthlyCounts[new Date(r.time.replace(/\//g, '-')).getMonth()]++; });
-            const ctx = document.getElementById('records-chart').getContext('2d');
-            const labels = ['一', '二', '三', '四', '五', '六', '七', '八', '九', '十', '十一', '十二'];
-            if (recordsChart) recordsChart.destroy();
-            recordsChart = new Chart(ctx, {
-                type: 'line',
-                data: { labels, datasets: [{ label: '每月记录次数', data: monthlyCounts, backgroundColor: 'rgba(22, 93, 255, 0.2)', borderColor: '#165DFF', borderWidth: 2, tension: 0.2, fill: true }] },
-                options: { responsive: true, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }, plugins: { legend: { display: false } } }
-            });
-        }
-
-        // --- 初始化与事件监听 ---
-        document.addEventListener('DOMContentLoaded', () => {
-            const hasConfig = loadConfig();
-
-            document.getElementById('config-form').addEventListener('submit', (e) => {
-                e.preventDefault();
-                saveConfig(
-                    document.getElementById('username').value.trim(),
-                    document.getElementById('gistId').value.trim(),
-                    document.getElementById('pat').value.trim()
-                );
-            });
-
-            if (hasConfig) {
-                loadRecordsFromGist();
-            }
-
-            // 【优化】绑定事件到新的 async 函数
-            document.getElementById('record-btn').addEventListener('click', handleAddRecord);
-            document.getElementById('download-btn').addEventListener('click', exportToCsv);
-            document.getElementById('import-btn').addEventListener('click', () => document.getElementById('csv-file-input').click());
-            document.getElementById('csv-file-input').addEventListener('change', importFromCsv);
-
-            document.getElementById('edit-form').addEventListener('submit', handleEditSave);
-            document.getElementById('cancel-edit-btn').addEventListener('click', closeEditModal);
-            document.getElementById('edit-modal-overlay').addEventListener('click', (event) => {
-                if (event.target === event.currentTarget) {
-                    closeEditModal();
-                }
-            });
-
-            updateCurrentTime();
-            setInterval(updateCurrentTime, 1000);
+    exportToCsv() {
+        if (this.records.length === 0) return showToast('没有本地记录可导出', 'error');
+        let csvContent = "序号,时间,备注\n";
+        const sortedRecords = [...this.records].sort((a, b) => new Date(b.time.replace(/\//g, '-')) - new Date(a.time.replace(/\//g, '-')));
+        sortedRecords.forEach((record, index) => {
+            const remarkText = record.remark ? `"${record.remark.replace(/"/g, '""')}"` : '""';
+            csvContent += `${sortedRecords.length - index},"${record.time}",${remarkText}\n`;
         });
-    </script>
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.setAttribute('download', `本地时间记录_${new Date().toISOString().slice(0,10)}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    },
+
+    renderRecords() {
+        const container = document.getElementById('local-records-container');
+        this.records.sort((a, b) => new Date(b.time.replace(/\//g, '-')) - new Date(a.time.replace(/\//g, '-')));
+        if (this.records.length === 0) {
+            container.innerHTML = '<p class="text-gray-500 text-center py-4">暂无记录</p>';
+        } else {
+            container.innerHTML = this.records.map((record, index) => `
+                <div class="flex justify-between items-center p-2.5 border-b border-gray-100 last:border-0 hover:bg-gray-50 rounded-md">
+                    <div class="flex-1 min-w-0 mr-2">
+                        <p class="text-gray-800 text-sm sm:text-base font-medium">${record.time}</p>
+                        <p class="text-gray-500 text-xs sm:text-sm truncate" title="${record.remark || ''}">${record.remark || '无备注'}</p>
+                    </div>
+                    <div class="flex items-center flex-shrink-0">
+                        <button class="edit-btn text-blue-400 hover:text-blue-600 p-1 mr-2" onclick="openEditModal('local', ${index})" title="编辑"><i class="fa fa-pencil fa-lg"></i></button>
+                        <button class="delete-btn text-red-400 hover:text-red-600 p-1" onclick="localApp.handleDeleteRecord(${index})" title="删除"><i class="fa fa-trash-o fa-lg"></i></button>
+                    </div>
+                </div>
+            `).join('');
+        }
+        this.updateStatistics();
+    },
+
+    updateStatistics() {
+        const currentYear = new Date().getFullYear();
+        const yearRecords = this.records.filter(r => new Date(r.time.replace(/\//g, '-')).getFullYear() === currentYear);
+
+        document.getElementById('local-summary-tbody').innerHTML = `<tr class="bg-white border-b"><td class="px-4 py-2 font-medium text-gray-900 whitespace-nowrap">${currentYear}年 总记录次数</td><td class="px-4 py-2">${yearRecords.length} 次</td></tr>`;
+
+        const monthlyCounts = Array(12).fill(0);
+        yearRecords.forEach(r => { monthlyCounts[new Date(r.time.replace(/\//g, '-')).getMonth()]++; });
+        const ctx = document.getElementById('local-records-chart').getContext('2d');
+        if (this.recordsChart) this.recordsChart.destroy();
+        this.recordsChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: ['一月', '二月', '三月', '四月', '五月', '六月', '七月', '八月', '九月', '十月', '十一月', '十二月'],
+                datasets: [{ label: '每月记录次数', data: monthlyCounts, backgroundColor: 'rgba(22, 93, 255, 0.2)', borderColor: '#165DFF', borderWidth: 2, tension: 0.2, fill: true }]
+            },
+            options: { responsive: true, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }, plugins: { legend: { display: false } } }
+        });
+    }
+};
+
+
+// --- 云同步版 (Gist) 应用逻辑 ---
+const gistApp = {
+    config: {},
+    records: [],
+    recordsChart: null,
+
+    init() {
+        if (this.loadConfig()) {
+            this.loadRecordsFromGist();
+        }
+        document.getElementById('gist-config-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.saveConfig(
+                document.getElementById('gist-username').value.trim(),
+                document.getElementById('gist-gistId').value.trim(),
+                document.getElementById('gist-pat').value.trim()
+            );
+        });
+        document.getElementById('gist-record-btn').addEventListener('click', () => this.handleAddRecord());
+        document.getElementById('gist-download-btn').addEventListener('click', () => this.exportToCsv());
+        document.getElementById('gist-import-btn').addEventListener('click', () => document.getElementById('csv-file-input').click());
+    },
+
+    loadConfig() {
+        const savedConfig = localStorage.getItem('timeRecorderConfig');
+        if (savedConfig) {
+            this.config = JSON.parse(savedConfig);
+            document.getElementById('gist-config-overlay').classList.add('hidden');
+            return true;
+        } else {
+            document.getElementById('gist-config-overlay').classList.remove('hidden');
+            return false;
+        }
+    },
+
+    saveConfig(username, gistId, pat) {
+        this.config = { GITHUB_USERNAME: username, GIST_ID: gistId, GITHUB_PAT: pat };
+        localStorage.setItem('timeRecorderConfig', JSON.stringify(this.config));
+        document.getElementById('gist-config-overlay').classList.add('hidden');
+        this.loadRecordsFromGist();
+    },
+
+    async loadRecordsFromGist() {
+        if (!this.config.GIST_ID) {
+            document.getElementById('gist-records-container').innerHTML = '<p class="text-gray-500 text-center py-4">请先完成配置</p>';
+            return;
+        }
+        showToast("正在从云端同步数据...", "info");
+        try {
+            const response = await fetch(`https://gist.githubusercontent.com/${this.config.GITHUB_USERNAME}/${this.config.GIST_ID}/raw/records.json?t=${new Date().getTime()}`);
+            if (!response.ok) throw new Error(`无法加载Gist: ${response.statusText}`);
+            const data = await response.json();
+            this.records = Array.isArray(data) ? data : [];
+            this.renderRecords();
+            showToast("数据同步成功！", "success");
+        } catch (error) {
+            console.error("加载记录失败:", error);
+            showToast("同步失败，请检查配置或网络。", "error");
+            this.renderRecords();
+        }
+    },
+
+    async saveRecordsToGist() {
+        if (!this.config.GIST_ID) throw new Error("配置不完整，无法保存。");
+        try {
+            const response = await fetch(`https://api.github.com/gists/${this.config.GIST_ID}`, {
+                method: 'PATCH',
+                headers: { 'Authorization': `token ${this.config.GITHUB_PAT}`, 'Accept': 'application/vnd.github.v3+json' },
+                body: JSON.stringify({ files: { 'records.json': { content: JSON.stringify(this.records, null, 2) } } })
+            });
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(`保存失败: ${errorData.message}`);
+            }
+        } catch (error) {
+            console.error("保存记录失败:", error);
+            throw error;
+        }
+    },
+
+    async handleAddRecord() {
+        const recordBtn = document.getElementById('gist-record-btn');
+        const originalBtnContent = recordBtn.innerHTML;
+        const remark = prompt("请输入本次记录的备注（可选）：", "");
+        if (remark === null) return showToast("操作已取消", "info");
+
+        const now = new Date();
+        const timeString = now.toLocaleString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }).replace(/\//g, '/');
+        this.records.unshift({ time: timeString, remark: remark.trim() });
+        this.renderRecords(); // 先更新UI
+
+        recordBtn.disabled = true;
+        recordBtn.innerHTML = '<i class="fa fa-spinner fa-spin mr-2"></i>正在保存...';
+
+        try {
+            await this.saveRecordsToGist();
+            showToast("数据已成功保存到云端！", "success");
+        } catch (error) {
+            showToast(error.message, "error");
+            this.records.shift(); // 回滚
+            this.renderRecords();
+        } finally {
+            recordBtn.disabled = false;
+            recordBtn.innerHTML = originalBtnContent;
+        }
+    },
+
+    async handleDeleteRecord(index) {
+        if (!confirm('确定要删除这条云端记录吗？')) return;
+        const deletedRecord = this.records[index];
+        this.records.splice(index, 1);
+        this.renderRecords(); // 先更新UI
+
+        try {
+            await this.saveRecordsToGist();
+            showToast('云端记录已删除', 'success');
+        } catch (error) {
+            showToast(`删除失败: ${error.message}`, 'error');
+            this.records.splice(index, 0, deletedRecord); // 回滚
+            this.renderRecords();
+        }
+    },
+
+    async handleEditSave(index, newTime, newRemark) {
+        if (!newTime) return showToast('时间不能为空', 'error');
+        const submitBtn = document.querySelector('#edit-form button[type="submit"]');
+        const originalBtnText = submitBtn.textContent;
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fa fa-spinner fa-spin mr-2"></i>保存中...';
+
+        const oldRecord = { ...this.records[index] };
+        this.records[index] = { time: newTime, remark: newRemark };
+        this.renderRecords();
+
+        try {
+            await this.saveRecordsToGist();
+            showToast('云端记录已更新', 'success');
+            closeEditModal();
+        } catch (error) {
+            showToast(`更新失败: ${error.message}`, 'error');
+            this.records[index] = oldRecord; // 回滚
+            this.renderRecords();
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.textContent = originalBtnText;
+        }
+    },
+
+    async importFromCsv(csvContent) {
+        showToast('正在解析和合并数据...', 'info');
+        const originalRecords = JSON.parse(JSON.stringify(this.records)); // 深拷贝备份
+        try {
+            const fileRecords = csvContent.trim().split('\n').slice(1).map(line => {
+                const parts = line.split(',');
+                if (parts.length < 2) return null;
+                const time = parts[1].replace(/"/g, '').trim();
+                const remark = parts.slice(2).join(',').replace(/^"|"$/g, '').replace(/""/g, '"').trim();
+                return time ? { time, remark } : null;
+            }).filter(Boolean);
+
+            const combinedRecordsMap = new Map(this.records.map(r => [r.time, r]));
+            const originalCount = combinedRecordsMap.size;
+            fileRecords.forEach(r => combinedRecordsMap.set(r.time, r));
+
+            const newTotalRecords = Array.from(combinedRecordsMap.values());
+            const addedCount = newTotalRecords.length - originalCount;
+
+            if (addedCount > 0) {
+                this.records = newTotalRecords;
+                this.renderRecords();
+                showToast('合并完成，正在保存到云端...', 'info');
+                await this.saveRecordsToGist();
+                showToast(`导入并保存成功！新增了 ${addedCount} 条记录。`, 'success');
+            } else {
+                showToast('数据已是最新，无需导入。', 'info');
+            }
+        } catch (error) {
+            showToast(`导入或保存失败: ${error.message}`, 'error');
+            this.records = originalRecords; // 回滚
+            this.renderRecords();
+        }
+    },
+
+    exportToCsv() {
+        if (this.records.length === 0) return showToast('没有云端记录可导出', 'error');
+        // ... (与 localApp.exportToCsv 逻辑相同, 仅文件名不同)
+        let csvContent = "序号,时间,备注\n";
+        const sortedRecords = [...this.records].sort((a, b) => new Date(b.time.replace(/\//g, '-')) - new Date(a.time.replace(/\//g, '-')));
+        sortedRecords.forEach((record, index) => {
+            const remarkText = record.remark ? `"${record.remark.replace(/"/g, '""')}"` : '""';
+            csvContent += `${sortedRecords.length - index},"${record.time}",${remarkText}\n`;
+        });
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.setAttribute('download', `云同步时间记录_${new Date().toISOString().slice(0,10)}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    },
+
+    renderRecords() {
+        const container = document.getElementById('gist-records-container');
+        this.records.sort((a, b) => new Date(b.time.replace(/\//g, '-')) - new Date(a.time.replace(/\//g, '-')));
+        if (this.records.length === 0 && this.config.GIST_ID) {
+            container.innerHTML = '<p class="text-gray-500 text-center py-4">暂无记录</p>';
+        } else if (this.records.length > 0) {
+             container.innerHTML = this.records.map((record, index) => `
+                <div class="flex justify-between items-center p-2.5 border-b border-gray-100 last:border-0 hover:bg-gray-50 rounded-md">
+                    <div class="flex-1 min-w-0 mr-2">
+                        <p class="text-gray-800 text-sm sm:text-base font-medium">${record.time}</p>
+                        <p class="text-gray-500 text-xs sm:text-sm truncate" title="${record.remark || ''}">${record.remark || '无备注'}</p>
+                    </div>
+                    <div class="flex items-center flex-shrink-0">
+                        <button class="edit-btn text-blue-400 hover:text-blue-600 p-1 mr-2" onclick="openEditModal('gist', ${index})" title="编辑"><i class="fa fa-pencil fa-lg"></i></button>
+                        <button class="delete-btn text-red-400 hover:text-red-600 p-1" onclick="gistApp.handleDeleteRecord(${index})" title="删除"><i class="fa fa-trash-o fa-lg"></i></button>
+                    </div>
+                </div>
+            `).join('');
+        }
+        this.updateStatistics();
+    },
+
+    updateStatistics() {
+        const currentYear = new Date().getFullYear();
+        const yearRecords = this.records.filter(r => new Date(r.time.replace(/\//g, '-')).getFullYear() === currentYear);
+
+        document.getElementById('gist-summary-tbody').innerHTML = `<tr class="bg-white border-b"><td class="px-4 py-2 font-medium text-gray-900 whitespace-nowrap">${currentYear}年 总记录次数</td><td class="px-4 py-2">${yearRecords.length} 次</td></tr>`;
+
+        const monthlyCounts = Array(12).fill(0);
+        yearRecords.forEach(r => { monthlyCounts[new Date(r.time.replace(/\//g, '-')).getMonth()]++; });
+        const ctx = document.getElementById('gist-records-chart').getContext('2d');
+        if (this.recordsChart) this.recordsChart.destroy();
+        this.recordsChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: ['一月', '二月', '三月', '四月', '五月', '六月', '七月', '八月', '九月', '十月', '十一月', '十二月'],
+                datasets: [{ label: '每月记录次数', data: monthlyCounts, backgroundColor: 'rgba(22, 93, 255, 0.2)', borderColor: '#165DFF', borderWidth: 2, tension: 0.2, fill: true }]
+            },
+            options: { responsive: true, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }, plugins: { legend: { display: false } } }
+        });
+    }
+};
+
+// --- 页面初始化与主事件监听 ---
+document.addEventListener('DOMContentLoaded', () => {
+    // 初始化两个应用
+    localApp.init();
+    gistApp.init();
+
+    // 初始化时间显示
+    updateAllCurrentTime();
+    setInterval(updateAllCurrentTime, 1000);
+
+    // 标签页切换逻辑
+    const tabLocal = document.getElementById('tab-local');
+    const tabGist = document.getElementById('tab-gist');
+    const contentLocal = document.getElementById('content-local');
+    const contentGist = document.getElementById('content-gist');
+
+    tabLocal.addEventListener('click', () => {
+        tabLocal.classList.add('active');
+        tabGist.classList.remove('active');
+        contentLocal.classList.remove('hidden');
+        contentGist.classList.add('hidden');
+    });
+
+    tabGist.addEventListener('click', () => {
+        tabGist.classList.add('active');
+        tabLocal.classList.remove('active');
+        contentGist.classList.remove('hidden');
+        contentLocal.classList.add('hidden');
+    });
+
+    // 通用编辑模态框事件
+    document.getElementById('edit-form').addEventListener('submit', (event) => {
+        event.preventDefault();
+        const version = document.getElementById('edit-version').value;
+        const index = document.getElementById('edit-index').value;
+        const newTime = document.getElementById('edit-time').value.trim();
+        const newRemark = document.getElementById('edit-remark').value.trim();
+
+        if (version === 'local') {
+            localApp.handleEditSave(index, newTime, newRemark);
+        } else if (version === 'gist') {
+            gistApp.handleEditSave(index, newTime, newRemark);
+        }
+    });
+    document.getElementById('cancel-edit-btn').addEventListener('click', closeEditModal);
+    document.getElementById('edit-modal-overlay').addEventListener('click', (event) => {
+        if (event.target === event.currentTarget) closeEditModal();
+    });
+
+    // 文件导入事件分发
+    document.getElementById('csv-file-input').addEventListener('change', (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const activeTab = document.querySelector('.tab-btn.active').id;
+            if (activeTab === 'tab-local') {
+                localApp.importFromCsv(e.target.result);
+            } else {
+                gistApp.importFromCsv(e.target.result);
+            }
+        };
+        reader.readAsText(file);
+        event.target.value = null; // 清空以便再次选择同名文件
+    });
+});
+</script>
+
 </body>
 </html>
