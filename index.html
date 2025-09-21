@@ -107,7 +107,7 @@
         <div class="container mx-auto px-4">
             <h1 class="text-xl font-bold flex items-center">
                 <i class="fa fa-clock-o mr-2"></i>
-                私人时间记录器 (整合版)
+                私人时间记录器
             </h1>
         </div>
     </header>
@@ -233,35 +233,44 @@
         </div>
 
         <!-- 两个版本共用的卡片 -->
-<div class="max-w-xl mx-auto space-y-6 mt-6">
-    <div class="bg-white rounded-xl shadow-lg p-6">
-        <div class="flex items-center justify-between">
-            <div>
-                <h2 class="text-lg font-bold text-gray-800">词条分析</h2>
-                <p class="text-sm text-gray-500 mt-1">查看所有备注词条的出现频率排行。</p>
+        <div class="max-w-xl mx-auto space-y-6 mt-6">
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h2 class="text-lg font-bold text-gray-800">词条分析</h2>
+                        <p class="text-sm text-gray-500 mt-1">查看所有备注词条的出现频率排行。</p>
+                    </div>
+                    <a href="./page1.html" target="_blank" rel="noopener noreferrer" class="bg-success hover:bg-success/90 text-white font-medium py-2 px-4 rounded-lg transition-all shadow-md flex items-center">
+                        前往
+                        <i class="fa fa-arrow-right ml-2"></i>
+                    </a>
+                </div>
             </div>
-            <!-- 修改这里 -->
-            <a href="./page1.html" target="_blank" rel="noopener noreferrer" class="bg-success hover:bg-success/90 text-white font-medium py-2 px-4 rounded-lg transition-all shadow-md flex items-center">
-                前往
-                <i class="fa fa-arrow-right ml-2"></i>
-            </a>
-        </div>
-    </div>
-    <div class="bg-white rounded-xl shadow-lg p-6">
-        <div class="flex items-center justify-between">
-            <div>
-                <h2 class="text-lg font-bold text-gray-800">成就系统</h2>
-                <p class="text-sm text-gray-500 mt-1">查看所有成就获得。</p>
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h2 class="text-lg font-bold text-gray-800">成就系统</h2>
+                        <p class="text-sm text-gray-500 mt-1">查看所有成就获得。</p>
+                    </div>
+                    <a href="./page2.html" target="_blank" rel="noopener noreferrer" class="bg-success hover:bg-success/90 text-white font-medium py-2 px-4 rounded-lg transition-all shadow-md flex items-center">
+                        前往
+                        <i class="fa fa-arrow-right ml-2"></i>
+                    </a>
+                </div>
             </div>
-            <!-- 修改这里 -->
-            <a href="./page2.html" target="_blank" rel="noopener noreferrer" class="bg-success hover:bg-success/90 text-white font-medium py-2 px-4 rounded-lg transition-all shadow-md flex items-center">
-                前往
-                <i class="fa fa-arrow-right ml-2"></i>
-            </a>
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h2 class="text-lg font-bold text-gray-800">进阶网页</h2>
+                        <p class="text-sm text-gray-500 mt-1">这是免费使用版本在此进阶专用版。</p>
+                    </div>
+                    <a href="./page3.html" target="_blank" rel="noopener noreferrer" class="bg-success hover:bg-success/90 text-white font-medium py-2 px-4 rounded-lg transition-all shadow-md flex items-center">
+                        前往
+                        <i class="fa fa-arrow-right ml-2"></i>
+                    </a>
+                </div>
+            </div>
         </div>
-    </div>
-
-</div>
 
     </main>
 
@@ -453,6 +462,7 @@ const localApp = {
 
 // --- 云同步版 (Gist) 应用逻辑 ---
 const gistApp = {
+    isInitialized: false,
     config: {},
     records: [],
     recordsChart: null,
@@ -627,7 +637,8 @@ const gistApp = {
             } else {
                 showToast('数据已是最新，无需导入。', 'info');
             }
-        } catch (error) {
+        } catch (error)
+        {
             showToast(`导入或保存失败: ${error.message}`, 'error');
             this.records = originalRecords; // 回滚
             this.renderRecords();
@@ -636,7 +647,6 @@ const gistApp = {
 
     exportToCsv() {
         if (this.records.length === 0) return showToast('没有云端记录可导出', 'error');
-        // ... (与 localApp.exportToCsv 逻辑相同, 仅文件名不同)
         let csvContent = "序号,时间,备注\n";
         const sortedRecords = [...this.records].sort((a, b) => new Date(b.time.replace(/\//g, '-')) - new Date(a.time.replace(/\//g, '-')));
         sortedRecords.forEach((record, index) => {
@@ -697,15 +707,14 @@ const gistApp = {
 
 // --- 页面初始化与主事件监听 ---
 document.addEventListener('DOMContentLoaded', () => {
-    // 初始化两个应用
+    // 1. 只初始化本地版，让用户可以立即使用
     localApp.init();
-    gistApp.init();
 
-    // 初始化时间显示
+    // 2. 初始化时间显示
     updateAllCurrentTime();
     setInterval(updateAllCurrentTime, 1000);
 
-    // 标签页切换逻辑
+    // 3. 标签页切换逻辑
     const tabLocal = document.getElementById('tab-local');
     const tabGist = document.getElementById('tab-gist');
     const contentLocal = document.getElementById('content-local');
@@ -723,9 +732,15 @@ document.addEventListener('DOMContentLoaded', () => {
         tabLocal.classList.remove('active');
         contentGist.classList.remove('hidden');
         contentLocal.classList.add('hidden');
+
+        // 关键改动：只在第一次点击时才初始化云端版
+        if (!gistApp.isInitialized) {
+            gistApp.init();
+            gistApp.isInitialized = true; // 标记为已初始化，避免重复执行
+        }
     });
 
-    // 通用编辑模态框事件
+    // 4. 通用编辑模态框事件
     document.getElementById('edit-form').addEventListener('submit', (event) => {
         event.preventDefault();
         const version = document.getElementById('edit-version').value;
@@ -744,7 +759,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (event.target === event.currentTarget) closeEditModal();
     });
 
-    // 文件导入事件分发
+    // 5. 文件导入事件分发
     document.getElementById('csv-file-input').addEventListener('change', (event) => {
         const file = event.target.files[0];
         if (!file) return;
@@ -755,11 +770,16 @@ document.addEventListener('DOMContentLoaded', () => {
             if (activeTab === 'tab-local') {
                 localApp.importFromCsv(e.target.result);
             } else {
+                // 如果云端版还未初始化，先初始化它
+                if (!gistApp.isInitialized) {
+                    gistApp.init();
+                    gistApp.isInitialized = true;
+                }
                 gistApp.importFromCsv(e.target.result);
             }
         };
         reader.readAsText(file);
-        event.target.value = null; // 清空以便再次选择同名文件
+        event.target.value = null;
     });
 });
 </script>
