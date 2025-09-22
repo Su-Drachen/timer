@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>时间记录器 - 进阶版 | 解锁全部潜力</title>
+    <title>时间笔记 - 进阶版 | 解锁全部潜力</title>
     <style>
         /* --- 全局样式 --- */
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap');
@@ -147,46 +147,75 @@
             background-color: var(--dark-color);
             color: var(--light-color);
             text-align: center;
-            padding: 60px 20px;
+            padding: 60px 30px; /* 增加内边距 */
             border-radius: var(--border-radius);
             margin: 40px 0;
         }
 
         .cta-section h2 {
             font-size: 2.2rem;
+            margin-bottom: 40px; /* 增加标题和下方卡片的间距 */
+        }
+
+        /* --- 新增：升级选项网格布局 --- */
+        .upgrade-options-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr; /* 两列布局 */
+            gap: 30px;
+            align-items: stretch; /* 让卡片等高 */
+        }
+
+        /* --- 新增：升级选项卡片样式 --- */
+        .upgrade-card {
+            background-color: rgba(255, 255, 255, 0.05); /* 半透明背景 */
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 30px;
+            border-radius: var(--border-radius);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            transition: all 0.3s ease;
+        }
+
+        .upgrade-card:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+            transform: translateY(-5px);
+        }
+
+        .upgrade-card h3 {
+            font-size: 1.6rem;
+            color: var(--light-color);
+            margin-top: 0;
+            margin-bottom: 15px;
+        }
+        .upgrade-card h3 .recommend-badge {
+            background-color: var(--secondary-color);
+            color: var(--dark-color);
+            font-size: 0.8rem;
+            padding: 3px 10px;
+            border-radius: 12px;
+            margin-left: 8px;
+            font-weight: 500;
+            vertical-align: middle;
+        }
+
+        .upgrade-card p {
+            font-size: 1rem;
+            opacity: 0.9;
+            flex-grow: 1; /* 让描述内容占据多余空间 */
             margin-bottom: 30px;
         }
 
-        .steps-container {
-            display: flex;
-            justify-content: center;
-            gap: 40px;
-            margin-bottom: 40px;
-            flex-wrap: wrap;
-        }
-
-        .step {
-            max-width: 250px;
-        }
-
-        .step .step-number {
-            width: 50px;
-            height: 50px;
-            background: var(--primary-color);
-            border-radius: 50%;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.5rem;
-            font-weight: bold;
-            color: var(--light-color);
-            margin-bottom: 15px;
-            border: 3px solid var(--secondary-color);
-        }
-
-        .step p {
-            font-size: 1rem;
-            opacity: 0.9;
+        /* 新增：淘宝口令样式 */
+        .taobao-code {
+            background: rgba(0,0,0,0.2);
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            margin-top: 15px;
+            word-break: break-all;
+            font-family: monospace;
+            border: 1px dashed var(--secondary-color);
         }
 
         .btn {
@@ -199,12 +228,27 @@
             border-radius: 50px;
             transition: all 0.3s ease;
             display: inline-block;
+            border: none;
+            cursor: pointer;
         }
 
         .btn:hover {
             transform: scale(1.05);
             box-shadow: 0 8px 20px rgba(80, 227, 194, 0.4);
         }
+
+        /* 次要按钮样式 */
+        .btn.btn-secondary {
+            background-color: transparent;
+            color: var(--light-color);
+            border: 2px solid var(--secondary-color);
+        }
+
+        .btn.btn-secondary:hover {
+            background-color: var(--secondary-color);
+            color: var(--dark-color);
+        }
+
 
         /* --- 页脚 --- */
         footer {
@@ -225,6 +269,10 @@
             .section-title {
                 font-size: 2rem;
             }
+            /* 升级选项在移动端变为单列 */
+            .upgrade-options-grid {
+                grid-template-columns: 1fr;
+            }
         }
 
     </style>
@@ -233,7 +281,7 @@
 
     <header>
         <div class="container">
-            <h1>时间记录器<span class="pro-badge">进阶版</span></h1>
+            <h1>时间笔记<span class="pro-badge">进阶版</span></h1>
             <p>从记录到精通，释放您的全部时间管理潜力。</p>
             <div class="author">
                 由 Bilibili UP主 <a href="https://space.bilibili.com/1006715501" target="_blank">白菜卷_</a> 倾心打造
@@ -269,37 +317,49 @@
             </div>
         </section>
 
-        <!-- 如何升级 -->
+        <!-- 如何升级 (重构后) -->
         <section class="cta-section">
-            <h2>准备好开启进阶之旅了吗？</h2>
-            <div class="steps-container">
-                <div class="step">
-                    <div class="step-number">1</div>
-                    <p>前往B站，关注UP主 <strong>白菜卷_</strong></p>
+            <h2>选择您的升级方式</h2>
+
+            <div class="upgrade-options-grid">
+
+                <!-- 淘宝自助下单卡片 -->
+                <div class="upgrade-card">
+                    <div>
+                        <h3>淘宝自助下单<span class="recommend-badge">推荐</span></h3>
+                        <p>推荐方式，即拍即得，无需等待人工回复。标准版是本地使用，进阶版可以上传云端。</p>
+                    </div>
+                    <div>
+                        <a href="https://e.tb.cn/h.SWPg5O0dqBxZ74g?tk=erj34EZpBqL" target="_blank" class="btn">前往淘宝购买</a>
+                        <p class="taobao-code">或复制淘口令打开：<br>erj34EZpBqL</p>
+                    </div>
                 </div>
-                <div class="step">
-                    <div class="step-number">2</div>
-                    <p>向UP主发送私信，内容为：<strong>“时间记录器进阶”</strong></p>
+
+                <!-- 联系UP主卡片 -->
+                <div class="upgrade-card">
+                    <div>
+                        <h3>联系UP主升级</h3>
+                        <p>如果您在下单过程中遇到问题，或有其他疑问，可以前往B站联系UP主进行人工咨询和升级。</p>
+                    </div>
+                    <div>
+                        <a href="https://space.bilibili.com/1006715501" target="_blank" class="btn btn-secondary">前往B站联系UP主</a>
+                    </div>
                 </div>
-                <div class="step">
-                    <div class="step-number">3</div>
-                    <p>UP主看到后会尽快与您联系，并引导完成后续升级！</p>
-                </div>
+
             </div>
-            <a href="https://space.bilibili.com/1006715501" target="_blank" class="btn">立即前往B站联系UP主</a>
         </section>
 
         <!-- 免费版说明 -->
         <section style="text-align: center; padding: 20px; background: #fff; border-radius: var(--border-radius); box-shadow: var(--box-shadow);">
              <h3 style="color: var(--dark-color);">关于免费版</h3>
-             <p>我们承诺，基础的免费试用版将<strong>永久免费、永不收费、永不添加广告</strong>。如果您正在使用免费版，请支持原作者。如果您是通过任何付费渠道获得的免费版，您可能被欺骗了，请联系对方退款。</p>
+             <p>我们承诺，基础版将<strong>永不添加广告</strong>。如果您正在使用免费版，请支持原作者。</p>
         </section>
 
     </main>
 
     <footer>
         <div class="container">
-            <p>&copy;  白菜卷_ & 时间记录器. All Rights Reserved.</p>
+            <p>&copy;  白菜卷_ & 时间笔记. All Rights Reserved.</p>
         </div>
     </footer>
 
