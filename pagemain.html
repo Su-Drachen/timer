@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>时间笔记</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
@@ -12,404 +12,261 @@
             theme: {
                 extend: {
                     colors: {
-                        primary: '#111827',
-                        accent: '#2563EB',
-                        success: '#16A34A',
-                        danger: '#DC2626',
-                        ink: '#0F172A',
-                        muted: '#64748B',
-                        surface: 'rgba(255,255,255,0.78)'
+                        primary: '#165DFF',
+                        success: '#00B42A',
+                        danger: '#F53F3F',
                     },
-                    boxShadow: {
-                        soft: '0 20px 70px rgba(15, 23, 42, 0.08)',
-                        glow: '0 18px 45px rgba(37, 99, 235, 0.18)'
-                    }
                 }
             }
         }
     </script>
     <style>
-        :root {
-            --ring: rgba(37, 99, 235, .22);
-            --border: rgba(148, 163, 184, .28);
-        }
-
-        * { -webkit-tap-highlight-color: transparent; }
-
-        body {
-            font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
-            color: #0f172a;
-            background:
-                radial-gradient(circle at top left, rgba(37, 99, 235, .13), transparent 34rem),
-                radial-gradient(circle at top right, rgba(15, 23, 42, .10), transparent 32rem),
-                linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%);
-        }
-
         .hidden { display: none; }
         #toast { transition: opacity 0.3s, transform 0.3s; }
         .modal-content { pointer-events: auto; }
-        .modal-overlay { pointer-events: none; backdrop-filter: blur(10px); }
+        .modal-overlay { pointer-events: none; }
         .modal-overlay > * { pointer-events: auto; }
-        button:disabled { cursor: not-allowed; opacity: 0.65; }
-
-        .glass-card {
-            background: rgba(255, 255, 255, .76);
-            backdrop-filter: blur(20px);
-            border: 1px solid var(--border);
-            box-shadow: 0 24px 80px rgba(15, 23, 42, .08);
-        }
-
-        .premium-card {
-            background: rgba(255,255,255,.82);
-            border: 1px solid rgba(226,232,240,.82);
-            box-shadow: 0 16px 50px rgba(15, 23, 42, .055);
-        }
-
-        .control-input {
-            border: 1px solid rgba(203, 213, 225, .95);
-            background: rgba(248, 250, 252, .9);
-            border-radius: 1rem;
-            transition: all .2s ease;
-        }
-
-        .control-input:focus {
-            outline: none;
-            border-color: rgba(37, 99, 235, .7);
-            box-shadow: 0 0 0 5px var(--ring);
-            background: white;
-        }
-
-        .btn-primary {
-            background: linear-gradient(135deg, #111827 0%, #1e3a8a 100%);
-            color: white;
-            box-shadow: 0 16px 35px rgba(15, 23, 42, .16);
-        }
-
-        .btn-secondary {
-            background: rgba(248, 250, 252, .9);
-            color: #334155;
-            border: 1px solid rgba(203, 213, 225, .72);
-        }
-
-        .btn-success {
-            background: linear-gradient(135deg, #16a34a 0%, #059669 100%);
-            color: white;
-            box-shadow: 0 14px 32px rgba(22, 163, 74, .18);
-        }
-
-        .tab-shell {
-            background: rgba(255,255,255,.62);
-            border: 1px solid rgba(226,232,240,.85);
-            backdrop-filter: blur(16px);
-            box-shadow: 0 16px 50px rgba(15, 23, 42, .055);
-        }
-
+        button:disabled { cursor: not-allowed; opacity: 0.7; }
+        /* 标签页样式 */
         .tab-btn {
-            padding: 0.7rem 1.15rem;
-            border-radius: 999px;
-            font-weight: 700;
-            font-size: .92rem;
-            transition: all .22s ease;
-            color: #64748b;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: .45rem;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            font-weight: 500;
+            transition: all 0.2s;
+            border: 2px solid transparent;
         }
-
         .tab-btn.active {
-            background: #0f172a;
+            background-color: #165DFF;
             color: white;
-            box-shadow: 0 14px 32px rgba(15, 23, 42, .20);
+            border-color: #165DFF;
         }
-
-        .record-row {
-            border: 1px solid rgba(226, 232, 240, .85);
-            background: rgba(248, 250, 252, .74);
-            transition: all .2s ease;
+        .tab-btn:not(.active) {
+            background-color: #e5e7eb;
+            color: #4b5563;
         }
-
-        .icon-btn {
-            width: 2.5rem; /* 增大移动端触摸面积 */
-            height: 2.5rem;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: .85rem;
-            transition: all .18s ease;
-        }
-
-        /* 仅在支持悬停的设备上启用 hover，防止移动端出现粘性悬浮 */
-        @media (hover: hover) {
-            .premium-card:hover { box-shadow: 0 22px 70px rgba(15, 23, 42, .08); }
-            .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 20px 42px rgba(15, 23, 42, .22); }
-            .btn-secondary:hover { background: white; border-color: rgba(148, 163, 184, .9); }
-            .tab-btn:not(.active):hover { color: #0f172a; background: rgba(255,255,255,.75); }
-            .record-row:hover { background: white; transform: translateY(-1px); box-shadow: 0 12px 30px rgba(15, 23, 42, .06); }
-            .icon-btn:hover { background: rgba(226, 232, 240, .7); }
-        }
-
-        .scroll-area::-webkit-scrollbar { width: 8px; height: 8px; }
-        .scroll-area::-webkit-scrollbar-track { background: transparent; }
-        .scroll-area::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, .5); border-radius: 999px; }
     </style>
 </head>
-<body class="min-h-screen flex flex-col">
+<body class="bg-gray-50 min-h-screen flex flex-col">
 
     <!-- ==== 全局模态框和提示 ==== -->
 
     <!-- Gist 配置模态框 -->
-    <div id="gist-config-overlay" class="fixed inset-0 bg-slate-950/60 flex items-center justify-center z-50 p-4 hidden">
-        <div class="glass-card rounded-3xl p-5 sm:p-7 w-full max-w-md relative max-h-[90vh] overflow-y-auto scroll-area">
-            <button id="close-gist-config-btn" type="button"
-                class="absolute top-4 right-4 w-10 h-10 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-900 hover:bg-slate-100 transition-all"
-                aria-label="关闭配置">
-                <i class="fa fa-times"></i>
-            </button>
-
-            <div class="mb-5 sm:mb-6 mt-2">
-                <div class="w-12 h-12 rounded-2xl bg-slate-950 text-white flex items-center justify-center mb-4 shadow-glow">
-                    <i class="fa fa-cloud"></i>
-                </div>
-                <h2 class="text-xl sm:text-2xl font-black text-ink tracking-tight">首次使用配置</h2>
-                <p class="text-muted mt-2 text-sm leading-6">首次使用需要行进阶，获取专属账号，进阶方法在最底部。</p>
-            </div>
+    <div id="gist-config-overlay" class="fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center z-50 p-4 hidden">
+        <div class="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md">
+            <h2 class="text-xl font-bold text-gray-800 mb-4">首次使用配置 (云同步版)</h2>
+            <p class="text-gray-600 mb-6 text-sm">首次使用需要行进阶，获取专属账号，进阶方法在最底部。</p>
             <form id="gist-config-form" class="space-y-4">
                 <div>
-                    <label for="gist-username" class="block text-sm font-bold text-slate-700 mb-1.5">用户名</label>
-                    <input type="text" id="gist-username" class="control-input block w-full px-4 py-3 text-base sm:text-sm" required>
+                    <label for="gist-username" class="block text-sm font-medium text-gray-700">用户名</label>
+                    <input type="text" id="gist-username" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary" required>
                 </div>
                 <div>
-                    <label for="gist-gistId" class="block text-sm font-bold text-slate-700 mb-1.5">ID密码</label>
-                    <input type="text" id="gist-gistId" class="control-input block w-full px-4 py-3 text-base sm:text-sm" required>
+                    <label for="gist-gistId" class="block text-sm font-medium text-gray-700">ID密码</label>
+                    <input type="text" id="gist-gistId" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary" required>
                 </div>
                 <div>
-                    <label for="gist-pat" class="block text-sm font-bold text-slate-700 mb-1.5">个人访问令牌 PAT</label>
-                    <input type="password" id="gist-pat" class="control-input block w-full px-4 py-3 text-base sm:text-sm" required>
+                    <label for="gist-pat" class="block text-sm font-medium text-gray-700">个人访问令牌 (PAT)</label>
+                    <input type="password" id="gist-pat" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary" required>
                 </div>
-                <button type="submit" class="btn-primary w-full font-bold py-3.5 px-4 rounded-2xl transition-all mt-2">保存并开始使用</button>
+                <button type="submit" class="w-full bg-primary hover:bg-primary/90 text-white font-medium py-2 px-4 rounded-lg transition-all shadow-md">保存并开始使用</button>
             </form>
         </div>
     </div>
 
-    <!-- 通用编辑模态框 -->
-    <div id="edit-modal-overlay" class="fixed inset-0 bg-slate-950/60 flex items-center justify-center z-50 p-4 hidden modal-overlay">
-        <div class="glass-card rounded-3xl p-5 sm:p-7 w-full max-w-md modal-content max-h-[90vh] overflow-y-auto scroll-area">
-            <div class="mb-5 sm:mb-6">
-                <div class="w-12 h-12 rounded-2xl bg-slate-950 text-white flex items-center justify-center mb-4">
-                    <i class="fa fa-pencil"></i>
-                </div>
-                <h2 class="text-xl sm:text-2xl font-black text-ink tracking-tight">编辑记录</h2>
-            </div>
+    <!-- 通用编辑模态框 (由JS动态填充内容) -->
+    <div id="edit-modal-overlay" class="fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center z-50 p-4 hidden modal-overlay">
+        <div class="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md modal-content">
+            <h2 class="text-xl font-bold text-gray-800 mb-6">编辑记录</h2>
             <form id="edit-form" class="space-y-4">
                 <input type="hidden" id="edit-index">
-                <input type="hidden" id="edit-version">
+                <input type="hidden" id="edit-version"> <!-- 用于区分是local还是gist -->
                 <div>
-                    <label for="edit-time" class="block text-sm font-bold text-slate-700 mb-1.5">时间</label>
-                    <input type="text" id="edit-time" class="control-input block w-full px-4 py-3 text-base sm:text-sm" required>
-                    <p class="text-xs text-muted mt-2">格式：YYYY/MM/DD HH:MM:SS</p>
+                    <label for="edit-time" class="block text-sm font-medium text-gray-700">时间</label>
+                    <input type="text" id="edit-time" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary" required>
+                    <p class="text-xs text-gray-500 mt-1">格式: YYYY/MM/DD HH:MM:SS</p>
                 </div>
                 <div>
-                    <label for="edit-remark" class="block text-sm font-bold text-slate-700 mb-1.5">备注</label>
-                    <textarea id="edit-remark" rows="3" class="control-input block w-full px-4 py-3 resize-none text-base sm:text-sm"></textarea>
+                    <label for="edit-remark" class="block text-sm font-medium text-gray-700">备注</label>
+                    <textarea id="edit-remark" rows="3" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary"></textarea>
                 </div>
                 <div class="flex justify-end gap-3 pt-4">
-                    <button type="button" id="cancel-edit-btn" class="btn-secondary font-bold py-2.5 px-5 rounded-2xl transition-all flex-1 sm:flex-none">取消</button>
-                    <button type="submit" class="btn-primary font-bold py-2.5 px-5 rounded-2xl transition-all flex-1 sm:flex-none">保存更改</button>
+                    <button type="button" id="cancel-edit-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-4 rounded-lg transition-all">取消</button>
+                    <button type="submit" class="bg-primary hover:bg-primary/90 text-white font-medium py-2 px-4 rounded-lg transition-all shadow-md">保存更改</button>
                 </div>
             </form>
         </div>
     </div>
 
     <input type="file" id="csv-file-input" class="hidden" accept=".csv">
-    <div id="toast" class="fixed bottom-6 left-6 right-6 sm:left-auto max-w-md mx-auto bg-slate-950 text-white py-3.5 px-5 rounded-2xl shadow-2xl opacity-0 translate-y-10 z-50 border border-white/10">
-        <p id="toast-message" class="text-sm font-semibold text-center sm:text-left"></p>
+    <div id="toast" class="fixed bottom-5 right-5 bg-gray-800 text-white py-3 px-5 rounded-lg shadow-xl opacity-0 translate-y-10 z-50">
+        <p id="toast-message"></p>
     </div>
 
     <!-- ==== 页面主体结构 ==== -->
-    <header class="relative overflow-hidden">
-        <div class="absolute inset-0 bg-slate-950"></div>
-        <div class="absolute inset-0 opacity-40" style="background: radial-gradient(circle at 25% 20%, rgba(59,130,246,.55), transparent 28rem), radial-gradient(circle at 80% 0%, rgba(255,255,255,.16), transparent 24rem);"></div>
-        <div class="relative container mx-auto px-4 pt-8 pb-16 sm:pt-12 sm:pb-24">
-            <div class="max-w-xl mx-auto text-white text-center sm:text-left">
-                <div class="inline-flex items-center gap-2 rounded-full bg-white/10 border border-white/15 px-3 py-1.5 text-xs font-bold text-white/80 mb-5 backdrop-blur">
-                    <i class="fa fa-clock-o"></i>
-                    Time Notes
-                </div>
-                <h1 class="text-3xl sm:text-5xl font-black tracking-tight">时间笔记</h1>
-                <p class="text-white/68 mt-3 leading-7 text-sm sm:text-base">轻量记录每一个时间节点，支持本地存储、云同步、CSV 导入导出与年度趋势统计。</p>
-            </div>
+    <header class="bg-primary text-white py-4 shadow-md">
+        <div class="container mx-auto px-4">
+            <h1 class="text-xl font-bold flex items-center">
+                <i class="fa fa-clock-o mr-2"></i>
+                时间笔记
+            </h1>
         </div>
     </header>
 
-    <main class="flex-grow container mx-auto px-4 -mt-10 sm:-mt-14 pb-10">
+    <main class="flex-grow container mx-auto px-4 py-6 sm:py-8">
 
         <!-- 标签页切换 -->
-        <div class="max-w-xl mx-auto mb-6 tab-shell rounded-full p-1.5 grid grid-cols-2 gap-1.5">
-            <button id="tab-local" class="tab-btn active text-sm sm:text-base"><i class="fa fa-laptop"></i>本地版</button>
-            <button id="tab-gist" class="tab-btn text-sm sm:text-base"><i class="fa fa-cloud"></i>云同步版</button>
+        <div class="max-w-xl mx-auto mb-6 flex justify-center gap-4">
+            <button id="tab-local" class="tab-btn active">本地版</button>
+            <button id="tab-gist" class="tab-btn">云同步版</button>
         </div>
 
         <!-- 本地版内容 -->
         <div id="content-local">
-            <div class="max-w-xl mx-auto space-y-5">
-                <section class="glass-card rounded-3xl p-5 sm:p-7">
-                    <div class="flex flex-col items-center text-center">
-                        <p class="text-muted text-sm font-bold mb-2">当前时间</p>
-                        <p id="local-current-time" class="text-4xl sm:text-6xl font-black text-ink tracking-tight tabular-nums">--:--:--</p>
-                        <button id="local-record-btn" class="btn-primary mt-6 sm:mt-7 font-bold py-3.5 px-7 rounded-2xl transition-all flex items-center w-full sm:w-auto justify-center">
-                            <i class="fa fa-plus-circle mr-2 text-lg"></i>
+            <div class="max-w-xl mx-auto space-y-6">
+                <div class="bg-white rounded-xl shadow-lg p-6">
+                    <div class="flex flex-col items-center">
+                        <div class="text-center mb-4">
+                            <p class="text-gray-500 mb-1">当前时间</p>
+                            <p id="local-current-time" class="text-2xl sm:text-3xl font-bold text-gray-800">--:--:--</p>
+                        </div>
+                        <button id="local-record-btn" class="bg-primary hover:bg-primary/90 text-white font-medium py-3 px-6 rounded-lg transition-all shadow-md hover:shadow-lg flex items-center w-full sm:w-auto justify-center">
+                            <i class="fa fa-plus-circle mr-2"></i>
                             记录当前时间
                         </button>
                     </div>
-                </section>
+                </div>
 
-                <section class="premium-card rounded-3xl p-5 sm:p-6 transition-all">
-                    <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-5 gap-4">
-                        <div>
-                            <h2 class="text-xl font-black text-ink tracking-tight">记录列表</h2>
-                            <p class="text-sm text-muted mt-1">本地数据仅保存在当前浏览器</p>
-                        </div>
+                <div class="bg-white rounded-xl shadow-lg p-6">
+                    <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 gap-4">
+                        <h2 class="text-lg font-bold text-gray-800">记录列表 (本地)</h2>
                         <div class="flex items-center gap-2">
-                            <button id="local-import-btn" class="btn-secondary flex-1 sm:flex-none py-2.5 px-3.5 rounded-xl transition-colors text-sm font-bold flex items-center justify-center">
-                                <i class="fa fa-upload mr-1.5"></i> 导入CSV
+                            <button id="local-import-btn" class="flex-1 sm:flex-none bg-gray-200 hover:bg-gray-300 text-gray-700 py-2 px-3 rounded transition-colors text-sm flex items-center justify-center">
+                                <i class="fa fa-upload mr-1"></i> 导入CSV
                             </button>
-                            <button id="local-download-btn" class="btn-secondary flex-1 sm:flex-none py-2.5 px-3.5 rounded-xl transition-colors text-sm font-bold flex items-center justify-center">
-                                <i class="fa fa-download mr-1.5"></i> 导出CSV
+                            <button id="local-download-btn" class="flex-1 sm:flex-none bg-gray-200 hover:bg-gray-300 text-gray-700 py-2 px-3 rounded transition-colors text-sm flex items-center justify-center">
+                                <i class="fa fa-download mr-1"></i> 导出CSV
                             </button>
                         </div>
                     </div>
-                    <div id="local-records-container" class="scroll-area space-y-2 max-h-[60vh] sm:max-h-80 overflow-y-auto pr-1">
-                        <p class="text-muted text-center py-8">暂无记录</p>
+                    <div id="local-records-container" class="space-y-2 max-h-80 overflow-y-auto pr-2">
+                        <p class="text-gray-500 text-center py-4">暂无记录</p>
                     </div>
-                </section>
+                </div>
 
-                <section class="premium-card rounded-3xl p-5 sm:p-6 transition-all">
-                    <div class="flex items-center justify-between gap-3 mb-5">
-                        <h2 class="text-xl font-black text-ink tracking-tight">数据统计</h2>
-                        <select id="local-stats-year" class="control-input px-3 py-2 text-base sm:text-sm font-bold text-slate-700 focus:ring-0">
-                            <option value="current">本年</option>
-                        </select>
-                    </div>
-                    <div class="space-y-7">
+                <div class="bg-white rounded-xl shadow-lg p-6">
+                    <h2 class="text-lg font-bold text-gray-800 mb-4">数据统计 (本地)</h2>
+                    <div class="space-y-6">
                         <div>
-                            <h3 class="text-sm font-black text-slate-700 mb-3 uppercase tracking-wider">年度总览</h3>
-                            <div class="overflow-x-auto rounded-2xl border border-slate-200/80 scroll-area">
-                                <table class="w-full text-sm text-left text-slate-600 min-w-[200px]">
-                                    <thead class="text-xs text-slate-500 uppercase bg-slate-50">
-                                        <tr><th scope="col" class="px-4 py-3">项目</th><th scope="col" class="px-4 py-3">数值</th></tr>
+                            <h3 class="text-md font-semibold text-gray-700 mb-2">本年总览</h3>
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-sm text-left text-gray-600">
+                                    <thead class="text-xs text-gray-700 uppercase bg-gray-100">
+                                        <tr><th scope="col" class="px-4 py-2">项目</th><th scope="col" class="px-4 py-2">数值</th></tr>
                                     </thead>
                                     <tbody id="local-summary-tbody"></tbody>
                                 </table>
                             </div>
                         </div>
                         <div>
-                            <h3 class="text-sm font-black text-slate-700 mb-3 uppercase tracking-wider">年度每月记录趋势</h3>
-                            <div class="rounded-3xl border border-slate-200/80 bg-white/70 p-3 sm:p-4">
-                                <canvas id="local-records-chart"></canvas>
-                            </div>
+                            <h3 class="text-md font-semibold text-gray-700 mb-2">本年每月记录趋势</h3>
+                            <canvas id="local-records-chart"></canvas>
                         </div>
                     </div>
-                </section>
+                </div>
             </div>
         </div>
 
         <!-- 云同步版内容 -->
         <div id="content-gist" class="hidden">
-            <div class="max-w-xl mx-auto space-y-5">
-                <section class="glass-card rounded-3xl p-5 sm:p-7">
-                    <div class="flex flex-col items-center text-center">
-                        <p class="text-muted text-sm font-bold mb-2">当前时间</p>
-                        <p id="gist-current-time" class="text-4xl sm:text-6xl font-black text-ink tracking-tight tabular-nums">--:--:--</p>
-                        <button id="gist-record-btn" class="btn-primary mt-6 sm:mt-7 font-bold py-3.5 px-7 rounded-2xl transition-all flex items-center w-full sm:w-auto justify-center">
-                            <i class="fa fa-plus-circle mr-2 text-lg"></i>
+            <div class="max-w-xl mx-auto space-y-6">
+                <div class="bg-white rounded-xl shadow-lg p-6">
+                    <div class="flex flex-col items-center">
+                        <div class="text-center mb-4">
+                            <p class="text-gray-500 mb-1">当前时间</p>
+                            <p id="gist-current-time" class="text-2xl sm:text-3xl font-bold text-gray-800">--:--:--</p>
+                        </div>
+                        <button id="gist-record-btn" class="bg-primary hover:bg-primary/90 text-white font-medium py-3 px-6 rounded-lg transition-all shadow-md hover:shadow-lg flex items-center w-full sm:w-auto justify-center">
+                            <i class="fa fa-plus-circle mr-2"></i>
                             记录当前时间
                         </button>
                     </div>
-                </section>
+                </div>
 
-                <section class="premium-card rounded-3xl p-5 sm:p-6 transition-all">
-                    <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-5 gap-4">
-                        <div>
-                            <h2 class="text-xl font-black text-ink tracking-tight">记录列表</h2>
-                            <p class="text-sm text-muted mt-1">通过 Gist 进行云同步</p>
-                        </div>
+                <div class="bg-white rounded-xl shadow-lg p-6">
+                    <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 gap-4">
+                        <h2 class="text-lg font-bold text-gray-800">记录列表 (云同步)</h2>
                         <div class="flex items-center gap-2">
-                            <button id="gist-import-btn" class="btn-secondary flex-1 sm:flex-none py-2.5 px-3.5 rounded-xl transition-colors text-sm font-bold flex items-center justify-center">
-                                <i class="fa fa-upload mr-1.5"></i> 导入CSV
+                            <button id="gist-import-btn" class="flex-1 sm:flex-none bg-gray-200 hover:bg-gray-300 text-gray-700 py-2 px-3 rounded transition-colors text-sm flex items-center justify-center">
+                                <i class="fa fa-upload mr-1"></i> 导入CSV
                             </button>
-                            <button id="gist-download-btn" class="btn-secondary flex-1 sm:flex-none py-2.5 px-3.5 rounded-xl transition-colors text-sm font-bold flex items-center justify-center">
-                                <i class="fa fa-download mr-1.5"></i> 导出CSV
+                            <button id="gist-download-btn" class="flex-1 sm:flex-none bg-gray-200 hover:bg-gray-300 text-gray-700 py-2 px-3 rounded transition-colors text-sm flex items-center justify-center">
+                                <i class="fa fa-download mr-1"></i> 导出CSV
                             </button>
                         </div>
                     </div>
-                    <div id="gist-records-container" class="scroll-area space-y-2 max-h-[60vh] sm:max-h-80 overflow-y-auto pr-1">
-                        <p class="text-muted text-center py-8">正在检查配置...</p>
+                    <div id="gist-records-container" class="space-y-2 max-h-80 overflow-y-auto pr-2">
+                        <p class="text-gray-500 text-center py-4">正在检查配置...</p>
                     </div>
-                </section>
+                </div>
 
-                <section class="premium-card rounded-3xl p-5 sm:p-6 transition-all">
-                    <div class="flex items-center justify-between gap-3 mb-5">
-                        <h2 class="text-xl font-black text-ink tracking-tight">数据统计</h2>
-                        <select id="gist-stats-year" class="control-input px-3 py-2 text-base sm:text-sm font-bold text-slate-700 focus:ring-0">
-                            <option value="current">本年</option>
-                        </select>
-                    </div>
-                    <div class="space-y-7">
+                <div class="bg-white rounded-xl shadow-lg p-6">
+                    <h2 class="text-lg font-bold text-gray-800 mb-4">数据统计 (云同步)</h2>
+                    <div class="space-y-6">
                         <div>
-                            <h3 class="text-sm font-black text-slate-700 mb-3 uppercase tracking-wider">年度总览</h3>
-                            <div class="overflow-x-auto rounded-2xl border border-slate-200/80 scroll-area">
-                                <table class="w-full text-sm text-left text-slate-600 min-w-[200px]">
-                                    <thead class="text-xs text-slate-500 uppercase bg-slate-50">
-                                        <tr><th scope="col" class="px-4 py-3">项目</th><th scope="col" class="px-4 py-3">数值</th></tr>
+                            <h3 class="text-md font-semibold text-gray-700 mb-2">本年总览</h3>
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-sm text-left text-gray-600">
+                                    <thead class="text-xs text-gray-700 uppercase bg-gray-100">
+                                        <tr><th scope="col" class="px-4 py-2">项目</th><th scope="col" class="px-4 py-2">数值</th></tr>
                                     </thead>
                                     <tbody id="gist-summary-tbody"></tbody>
                                 </table>
                             </div>
                         </div>
                         <div>
-                            <h3 class="text-sm font-black text-slate-700 mb-3 uppercase tracking-wider">年度每月记录趋势</h3>
-                            <div class="rounded-3xl border border-slate-200/80 bg-white/70 p-3 sm:p-4">
-                                <canvas id="gist-records-chart"></canvas>
-                            </div>
+                            <h3 class="text-md font-semibold text-gray-700 mb-2">本年每月记录趋势</h3>
+                            <canvas id="gist-records-chart"></canvas>
                         </div>
                     </div>
-                </section>
+                </div>
             </div>
         </div>
 
         <!-- 两个版本共用的卡片 -->
-        <div class="max-w-xl mx-auto space-y-4 mt-5">
-            <div class="premium-card rounded-3xl p-5 sm:p-6 transition-all">
-                <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                    <div class="min-w-0">
-                        <h2 class="text-lg font-black text-ink tracking-tight">词条分析</h2>
-                        <p class="text-sm text-muted mt-1">查看所有备注词条的出现频率排行。</p>
+        <div class="max-w-xl mx-auto space-y-6 mt-6">
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h2 class="text-lg font-bold text-gray-800">词条分析(进阶可用)</h2>
+                        <p class="text-sm text-gray-500 mt-1">查看所有备注词条的出现频率排行。</p>
                     </div>
-                    <a href="./page1.html" target="_blank" rel="noopener noreferrer" class="btn-success w-full sm:w-auto justify-center font-bold py-2.5 px-4 rounded-2xl transition-all flex items-center shrink-0">
-                        前往<i class="fa fa-arrow-right ml-2"></i>
+                    <a href="./page1.html" target="_blank" rel="noopener noreferrer" class="bg-success hover:bg-success/90 text-white font-medium py-2 px-4 rounded-lg transition-all shadow-md flex items-center">
+                        前往
+                        <i class="fa fa-arrow-right ml-2"></i>
                     </a>
                 </div>
             </div>
-            <div class="premium-card rounded-3xl p-5 sm:p-6 transition-all">
-                <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                    <div class="min-w-0">
-                        <h2 class="text-lg font-black text-ink tracking-tight">成就系统</h2>
-                        <p class="text-sm text-muted mt-1">查看所有成就获得。</p>
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h2 class="text-lg font-bold text-gray-800">成就系统(进阶可用)</h2>
+                        <p class="text-sm text-gray-500 mt-1">查看所有成就获得。</p>
                     </div>
-                    <a href="./page2.html" target="_blank" rel="noopener noreferrer" class="btn-success w-full sm:w-auto justify-center font-bold py-2.5 px-4 rounded-2xl transition-all flex items-center shrink-0">
-                        前往<i class="fa fa-arrow-right ml-2"></i>
+                    <a href="./page2.html" target="_blank" rel="noopener noreferrer" class="bg-success hover:bg-success/90 text-white font-medium py-2 px-4 rounded-lg transition-all shadow-md flex items-center">
+                        前往
+                        <i class="fa fa-arrow-right ml-2"></i>
                     </a>
                 </div>
             </div>
-            <div class="premium-card rounded-3xl p-5 sm:p-6 transition-all">
-                <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                    <div class="min-w-0">
-                        <h2 class="text-lg font-black text-ink tracking-tight">进阶网页</h2>
-                        <p class="text-sm text-muted mt-1">这是免费版本在此进阶云端专用版。</p>
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h2 class="text-lg font-bold text-gray-800">进阶网页</h2>
+                        <p class="text-sm text-gray-500 mt-1">这是免费版本在此进阶云端专用版。</p>
                     </div>
-                    <a href="./page0.html" target="_blank" rel="noopener noreferrer" class="btn-success w-full sm:w-auto justify-center font-bold py-2.5 px-4 rounded-2xl transition-all flex items-center shrink-0">
-                        前往<i class="fa fa-arrow-right ml-2"></i>
+                    <a href="./page0.html" target="_blank" rel="noopener noreferrer" class="bg-success hover:bg-success/90 text-white font-medium py-2 px-4 rounded-lg transition-all shadow-md flex items-center">
+                        前往
+                        <i class="fa fa-arrow-right ml-2"></i>
                     </a>
                 </div>
             </div>
@@ -417,42 +274,26 @@
 
     </main>
 
-    <footer class="py-8 mt-auto">
-        <div class="container mx-auto px-4 text-center text-sm text-slate-500 font-medium">
-            © 时间笔记 · Keep your moments organized
+    <footer class="bg-gray-800 text-white py-4 mt-auto">
+        <div class="container mx-auto px-4 text-center text-sm">
+            © 时间笔记
         </div>
     </footer>
 
 <script>
 // --- 全局工具函数 ---
-function escapeHtml(value) {
-    return String(value ?? '')
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#039;');
-}
-
 function showToast(message, type = 'info') {
     const toast = document.getElementById('toast');
     const toastMessage = document.getElementById('toast-message');
     toastMessage.textContent = message;
-    toast.classList.remove('bg-success', 'bg-danger', 'bg-slate-950');
+    toast.classList.remove('bg-success', 'bg-danger', 'bg-gray-800');
     if (type === 'success') toast.classList.add('bg-success');
     else if (type === 'error') toast.classList.add('bg-danger');
-    else toast.classList.add('bg-slate-950');
+    else toast.classList.add('bg-gray-800');
     toast.classList.remove('opacity-0', 'translate-y-10');
     setTimeout(() => {
         toast.classList.add('opacity-0', 'translate-y-10');
     }, 3000);
-}
-
-function switchToLocalTab() {
-    document.getElementById('tab-local').classList.add('active');
-    document.getElementById('tab-gist').classList.remove('active');
-    document.getElementById('content-local').classList.remove('hidden');
-    document.getElementById('content-gist').classList.add('hidden');
 }
 
 function updateAllCurrentTime() {
@@ -476,112 +317,17 @@ function closeEditModal() {
     document.getElementById('edit-modal-overlay').classList.add('hidden');
 }
 
-function renderRecordItem(record, index, version) {
-    const safeTime = escapeHtml(record.time);
-    const safeRemark = escapeHtml(record.remark || '无备注');
-    const appName = version === 'local' ? 'localApp' : 'gistApp';
-    return `
-        <div class="record-row flex justify-between items-center p-3 sm:p-4 rounded-2xl mb-2">
-            <div class="flex-1 min-w-0 mr-2 sm:mr-3">
-                <p class="text-ink text-sm sm:text-base font-black tabular-nums">${safeTime}</p>
-                <p class="text-muted text-xs sm:text-sm truncate mt-1" title="${safeRemark}">${safeRemark}</p>
-            </div>
-            <div class="flex items-center flex-shrink-0 gap-1 sm:gap-2">
-                <button class="icon-btn text-blue-500 hover:text-blue-700" onclick="openEditModal('${version}', ${index})" title="编辑" aria-label="编辑记录"><i class="fa fa-pencil text-lg"></i></button>
-                <button class="icon-btn text-red-500 hover:text-red-700" onclick="${appName}.handleDeleteRecord(${index})" title="删除" aria-label="删除记录"><i class="fa fa-trash-o text-lg"></i></button>
-            </div>
-        </div>
-    `;
-}
-
-function getChartOptions() {
-    return {
-        responsive: true,
-        maintainAspectRatio: false,
-        scales: {
-            y: {
-                beginAtZero: true,
-                ticks: { stepSize: 1, color: '#64748B' },
-                grid: { color: 'rgba(148, 163, 184, .18)' }
-            },
-            x: {
-                ticks: { color: '#64748B', maxRotation: 45, minRotation: 45 },
-                grid: { display: false }
-            }
-        },
-        plugins: {
-            legend: { display: false },
-            tooltip: {
-                backgroundColor: '#0f172a',
-                padding: 12,
-                cornerRadius: 12,
-                titleColor: '#fff',
-                bodyColor: '#cbd5e1',
-                displayColors: false
-            }
-        }
-    };
-}
-
-function getChartDataset(monthlyCounts) {
-    return [{
-        label: '每月记录次数',
-        data: monthlyCounts,
-        backgroundColor: 'rgba(37, 99, 235, 0.10)',
-        borderColor: '#2563EB',
-        borderWidth: 3,
-        pointRadius: 3,
-        pointHoverRadius: 6,
-        pointBackgroundColor: '#2563EB',
-        tension: 0.38,
-        fill: true
-    }];
-}
-
-function parseRecordDate(time) {
-    return new Date(String(time || '').replace(/\//g, '-'));
-}
-
-function getAvailableYears(records) {
-    const years = records
-        .map(r => parseRecordDate(r.time).getFullYear())
-        .filter(year => !Number.isNaN(year));
-
-    const currentYear = new Date().getFullYear();
-
-    return Array.from(new Set([currentYear, ...years])).sort((a, b) => b - a);
-}
-
-function updateYearSelector(selectId, records, selectedYear) {
-    const select = document.getElementById(selectId);
-    if (!select) return;
-
-    const years = getAvailableYears(records);
-    const currentYear = new Date().getFullYear();
-    const targetYear = Number(selectedYear || currentYear);
-
-    select.innerHTML = years.map(year => {
-        const label = year === currentYear ? `${year}年（本年）` : `${year}年`;
-        return `<option value="${year}" ${year === targetYear ? 'selected' : ''}>${label}</option>`;
-    }).join('');
-}
 
 // --- 本地版 (Local) 应用逻辑 ---
 const localApp = {
     records: [],
     recordsChart: null,
-    selectedStatsYear: new Date().getFullYear(),
 
     init() {
         this.loadRecordsFromLocal();
         document.getElementById('local-record-btn').addEventListener('click', () => this.handleAddRecord());
         document.getElementById('local-download-btn').addEventListener('click', () => this.exportToCsv());
         document.getElementById('local-import-btn').addEventListener('click', () => document.getElementById('csv-file-input').click());
-
-        document.getElementById('local-stats-year').addEventListener('change', (event) => {
-            this.selectedStatsYear = Number(event.target.value);
-            this.updateStatistics();
-        });
     },
 
     loadRecordsFromLocal() {
@@ -603,7 +349,7 @@ const localApp = {
         this.records.unshift({ time: timeString, remark: remark.trim() });
         this.renderRecords();
         this.saveRecordsToLocal();
-        showToast("记录已添加（本地）", "success");
+        showToast("记录已添加 (本地)", "success");
     },
 
     handleDeleteRecord(index) {
@@ -674,56 +420,45 @@ const localApp = {
         const container = document.getElementById('local-records-container');
         this.records.sort((a, b) => new Date(b.time.replace(/\//g, '-')) - new Date(a.time.replace(/\//g, '-')));
         if (this.records.length === 0) {
-            container.innerHTML = '<p class="text-muted text-center py-8">暂无记录</p>';
+            container.innerHTML = '<p class="text-gray-500 text-center py-4">暂无记录</p>';
         } else {
-            container.innerHTML = this.records.map((record, index) => renderRecordItem(record, index, 'local')).join('');
+            container.innerHTML = this.records.map((record, index) => `
+                <div class="flex justify-between items-center p-2.5 border-b border-gray-100 last:border-0 hover:bg-gray-50 rounded-md">
+                    <div class="flex-1 min-w-0 mr-2">
+                        <p class="text-gray-800 text-sm sm:text-base font-medium">${record.time}</p>
+                        <p class="text-gray-500 text-xs sm:text-sm truncate" title="${record.remark || ''}">${record.remark || '无备注'}</p>
+                    </div>
+                    <div class="flex items-center flex-shrink-0">
+                        <button class="edit-btn text-blue-400 hover:text-blue-600 p-1 mr-2" onclick="openEditModal('local', ${index})" title="编辑"><i class="fa fa-pencil fa-lg"></i></button>
+                        <button class="delete-btn text-red-400 hover:text-red-600 p-1" onclick="localApp.handleDeleteRecord(${index})" title="删除"><i class="fa fa-trash-o fa-lg"></i></button>
+                    </div>
+                </div>
+            `).join('');
         }
         this.updateStatistics();
     },
 
     updateStatistics() {
         const currentYear = new Date().getFullYear();
+        const yearRecords = this.records.filter(r => new Date(r.time.replace(/\//g, '-')).getFullYear() === currentYear);
 
-        updateYearSelector('local-stats-year', this.records, this.selectedStatsYear);
-
-        const selectedYear = this.selectedStatsYear || currentYear;
-        const yearRecords = this.records.filter(r => {
-            const recordDate = parseRecordDate(r.time);
-            return recordDate.getFullYear() === selectedYear;
-        });
-
-        const yearLabel = selectedYear === currentYear ? `${selectedYear}年 本年总览` : `${selectedYear}年 历史总览`;
-
-        document.getElementById('local-summary-tbody').innerHTML = `
-            <tr class="bg-white border-t border-slate-100">
-                <td class="px-4 py-3 font-bold text-ink whitespace-nowrap">${yearLabel}</td>
-                <td class="px-4 py-3 font-black text-blue-600">${yearRecords.length} 次</td>
-            </tr>
-        `;
+        document.getElementById('local-summary-tbody').innerHTML = `<tr class="bg-white border-b"><td class="px-4 py-2 font-medium text-gray-900 whitespace-nowrap">${currentYear}年 总记录次数</td><td class="px-4 py-2">${yearRecords.length} 次</td></tr>`;
 
         const monthlyCounts = Array(12).fill(0);
-        yearRecords.forEach(r => {
-            const recordDate = parseRecordDate(r.time);
-            const month = recordDate.getMonth();
-            if (!Number.isNaN(month)) monthlyCounts[month]++;
-        });
-
-        const chartContainer = document.getElementById('local-records-chart').parentElement;
-        chartContainer.style.height = '250px'; // 限制移动端图表高度
-
+        yearRecords.forEach(r => { monthlyCounts[new Date(r.time.replace(/\//g, '-')).getMonth()]++; });
         const ctx = document.getElementById('local-records-chart').getContext('2d');
         if (this.recordsChart) this.recordsChart.destroy();
-
         this.recordsChart = new Chart(ctx, {
             type: 'line',
             data: {
                 labels: ['一月', '二月', '三月', '四月', '五月', '六月', '七月', '八月', '九月', '十月', '十一月', '十二月'],
-                datasets: getChartDataset(monthlyCounts)
+                datasets: [{ label: '每月记录次数', data: monthlyCounts, backgroundColor: 'rgba(22, 93, 255, 0.2)', borderColor: '#165DFF', borderWidth: 2, tension: 0.2, fill: true }]
             },
-            options: getChartOptions()
+            options: { responsive: true, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }, plugins: { legend: { display: false } } }
         });
     }
 };
+
 
 // --- 云同步版 (Gist) 应用逻辑 ---
 const gistApp = {
@@ -731,48 +466,34 @@ const gistApp = {
     config: {},
     records: [],
     recordsChart: null,
-    selectedStatsYear: new Date().getFullYear(),
 
     init() {
         if (this.loadConfig()) {
             this.loadRecordsFromGist();
         }
-
-        if (!this._eventsBound) {
-            document.getElementById('gist-config-form').addEventListener('submit', (e) => {
-                e.preventDefault();
-                this.saveConfig(
-                    document.getElementById('gist-username').value.trim(),
-                    document.getElementById('gist-gistId').value.trim(),
-                    document.getElementById('gist-pat').value.trim()
-                );
-            });
-
-            document.getElementById('gist-record-btn').addEventListener('click', () => this.handleAddRecord());
-            document.getElementById('gist-download-btn').addEventListener('click', () => this.exportToCsv());
-            document.getElementById('gist-import-btn').addEventListener('click', () => document.getElementById('csv-file-input').click());
-
-            document.getElementById('gist-stats-year').addEventListener('change', (event) => {
-                this.selectedStatsYear = Number(event.target.value);
-                this.updateStatistics();
-            });
-
-            this._eventsBound = true;
-        }
+        document.getElementById('gist-config-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.saveConfig(
+                document.getElementById('gist-username').value.trim(),
+                document.getElementById('gist-gistId').value.trim(),
+                document.getElementById('gist-pat').value.trim()
+            );
+        });
+        document.getElementById('gist-record-btn').addEventListener('click', () => this.handleAddRecord());
+        document.getElementById('gist-download-btn').addEventListener('click', () => this.exportToCsv());
+        document.getElementById('gist-import-btn').addEventListener('click', () => document.getElementById('csv-file-input').click());
     },
 
     loadConfig() {
         const savedConfig = localStorage.getItem('timeRecorderConfig');
-
         if (savedConfig) {
             this.config = JSON.parse(savedConfig);
             document.getElementById('gist-config-overlay').classList.add('hidden');
             return true;
+        } else {
+            document.getElementById('gist-config-overlay').classList.remove('hidden');
+            return false;
         }
-
-        document.getElementById('gist-config-overlay').classList.remove('hidden');
-        switchToLocalTab();
-        return false;
     },
 
     saveConfig(username, gistId, pat) {
@@ -784,19 +505,13 @@ const gistApp = {
 
     async loadRecordsFromGist() {
         if (!this.config.GIST_ID) {
-            document.getElementById('gist-records-container').innerHTML = '<p class="text-muted text-center py-8">请先完成配置</p>';
+            document.getElementById('gist-records-container').innerHTML = '<p class="text-gray-500 text-center py-4">请先完成配置</p>';
             return;
         }
-
         showToast("正在从云端同步数据...", "info");
-
         try {
             const response = await fetch(`https://gist.githubusercontent.com/${this.config.GITHUB_USERNAME}/${this.config.GIST_ID}/raw/records.json?t=${new Date().getTime()}`);
-
-            if (!response.ok) {
-                throw new Error(`无法加载Gist: ${response.statusText}`);
-            }
-
+            if (!response.ok) throw new Error(`无法加载Gist: ${response.statusText}`);
             const data = await response.json();
             this.records = Array.isArray(data) ? data : [];
             this.renderRecords();
@@ -804,29 +519,18 @@ const gistApp = {
         } catch (error) {
             console.error("加载记录失败:", error);
             showToast("同步失败，请检查配置或网络。", "error");
-
-            localStorage.removeItem('timeRecorderConfig');
-            this.config = {};
-            this.records = [];
-            this.isInitialized = false;
-
-            document.getElementById('gist-config-overlay').classList.remove('hidden');
-            switchToLocalTab();
-
             this.renderRecords();
         }
     },
 
     async saveRecordsToGist() {
         if (!this.config.GIST_ID) throw new Error("配置不完整，无法保存。");
-
         try {
             const response = await fetch(`https://api.github.com/gists/${this.config.GIST_ID}`, {
                 method: 'PATCH',
                 headers: { 'Authorization': `token ${this.config.GITHUB_PAT}`, 'Accept': 'application/vnd.github.v3+json' },
                 body: JSON.stringify({ files: { 'records.json': { content: JSON.stringify(this.records, null, 2) } } })
             });
-
             if (!response.ok) {
                 const errorData = await response.json();
                 throw new Error(`保存失败: ${errorData.message}`);
@@ -846,7 +550,7 @@ const gistApp = {
         const now = new Date();
         const timeString = now.toLocaleString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }).replace(/\//g, '/');
         this.records.unshift({ time: timeString, remark: remark.trim() });
-        this.renderRecords();
+        this.renderRecords(); // 先更新UI
 
         recordBtn.disabled = true;
         recordBtn.innerHTML = '<i class="fa fa-spinner fa-spin mr-2"></i>正在保存...';
@@ -856,7 +560,7 @@ const gistApp = {
             showToast("数据已成功保存到云端！", "success");
         } catch (error) {
             showToast(error.message, "error");
-            this.records.shift();
+            this.records.shift(); // 回滚
             this.renderRecords();
         } finally {
             recordBtn.disabled = false;
@@ -868,14 +572,14 @@ const gistApp = {
         if (!confirm('确定要删除这条云端记录吗？')) return;
         const deletedRecord = this.records[index];
         this.records.splice(index, 1);
-        this.renderRecords();
+        this.renderRecords(); // 先更新UI
 
         try {
             await this.saveRecordsToGist();
             showToast('云端记录已删除', 'success');
         } catch (error) {
             showToast(`删除失败: ${error.message}`, 'error');
-            this.records.splice(index, 0, deletedRecord);
+            this.records.splice(index, 0, deletedRecord); // 回滚
             this.renderRecords();
         }
     },
@@ -897,7 +601,7 @@ const gistApp = {
             closeEditModal();
         } catch (error) {
             showToast(`更新失败: ${error.message}`, 'error');
-            this.records[index] = oldRecord;
+            this.records[index] = oldRecord; // 回滚
             this.renderRecords();
         } finally {
             submitBtn.disabled = false;
@@ -907,8 +611,7 @@ const gistApp = {
 
     async importFromCsv(csvContent) {
         showToast('正在解析和合并数据...', 'info');
-        const originalRecords = JSON.parse(JSON.stringify(this.records));
-
+        const originalRecords = JSON.parse(JSON.stringify(this.records)); // 深拷贝备份
         try {
             const fileRecords = csvContent.trim().split('\n').slice(1).map(line => {
                 const parts = line.split(',');
@@ -934,24 +637,22 @@ const gistApp = {
             } else {
                 showToast('数据已是最新，无需导入。', 'info');
             }
-        } catch (error) {
+        } catch (error)
+        {
             showToast(`导入或保存失败: ${error.message}`, 'error');
-            this.records = originalRecords;
+            this.records = originalRecords; // 回滚
             this.renderRecords();
         }
     },
 
     exportToCsv() {
         if (this.records.length === 0) return showToast('没有云端记录可导出', 'error');
-
         let csvContent = "序号,时间,备注\n";
         const sortedRecords = [...this.records].sort((a, b) => new Date(b.time.replace(/\//g, '-')) - new Date(a.time.replace(/\//g, '-')));
-
         sortedRecords.forEach((record, index) => {
             const remarkText = record.remark ? `"${record.remark.replace(/"/g, '""')}"` : '""';
             csvContent += `${sortedRecords.length - index},"${record.time}",${remarkText}\n`;
         });
-
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement('a');
         link.href = URL.createObjectURL(blob);
@@ -964,70 +665,56 @@ const gistApp = {
     renderRecords() {
         const container = document.getElementById('gist-records-container');
         this.records.sort((a, b) => new Date(b.time.replace(/\//g, '-')) - new Date(a.time.replace(/\//g, '-')));
-
-        if (!this.config.GIST_ID) {
-            container.innerHTML = '<p class="text-muted text-center py-8">请先完成配置</p>';
-        } else if (this.records.length === 0) {
-            container.innerHTML = '<p class="text-muted text-center py-8">暂无记录</p>';
-        } else {
-            container.innerHTML = this.records.map((record, index) => renderRecordItem(record, index, 'gist')).join('');
+        if (this.records.length === 0 && this.config.GIST_ID) {
+            container.innerHTML = '<p class="text-gray-500 text-center py-4">暂无记录</p>';
+        } else if (this.records.length > 0) {
+             container.innerHTML = this.records.map((record, index) => `
+                <div class="flex justify-between items-center p-2.5 border-b border-gray-100 last:border-0 hover:bg-gray-50 rounded-md">
+                    <div class="flex-1 min-w-0 mr-2">
+                        <p class="text-gray-800 text-sm sm:text-base font-medium">${record.time}</p>
+                        <p class="text-gray-500 text-xs sm:text-sm truncate" title="${record.remark || ''}">${record.remark || '无备注'}</p>
+                    </div>
+                    <div class="flex items-center flex-shrink-0">
+                        <button class="edit-btn text-blue-400 hover:text-blue-600 p-1 mr-2" onclick="openEditModal('gist', ${index})" title="编辑"><i class="fa fa-pencil fa-lg"></i></button>
+                        <button class="delete-btn text-red-400 hover:text-red-600 p-1" onclick="gistApp.handleDeleteRecord(${index})" title="删除"><i class="fa fa-trash-o fa-lg"></i></button>
+                    </div>
+                </div>
+            `).join('');
         }
-
         this.updateStatistics();
     },
 
     updateStatistics() {
         const currentYear = new Date().getFullYear();
+        const yearRecords = this.records.filter(r => new Date(r.time.replace(/\//g, '-')).getFullYear() === currentYear);
 
-        updateYearSelector('gist-stats-year', this.records, this.selectedStatsYear);
-
-        const selectedYear = this.selectedStatsYear || currentYear;
-        const yearRecords = this.records.filter(r => {
-            const recordDate = parseRecordDate(r.time);
-            return recordDate.getFullYear() === selectedYear;
-        });
-
-        const yearLabel = selectedYear === currentYear ? `${selectedYear}年 本年总览` : `${selectedYear}年 历史总览`;
-
-        document.getElementById('gist-summary-tbody').innerHTML = `
-            <tr class="bg-white border-t border-slate-100">
-                <td class="px-4 py-3 font-bold text-ink whitespace-nowrap">${yearLabel}</td>
-                <td class="px-4 py-3 font-black text-blue-600">${yearRecords.length} 次</td>
-            </tr>
-        `;
+        document.getElementById('gist-summary-tbody').innerHTML = `<tr class="bg-white border-b"><td class="px-4 py-2 font-medium text-gray-900 whitespace-nowrap">${currentYear}年 总记录次数</td><td class="px-4 py-2">${yearRecords.length} 次</td></tr>`;
 
         const monthlyCounts = Array(12).fill(0);
-
-        yearRecords.forEach(r => {
-            const recordDate = parseRecordDate(r.time);
-            const month = recordDate.getMonth();
-            if (!Number.isNaN(month)) monthlyCounts[month]++;
-        });
-
-        const chartContainer = document.getElementById('gist-records-chart').parentElement;
-        chartContainer.style.height = '250px'; // 限制移动端图表高度
-
+        yearRecords.forEach(r => { monthlyCounts[new Date(r.time.replace(/\//g, '-')).getMonth()]++; });
         const ctx = document.getElementById('gist-records-chart').getContext('2d');
         if (this.recordsChart) this.recordsChart.destroy();
-
         this.recordsChart = new Chart(ctx, {
             type: 'line',
             data: {
                 labels: ['一月', '二月', '三月', '四月', '五月', '六月', '七月', '八月', '九月', '十月', '十一月', '十二月'],
-                datasets: getChartDataset(monthlyCounts)
+                datasets: [{ label: '每月记录次数', data: monthlyCounts, backgroundColor: 'rgba(22, 93, 255, 0.2)', borderColor: '#165DFF', borderWidth: 2, tension: 0.2, fill: true }]
             },
-            options: getChartOptions()
+            options: { responsive: true, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }, plugins: { legend: { display: false } } }
         });
     }
 };
 
 // --- 页面初始化与主事件监听 ---
 document.addEventListener('DOMContentLoaded', () => {
+    // 1. 只初始化本地版，让用户可以立即使用
     localApp.init();
 
+    // 2. 初始化时间显示
     updateAllCurrentTime();
     setInterval(updateAllCurrentTime, 1000);
 
+    // 3. 标签页切换逻辑
     const tabLocal = document.getElementById('tab-local');
     const tabGist = document.getElementById('tab-gist');
     const contentLocal = document.getElementById('content-local');
@@ -1046,18 +733,16 @@ document.addEventListener('DOMContentLoaded', () => {
         contentGist.classList.remove('hidden');
         contentLocal.classList.add('hidden');
 
+        // 关键改动：只在第一次点击时才初始化云端版
         if (!gistApp.isInitialized) {
             gistApp.init();
-            gistApp.isInitialized = true;
-        } else if (!localStorage.getItem('timeRecorderConfig')) {
-            document.getElementById('gist-config-overlay').classList.remove('hidden');
-            switchToLocalTab();
+            gistApp.isInitialized = true; // 标记为已初始化，避免重复执行
         }
     });
 
+    // 4. 通用编辑模态框事件
     document.getElementById('edit-form').addEventListener('submit', (event) => {
         event.preventDefault();
-
         const version = document.getElementById('edit-version').value;
         const index = document.getElementById('edit-index').value;
         const newTime = document.getElementById('edit-time').value.trim();
@@ -1069,30 +754,23 @@ document.addEventListener('DOMContentLoaded', () => {
             gistApp.handleEditSave(index, newTime, newRemark);
         }
     });
-
     document.getElementById('cancel-edit-btn').addEventListener('click', closeEditModal);
-
-    document.getElementById('close-gist-config-btn').addEventListener('click', () => {
-        document.getElementById('gist-config-overlay').classList.add('hidden');
-        switchToLocalTab();
-    });
-
     document.getElementById('edit-modal-overlay').addEventListener('click', (event) => {
         if (event.target === event.currentTarget) closeEditModal();
     });
 
+    // 5. 文件导入事件分发
     document.getElementById('csv-file-input').addEventListener('change', (event) => {
         const file = event.target.files[0];
         if (!file) return;
 
         const reader = new FileReader();
-
         reader.onload = function(e) {
             const activeTab = document.querySelector('.tab-btn.active').id;
-
             if (activeTab === 'tab-local') {
                 localApp.importFromCsv(e.target.result);
             } else {
+                // 如果云端版还未初始化，先初始化它
                 if (!gistApp.isInitialized) {
                     gistApp.init();
                     gistApp.isInitialized = true;
@@ -1100,7 +778,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 gistApp.importFromCsv(e.target.result);
             }
         };
-
         reader.readAsText(file);
         event.target.value = null;
     });
