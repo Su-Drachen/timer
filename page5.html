@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>AI 健康顾问分析 - 私人时间记录器</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#165DFF',
+                        success: '#22c55e',
+                        warning: '#f97316',
+                        danger: '#ef4444',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { -webkit-tap-highlight-color: transparent; }
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { scrollbar-width: none; -ms-overflow-style: none; }
+
+        /* 简单动画 */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in { animation: fadeIn 0.3s ease-out forwards; }
+    </style>
+</head>
+<body class="bg-slate-100 min-h-screen flex flex-col font-sans antialiased text-slate-800">
+
+    <!-- 顶部导航栏 -->
+    <header class="bg-white shadow-sm sticky top-0 z-30 border-b border-slate-200/80">
+        <div class="container mx-auto px-4 py-3 flex justify-between items-center max-w-3xl">
+            <div class="flex items-center gap-2">
+                <div class="w-8 h-8 rounded-lg bg-blue-50 text-primary flex items-center justify-center">
+                    <i class="fa fa-user-md text-lg"></i>
+                </div>
+                <h1 class="text-base sm:text-lg font-bold tracking-tight text-slate-800">
+                    AI 健康评估与建议
+                </h1>
+            </div>
+            <div class="flex items-center gap-2">
+                <button onclick="startAnalysisProcess()" id="refresh-btn" class="bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors flex items-center text-xs font-semibold py-1.5 px-3 rounded-lg">
+                    <i class="fa fa-refresh mr-1"></i>
+                    <span>重新分析</span>
+                </button>
+                <a href="pagemain.html" class="bg-slate-200 text-slate-700 hover:bg-slate-300 transition-colors flex items-center text-xs font-semibold py-1.5 px-3 rounded-lg">
+                    <i class="fa fa-arrow-left mr-1"></i>
+                    <span>返回</span>
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- 主体区域 -->
+    <main class="flex-grow container mx-auto px-3.5 sm:px-4 py-4 max-w-3xl flex flex-col">
+
+        <!-- 概览状态栏 (简明数据背景) -->
+        <div id="status-bar" class="mb-3 bg-white rounded-xl p-3 border border-slate-200 shadow-sm flex items-center justify-between text-xs text-slate-600">
+            <div class="flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span id="data-summary">正在同步数据并准备分析...</span>
+            </div>
+            <span id="latest-duration" class="font-semibold text-primary"></span>
+        </div>
+
+        <!-- 聊天/分析对话容器 -->
+        <div class="flex-grow bg-white rounded-2xl shadow-sm border border-slate-200 p-4 sm:p-5 flex flex-col min-h-[460px] overflow-hidden">
+            <div id="chatResponseArea" class="flex-grow overflow-y-auto space-y-4 pb-4 scrollbar-hide">
+                <!-- 消息内容将动态插入 -->
+            </div>
+
+            <!-- 加载中指示器 -->
+            <div id="loadingIndicator" class="hidden flex items-center space-x-2 py-3 px-2">
+                <div class="w-2 h-2 rounded-full bg-primary animate-bounce"></div>
+                <div class="w-2 h-2 rounded-full bg-primary animate-bounce" style="animation-delay: 0.2s"></div>
+                <div class="w-2 h-2 rounded-full bg-primary animate-bounce" style="animation-delay: 0.4s"></div>
+                <span class="text-xs text-slate-400 font-medium">AI 顾问正在结合生理与医学模型深度评估...</span>
+            </div>
+
+            <!-- 追问输入框区域 -->
+            <div class="pt-3 border-t border-slate-100 mt-auto">
+                <div class="flex gap-2">
+                    <input type="text" id="userInput" placeholder="对分析结果有疑问？可在此继续向 AI 追问..."
+                        class="flex-grow px-3.5 py-2.5 text-xs sm:text-sm rounded-xl border border-slate-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all bg-slate-50 text-slate-800 placeholder-slate-400"
+                        onkeydown="if(event.key === 'Enter') sendUserFollowUpMessage()">
+                    <button id="sendBtn" onclick="sendUserFollowUpMessage()" class="px-4 py-2.5 bg-primary hover:bg-primary/90 text-white rounded-xl text-xs font-semibold shadow-sm transition-all flex items-center gap-1">
+                        <i class="fa fa-paper-plane-o"></i>
+                        <span class="hidden sm:inline">发送</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- 页脚 -->
+    <footer class="text-slate-400 py-4 mt-auto border-t border-slate-200/60">
+        <div class="container mx-auto px-4 text-center text-[11px]">
+            © 私人时间记录器 · AI 辅助健康评估 (仅供日常自律与健康参考)
+        </div>
+    </footer>
+
+    <script>
+        // ==================== 接口配置 ====================
+        const API_KEY = 'abf06d05170b0e58';
+        const API_SECRET = 'eb4b62752f9d4c12f3f22c9b182d34fa';
+        const ASSISTANT_ID = "692e99fdb0b9d6732c761232";
+
+        // ==================== 全局状态 ====================
+        let config = { GITHUB_USERNAME: "", GIST_ID: "", GITHUB_PAT: "" };
+        let localRecords = [];
+        let gistRecords = [];
+        let allMatchedPairs = [];
+        let cachedAccessToken = null;
+
+        // DOM 元素
+        const chatResponseArea = document.getElementById('chatResponseArea');
+        const loadingIndicator = document.getElementById('loadingIndicator');
+        const userInput = document.getElementById('userInput');
+        const refreshBtn = document.getElementById('refresh-btn');
+        const dataSummary = document.getElementById('data-summary');
+        const latestDurationText = document.getElementById('latest-duration');
+
+        // ==================== 配置与鉴权检查 ====================
+        function loadConfig() {
+            const savedConfig = localStorage.getItem('timeRecorderConfig');
+            if (savedConfig) {
+                config = JSON.parse(savedConfig);
+                return true;
+            } else {
+                chatResponseArea.innerHTML = `
+                    <div class="text-center py-12 px-4">
+                        <i class="fa fa-lock text-3xl text-warning mb-3"></i>
+                        <h3 class="text-sm font-bold text-slate-800">该功能需依赖进阶配置</h3>
+                        <p class="text-slate-500 my-2 text-xs max-w-sm mx-auto leading-relaxed">
+                            请先前往配置 GitHub Token 与 Gist ID 以便同步完整闭环记录。
+                        </p>
+                        <a href="page0.html" class="mt-3 inline-block bg-primary text-white text-xs py-2 px-5 rounded-xl hover:bg-blue-600 transition-colors font-medium shadow-sm">
+                            前往进阶配置
+                        </a>
+                    </div>
+                `;
+                return false;
+            }
+        }
+
+        // ==================== GitHub Gist 获取 ====================
+        async function fetchDirectFromGitHubApi() {
+            const res = await fetch(`https://api.github.com/gists/${config.GIST_ID}`, {
+                headers: {
+                    'Authorization': `token ${config.GITHUB_PAT}`,
+                    'Accept': 'application/vnd.github.v3+json'
+                },
+                cache: 'no-store'
+            });
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                throw new Error(err.message || `API 错误 (${res.status})`);
+            }
+            const data = await res.json();
+            const file = data.files && data.files['records.json'];
+            return file && file.content ? JSON.parse(file.content) : [];
+        }
+
+        // ==================== 时序匹配核心 ====================
+        function matchRecordsReadOnly() {
+            allMatchedPairs = [];
+            if (!localRecords.length || !gistRecords.length) return;
+
+            const unifiedEvents = [];
+            localRecords.forEach((r) => {
+                const ts = new Date(r.time.replace(/\//g, '-')).getTime();
+                if (!isNaN(ts)) unifiedEvents.push({ type: 'local', time: r.time, remark: r.remark || '', timestamp: ts, used: false });
+            });
+
+            gistRecords.forEach((r) => {
+                const ts = new Date(r.time.replace(/\//g, '-')).getTime();
+                if (!isNaN(ts)) unifiedEvents.push({ type: 'gist', time: r.time, remark: r.remark || '', timestamp: ts, used: false });
+            });
+
+            unifiedEvents.sort((a, b) => a.timestamp - b.timestamp);
+            const MIN_INTERVAL_MS = 60 * 1000;
+            const MAX_INTERVAL_MS = 12 * 60 * 60 * 1000;
+
+            for (let i = 0; i < unifiedEvents.length; i++) {
+                const current = unifiedEvents[i];
+                if (current.used) continue;
+
+                for (let j = i + 1; j < unifiedEvents.length; j++) {
+                    const target = unifiedEvents[j];
+                    if (!target.used && target.type !== current.type) {
+                        const diffMs = target.timestamp - current.timestamp;
+                        if (diffMs >= MIN_INTERVAL_MS && diffMs <= MAX_INTERVAL_MS) {
+                            current.used = true;
+                            target.used = true;
+                            const diffMinutes = Math.round(diffMs / (1000 * 60));
+                            const isCrossDay = new Date(current.timestamp).getDate() !== new Date(target.timestamp).getDate();
+                            const direction = current.type === 'local' ? 'local_to_gist' : 'gist_to_local';
+
+                            allMatchedPairs.push({
+                                start: { time: current.time, remark: current.remark },
+                                end: { time: target.time, remark: target.remark },
+                                direction: direction,
+                                startTimestamp: current.timestamp,
+                                endTimestamp: target.timestamp,
+                                durationMinutes: diffMinutes,
+                                isCrossDay: isCrossDay
+                            });
+                            break;
+                        }
+                    }
+                }
+            }
+            allMatchedPairs.sort((a, b) => b.startTimestamp - a.startTimestamp);
+        }
+
+        function formatMinutes(minutes) {
+            if (minutes < 60) return `${minutes} 分钟`;
+            const h = Math.floor(minutes / 60);
+            const m = minutes % 60;
+            return m === 0 ? `${h} 小时` : `${h}h ${m}m`;
+        }
+
+        // ==================== 构造分析提示词 ====================
+        function generateAIPrompt() {
+            if (!allMatchedPairs.length) return "";
+
+            const latest = allMatchedPairs[0];
+            const recent10 = allMatchedPairs.slice(0, 10);
+            const recentDurations = recent10.map(p => p.durationMinutes);
+            const avgRecent = Math.round(recentDurations.reduce((a, b) => a + b, 0) / recentDurations.length);
+            const maxRecent = Math.max(...recentDurations);
+            const minRecent = Math.min(...recentDurations);
+
+            let recentListText = recent10.map((p, idx) => {
+                const remarkPart = (p.start.remark || p.end.remark) ? ` (备注: ${p.start.remark || p.end.remark})` : '';
+                return `${idx + 1}. [${p.start.time} 至 ${p.end.time}] 单次历时: ${p.durationMinutes}分钟${p.isCrossDay ? ' (跨天/深夜)' : ''}${remarkPart}`;
+            }).join('\n');
+
+            return `你是一名专业、温和且具有循证医学背景的健康与生活方式顾问。我记录了近期的单次行为起止时间数据。请根据客观记录数据，提供一份客观、科学、无说教的健康分析与建议。
+
+【最新 1 次行为数据】
+- 开始时间：${latest.start.time}
+- 结束时间：${latest.end.time}
+- 单次持续时长：${latest.durationMinutes} 分钟 (${formatMinutes(latest.durationMinutes)})
+- 是否跨午夜/深夜：${latest.isCrossDay ? '是 (涉及夜间/跨日)' : '否'}
+- 记录备注：${latest.start.remark || latest.end.remark || '无'}
+
+【近期行为历史概况 (近 ${recent10.length} 次记录)】
+- 样本平均单次时长：${avgRecent} 分钟
+- 样本单次最长时间：${maxRecent} 分钟
+- 样本单次最短时间：${minRecent} 分钟
+- 近期明细清单：
+${recentListText}
+
+【请从以下几个维度提供精简且具体的建议】
+1. **持续时长评估**：评估该单次时长是否处于合理生理生理区间（如局部充血负担等）。
+2. **频率与时段节律**：结合近期记录时段（如是否常在深夜），评估对精力与生物钟的影响。
+3. **身心状态调理**：从多巴胺平衡、专注度恢复角度给出 2~3 条可实操的自律建议。`;
+        }
+
+        // ==================== GLM API 对接 ====================
+        async function get_access_token() {
+            if (cachedAccessToken) return cachedAccessToken;
+
+            const url = "https://chatglm.cn/chatglm/assistant-api/v1/get_token";
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ api_key: API_KEY, api_secret: API_SECRET })
+            });
+
+            if (!res.ok) throw new Error(`Token 获取失败 (${res.status})`);
+            const data = await res.json();
+            cachedAccessToken = data.result.access_token;
+            return cachedAccessToken;
+        }
+
+        function handle_response(data_dict) {
+            const message = data_dict.message || {};
+            const content = message.content || {};
+            if (content.type === "text") return content.text || "";
+            return null;
+        }
+
+        async function streamGLMResponse(prompt, messageElement) {
+            const token = await get_access_token();
+            const url = "https://chatglm.cn/chatglm/assistant-api/v1/stream";
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    "Authorization": `Bearer ${token}`,
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    "assistant_id": ASSISTANT_ID,
+                    "prompt": prompt
+                })
+            });
+
+            if (!response.ok) throw new Error(`API 响应异常: ${response.status}`);
+
+            let complete_output = "";
+            const reader = response.body.getReader();
+            let last_length = 0;
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                const decoded_line = new TextDecoder().decode(value);
+                const lines = decoded_line.split('\n');
+
+                for (const line of lines) {
+                    if (line.startsWith('data:')) {
+                        try {
+                            const data_dict = JSON.parse(line.slice(5));
+                            const output = handle_response(data_dict);
+                            if (output) {
+                                const new_text = output.slice(last_length);
+                                complete_output += new_text;
+                                last_length = output.length;
+                                messageElement.innerHTML = formatMarkdown(complete_output);
+                                scrollToBottom();
+                            }
+                        } catch (e) {}
+                    }
+                }
+            }
+            return complete_output;
+        }
+
+        // ==================== UI 消息渲染 ====================
+        function appendMessageBubble(type, content = "") {
+            const isUser = type === 'user';
+            const bubbleId = 'msg-' + Date.now();
+            const html = `
+                <div class="flex items-start gap-2.5 ${isUser ? 'justify-end' : ''} animate-fade-in">
+                    ${!isUser ? `
+                        <div class="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center flex-shrink-0 text-sm">
+                            <i class="fa fa-user-md"></i>
+                        </div>` : ''
+                    }
+                    <div class="max-w-[85%] rounded-2xl px-4 py-3 text-xs sm:text-sm leading-relaxed shadow-sm ${
+                        isUser
+                            ? 'bg-primary text-white rounded-br-none'
+                            : 'bg-slate-50 border border-slate-200 text-slate-800 rounded-tl-none'
+                    }">
+                        <div id="${bubbleId}">${content ? (isUser ? escapeHtml(content) : formatMarkdown(content)) : ''}</div>
+                    </div>
+                    ${isUser ? `
+                        <div class="w-8 h-8 rounded-full bg-slate-200 text-slate-600 flex items-center justify-center flex-shrink-0 text-xs">
+                            <i class="fa fa-user"></i>
+                        </div>` : ''
+                    }
+                </div>
+            `;
+            chatResponseArea.insertAdjacentHTML('beforeend', html);
+            scrollToBottom();
+            return document.getElementById(bubbleId);
+        }
+
+        function scrollToBottom() {
+            chatResponseArea.scrollTop = chatResponseArea.scrollHeight;
+        }
+
+        function formatMarkdown(text) {
+            let s = escapeHtml(text);
+            // 粗体
+            s = s.replace(/\*\*(.*?)\*\*/g, '<strong class="font-bold text-slate-900">$1</strong>');
+            // 列表项
+            s = s.replace(/^\s*-\s+(.*)$/gm, '<div class="flex items-start my-1"><span class="mr-1.5 text-primary">•</span><span>$1</span></div>');
+            s = s.replace(/^\s*(\d+)\.\s+(.*)$/gm, '<div class="my-1.5"><strong class="text-primary font-semibold">$1. </strong>$2</div>');
+            // 换行
+            s = s.replace(/\n\n/g, '<div class="h-2"></div>');
+            s = s.replace(/\n/g, '<br/>');
+            return s;
+        }
+
+        function escapeHtml(text) {
+            return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+
+        // ==================== 主流程控制 ====================
+        async function startAnalysisProcess() {
+            if (!loadConfig()) return;
+
+            if (refreshBtn) {
+                refreshBtn.disabled = true;
+                refreshBtn.innerHTML = '<i class="fa fa-spinner fa-spin mr-1"></i>分析中...';
+            }
+
+            chatResponseArea.innerHTML = '';
+            loadingIndicator.classList.remove('hidden');
+
+            const savedLocal = localStorage.getItem('timeRecords');
+            localRecords = savedLocal ? JSON.parse(savedLocal) : [];
+
+            try {
+                // 1. 同步 Gist
+                const realTimeGistData = await fetchDirectFromGitHubApi();
+                gistRecords = Array.isArray(realTimeGistData) ? realTimeGistData : [];
+
+                // 2. 匹配
+                matchRecordsReadOnly();
+
+                if (allMatchedPairs.length === 0) {
+                    loadingIndicator.classList.add('hidden');
+                    dataSummary.innerText = "暂无匹配的闭环数据";
+                    appendMessageBubble('assistant', "未能匹配到 1分钟~12小时 的有效使用间隔记录（已自动过滤极短记录）。请在打卡产生有效闭环后再来分析。");
+                    return;
+                }
+
+                // 3. 更新简报
+                const latest = allMatchedPairs[0];
+                dataSummary.innerText = `已比对 ${allMatchedPairs.length} 组闭环记录 | 最新：${latest.start.time.slice(5)}`;
+                latestDurationText.innerText = `最新时长: ${formatMinutes(latest.durationMinutes)}`;
+
+                // 4. 组装 Prompt 并直接发送
+                const prompt = generateAIPrompt();
+                const bubble = appendMessageBubble('assistant', '');
+
+                await streamGLMResponse(prompt, bubble);
+
+            } catch (err) {
+                console.error(err);
+                appendMessageBubble('assistant', `⚠️ 分析过程中出现异常：${err.message || '网络连接超时'}`);
+            } finally {
+                loadingIndicator.classList.add('hidden');
+                if (refreshBtn) {
+                    refreshBtn.disabled = false;
+                    refreshBtn.innerHTML = '<i class="fa fa-refresh mr-1"></i>重新分析';
+                }
+            }
+        }
+
+        // 用户追问发送
+        async function sendUserFollowUpMessage() {
+            const text = userInput.value.trim();
+            if (!text) return;
+
+            userInput.value = '';
+            appendMessageBubble('user', text);
+            loadingIndicator.classList.remove('hidden');
+
+            try {
+                const bubble = appendMessageBubble('assistant', '');
+                await streamGLMResponse(text, bubble);
+            } catch (error) {
+                appendMessageBubble('assistant', `抱歉，响应请求时遇到错误：${error.message}`);
+            } finally {
+                loadingIndicator.classList.add('hidden');
+            }
+        }
+
+        // 页面就绪时直接开始
+        document.addEventListener('DOMContentLoaded', () => {
+            startAnalysisProcess();
+        });
+    </script>
+</body>
+</html>
