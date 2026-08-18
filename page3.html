@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="blue">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>数据修复 - 时间笔记</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <style>
+        :root[data-theme="blue"] {
+            --bg-page: #F4F7FC;
+            --bg-card: #FFFFFF;
+            --bg-header: linear-gradient(135deg, #165DFF 0%, #0E42D2 100%);
+            --header-text: #FFFFFF;
+            --primary: #165DFF;
+            --primary-hover: #0E42D2;
+            --primary-light: #E8F3FF;
+            --text-main: #1D2129;
+            --text-sub: #86909C;
+            --border-color: #E5E6EB;
+            --table-header: #F2F3F5;
+            --scrollbar-thumb: #D8DFE9;
+        }
+
+        :root[data-theme="white"] {
+            --bg-page: #F8F9FA;
+            --bg-card: #FFFFFF;
+            --bg-header: #FFFFFF;
+            --header-text: #18181B;
+            --primary: #18181B;
+            --primary-hover: #27272A;
+            --primary-light: #F4F4F5;
+            --text-main: #18181B;
+            --text-sub: #71717A;
+            --border-color: #E4E4E7;
+            --table-header: #F4F4F5;
+            --scrollbar-thumb: #E4E4E7;
+        }
+
+        :root[data-theme="dark"] {
+            --bg-page: #0B0F19;
+            --bg-card: #151D2C;
+            --bg-header: #151D2C;
+            --header-text: #F1F5F9;
+            --primary: #3B82F6;
+            --primary-hover: #2563EB;
+            --primary-light: #1E293B;
+            --text-main: #F1F5F9;
+            --text-sub: #94A3B8;
+            --border-color: #232F46;
+            --table-header: #1A2336;
+            --scrollbar-thumb: #2B384E;
+        }
+
+        body {
+            background-color: var(--bg-page);
+            color: var(--text-main);
+            transition: background-color 0.3s ease, color 0.3s ease;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .card-box {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-theme-primary {
+            background-color: var(--primary);
+            color: #FFFFFF;
+        }
+
+        .header-bg {
+            background: var(--bg-header);
+            color: var(--header-text);
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 5px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background-color: var(--scrollbar-thumb);
+            border-radius: 9999px;
+        }
+
+        button, a {
+            transition: transform 0.1s ease, background-color 0.2s ease, opacity 0.2s ease;
+        }
+        button:active, a:active {
+            transform: scale(0.97);
+        }
+        .hidden { display: none !important; }
+
+        .filter-btn {
+            border: 1px solid var(--border-color);
+            color: var(--text-sub);
+            background: var(--bg-card);
+        }
+        .filter-btn.active {
+            background-color: var(--primary);
+            color: #FFFFFF;
+            border-color: var(--primary);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col font-sans antialiased">
+
+    <!-- Toast 提示 -->
+    <div id="toast" class="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-gray-900/90 text-white backdrop-blur px-5 py-3 rounded-2xl shadow-2xl opacity-0 translate-y-10 z-50 text-sm font-medium flex items-center gap-2 pointer-events-none transition-all duration-300">
+        <i id="toast-icon" class="fa fa-info-circle"></i>
+        <span id="toast-message"></span>
+    </div>
+
+    <!-- 顶部导航 -->
+    <header class="header-bg shadow-sm sticky top-0 z-40 border-b" style="border-color: var(--border-color);">
+        <div class="max-w-4xl mx-auto px-4 py-3.5 flex justify-between items-center">
+            <div class="flex items-center gap-2.5">
+                <a href="pagemain.html" class="w-8 h-8 rounded-xl flex items-center justify-center bg-white/20 backdrop-blur hover:bg-white/30">
+                    <i class="fa fa-chevron-left text-sm"></i>
+                </a>
+                <h1 class="text-base sm:text-lg font-bold tracking-tight">数据修复 (本地)</h1>
+            </div>
+            <span class="text-xs px-2.5 py-1 rounded-lg bg-white/20 font-medium">免费工具</span>
+        </div>
+    </header>
+
+    <main class="flex-grow container mx-auto px-3.5 sm:px-4 py-4 sm:py-6 max-w-4xl space-y-4">
+
+        <!-- 操作控制面板 -->
+        <div class="card-box rounded-2xl p-4 sm:p-5 space-y-4 shadow-sm">
+
+            <!-- 快捷条件筛选按钮组 -->
+            <div>
+                <p class="text-xs font-semibold uppercase tracking-wider opacity-60 mb-2">条件筛选器</p>
+                <div class="flex flex-wrap gap-2 text-xs">
+                    <button class="filter-btn active px-3 py-1.5 rounded-xl font-medium" data-filter="all">全部数据</button>
+                    <button class="filter-btn px-3 py-1.5 rounded-xl font-medium" data-filter="has_remark">
+                        <i class="fa fa-commenting-o mr-1"></i>仅有备注
+                    </button>
+                    <button class="filter-btn px-3 py-1.5 rounded-xl font-medium" data-filter="no_remark">
+                        <i class="fa fa-comment-o mr-1"></i>仅无备注
+                    </button>
+                    <button class="filter-btn px-3 py-1.5 rounded-xl font-medium" data-filter="duplicates_only" title="筛选出同一天中除第一条之外的多余打卡">
+                        <i class="fa fa-clone mr-1"></i>同日多余记录 (除每天首条)
+                    </button>
+                </div>
+            </div>
+
+            <!-- 搜索与全选 -->
+            <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-3 pt-3 border-t" style="border-color: var(--border-color);">
+                <div class="relative flex-1">
+                    <i class="fa fa-search absolute left-3.5 top-1/2 -translate-y-1/2 text-xs opacity-50"></i>
+                    <input type="text" id="search-input" placeholder="在当前筛选结果中搜索时间或备注..." class="w-full pl-9 pr-3.5 py-2 rounded-xl border bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" style="border-color: var(--border-color);">
+                </div>
+
+                <div class="flex items-center gap-2 text-xs flex-shrink-0">
+                    <label class="flex items-center gap-1.5 cursor-pointer px-3 py-2 rounded-xl border" style="border-color: var(--border-color); background-color: var(--table-header);">
+                        <input type="checkbox" id="select-all-cb" class="rounded cursor-pointer">
+                        <span class="font-medium">全选当前视图</span>
+                    </label>
+                    <span class="opacity-60">已选: <b id="selected-count" class="text-blue-500">0</b> / <span id="filtered-count">0</span></span>
+                </div>
+            </div>
+
+            <!-- 批量快捷操作按钮组 -->
+            <div class="flex flex-wrap items-center justify-between gap-2 pt-3 border-t" style="border-color: var(--border-color);">
+                <div class="flex flex-wrap gap-2">
+                    <button id="batch-clear-remark-btn" class="px-3 py-2 rounded-xl border text-xs font-semibold hover:opacity-80 flex items-center gap-1.5 text-amber-600 border-amber-500/30 bg-amber-500/10">
+                        <i class="fa fa-eraser"></i> 清空选中备注 (保留记录)
+                    </button>
+                    <button id="batch-delete-btn" class="px-3 py-2 rounded-xl border text-xs font-semibold hover:opacity-80 flex items-center gap-1.5 text-red-600 border-red-500/30 bg-red-500/10">
+                        <i class="fa fa-trash"></i> 删除选中记录
+                    </button>
+                </div>
+
+                <!-- 专项一键修复工具 -->
+                <div>
+                    <button id="quick-dedup-btn" class="px-3 py-2 rounded-xl border text-xs font-semibold hover:opacity-80 flex items-center gap-1.5 text-blue-600 border-blue-500/30 bg-blue-500/10" title="自动保留每天最早的一次记录，清除同日其它打卡">
+                        <i class="fa fa-magic"></i> 一键去重 (每天仅留首条)
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 数据表格列表 -->
+        <div class="card-box rounded-2xl overflow-hidden shadow-sm">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs sm:text-sm">
+                    <thead style="background-color: var(--table-header); color: var(--text-sub);">
+                        <tr>
+                            <th class="p-3 w-10 text-center">#</th>
+                            <th class="p-3 w-48 font-semibold">记录时间</th>
+                            <th class="p-3 font-semibold">备注 (双击快速编辑)</th>
+                            <th class="p-3 w-28 text-right font-semibold">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="records-table-body" class="divide-y" style="border-color: var(--border-color);">
+                        <!-- 数据渲染区 -->
+                    </tbody>
+                </table>
+            </div>
+            <div id="empty-state" class="text-center py-12 text-xs opacity-50 hidden">
+                <i class="fa fa-inbox text-3xl mb-2 block opacity-30"></i>
+                没有找到符合条件的记录
+            </div>
+        </div>
+
+    </main>
+
+    <footer class="mt-auto py-5 text-center text-xs opacity-50 border-t" style="border-color: var(--border-color);">
+        <p>© 时间笔记 · 数据修复工具</p>
+    </footer>
+
+    <script>
+        // 主题自适应继承
+        (function() {
+            const savedTheme = localStorage.getItem('userTheme') || 'blue';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+        })();
+
+        function showToast(message, type = 'info') {
+            const toast = document.getElementById('toast');
+            const toastMessage = document.getElementById('toast-message');
+            const toastIcon = document.getElementById('toast-icon');
+
+            toastMessage.textContent = message;
+            toastIcon.className = 'fa ' + (type === 'success' ? 'fa-check-circle text-green-400' : type === 'error' ? 'fa-times-circle text-red-400' : 'fa-info-circle text-blue-400');
+
+            toast.classList.remove('opacity-0', 'translate-y-10');
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-10');
+            }, 2800);
+        }
+
+        const dataRepairApp = {
+            records: [],
+            selectedIndices: new Set(),
+            searchKeyword: '',
+            currentFilter: 'all', // 'all' | 'has_remark' | 'no_remark' | 'duplicates_only'
+
+            init() {
+                this.loadRecords();
+
+                // 筛选标签点击切换
+                document.querySelectorAll('.filter-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                        e.currentTarget.classList.add('active');
+                        this.currentFilter = e.currentTarget.getAttribute('data-filter');
+                        this.selectedIndices.clear();
+                        this.render();
+                    });
+                });
+
+                document.getElementById('search-input').addEventListener('input', (e) => {
+                    this.searchKeyword = e.target.value.trim().toLowerCase();
+                    this.render();
+                });
+
+                document.getElementById('select-all-cb').addEventListener('change', (e) => {
+                    this.toggleSelectAll(e.target.checked);
+                });
+
+                document.getElementById('batch-clear-remark-btn').addEventListener('click', () => {
+                    this.handleBatchClearRemark();
+                });
+
+                document.getElementById('batch-delete-btn').addEventListener('click', () => {
+                    this.handleBatchDelete();
+                });
+
+                document.getElementById('quick-dedup-btn').addEventListener('click', () => {
+                    this.handleQuickDedup();
+                });
+            },
+
+            loadRecords() {
+                const saved = localStorage.getItem('timeRecords');
+                this.records = saved ? JSON.parse(saved) : [];
+                this.render();
+            },
+
+            saveRecords() {
+                localStorage.setItem('timeRecords', JSON.stringify(this.records));
+                this.render();
+            },
+
+            // 提取日期的 YYYY/MM/DD 或 YYYY-MM-DD
+            getDateKey(timeStr) {
+                if (!timeStr) return '';
+                const match = timeStr.match(/^(\d{4}[/-]\d{1,2}[/-]\d{1,2})/);
+                return match ? match[1].replace(/-/g, '/') : timeStr.split(' ')[0];
+            },
+
+            getFilteredRecords() {
+                // 先标记出每日最早的第一条记录与同日重复的记录
+                // 原数组按时间正序排列进行同日分组（识别出每天最早的那一条）
+                const sortedWithIdx = this.records.map((r, originalIdx) => ({ ...r, originalIdx }))
+                    .sort((a, b) => new Date(a.time.replace(/\//g, '-')) - new Date(b.time.replace(/\//g, '-')));
+
+                const seenDates = new Set();
+                const duplicateOriginalIdxSet = new Set();
+                const firstRecordOriginalIdxSet = new Set();
+
+                sortedWithIdx.forEach(item => {
+                    const dateKey = this.getDateKey(item.time);
+                    if (seenDates.has(dateKey)) {
+                        duplicateOriginalIdxSet.add(item.originalIdx);
+                    } else {
+                        seenDates.add(dateKey);
+                        firstRecordOriginalIdxSet.add(item.originalIdx);
+                    }
+                });
+
+                return this.records.map((r, originalIdx) => ({
+                    ...r,
+                    originalIdx,
+                    isDuplicate: duplicateOriginalIdxSet.has(originalIdx),
+                    isFirstOfDay: firstRecordOriginalIdxSet.has(originalIdx)
+                })).filter(item => {
+                    // 1. 条件筛选逻辑
+                    if (this.currentFilter === 'has_remark') {
+                        if (!item.remark || !item.remark.trim()) return false;
+                    } else if (this.currentFilter === 'no_remark') {
+                        if (item.remark && item.remark.trim()) return false;
+                    } else if (this.currentFilter === 'duplicates_only') {
+                        if (!item.isDuplicate) return false;
+                    }
+
+                    // 2. 关键词模糊搜索
+                    if (this.searchKeyword) {
+                        const matchTime = item.time.toLowerCase().includes(this.searchKeyword);
+                        const matchRemark = item.remark && item.remark.toLowerCase().includes(this.searchKeyword);
+                        if (!matchTime && !matchRemark) return false;
+                    }
+
+                    return true;
+                });
+            },
+
+            toggleSelectAll(isChecked) {
+                const filtered = this.getFilteredRecords();
+                if (isChecked) {
+                    filtered.forEach(item => this.selectedIndices.add(item.originalIdx));
+                } else {
+                    filtered.forEach(item => this.selectedIndices.delete(item.originalIdx));
+                }
+                this.render();
+            },
+
+            toggleSelect(index) {
+                if (this.selectedIndices.has(index)) {
+                    this.selectedIndices.delete(index);
+                } else {
+                    this.selectedIndices.add(index);
+                }
+                this.render();
+            },
+
+            handleBatchClearRemark() {
+                if (this.selectedIndices.size === 0) return showToast('请先勾选需要清空备注的记录', 'error');
+                if (!confirm(`确定要清空已选中的 ${this.selectedIndices.size} 条记录的备注吗？\n（时间记录将完好保留）`)) return;
+
+                this.selectedIndices.forEach(idx => {
+                    if (this.records[idx]) {
+                        this.records[idx].remark = '';
+                    }
+                });
+
+                this.selectedIndices.clear();
+                this.saveRecords();
+                showToast('已成功批量清空备注', 'success');
+            },
+
+            handleBatchDelete() {
+                if (this.selectedIndices.size === 0) return showToast('请先勾选需要删除的记录', 'error');
+                if (!confirm(`警告：确定要彻底删除已选中的 ${this.selectedIndices.size} 条记录吗？`)) return;
+
+                this.records = this.records.filter((_, idx) => !this.selectedIndices.has(idx));
+                this.selectedIndices.clear();
+                this.saveRecords();
+                showToast('已成功批量删除记录', 'success');
+            },
+
+            // 智能一键去重：每天只保留最早的一条记录
+            handleQuickDedup() {
+                if (this.records.length <= 1) return showToast('当前记录数无需去重', 'info');
+
+                // 按时间升序排序
+                const sorted = [...this.records].sort((a, b) => new Date(a.time.replace(/\//g, '-')) - new Date(b.time.replace(/\//g, '-')));
+                const uniqueRecords = [];
+                const seenDates = new Set();
+
+                sorted.forEach(r => {
+                    const dateKey = this.getDateKey(r.time);
+                    if (!seenDates.has(dateKey)) {
+                        seenDates.add(dateKey);
+                        uniqueRecords.push(r);
+                    }
+                });
+
+                const deletedCount = this.records.length - uniqueRecords.length;
+                if (deletedCount === 0) {
+                    return showToast('每一天都只有一条记录，无需去重', 'info');
+                }
+
+                if (!confirm(`检测到 ${deletedCount} 条同一天的后续重复打卡。\n\n去重操作将为每一天【保留最早的第一条打卡】，彻底移除其余 ${deletedCount} 条打卡。\n\n是否确认执行？`)) {
+                    return;
+                }
+
+                // 恢复为默认倒序排序保存
+                this.records = uniqueRecords.sort((a, b) => new Date(b.time.replace(/\//g, '-')) - new Date(a.time.replace(/\//g, '-')));
+                this.selectedIndices.clear();
+                this.saveRecords();
+                showToast(`已成功去重，清理了 ${deletedCount} 条同日多余数据`, 'success');
+            },
+
+            handleQuickEdit(idx, field) {
+                const currentVal = this.records[idx][field] || '';
+                const promptMsg = field === 'time' ? '修改时间 (YYYY/MM/DD HH:MM:SS):' : '修改备注内容:';
+                const newVal = prompt(promptMsg, currentVal);
+                if (newVal === null) return;
+
+                if (field === 'time' && !newVal.trim()) {
+                    return showToast('时间不能为空', 'error');
+                }
+
+                this.records[idx][field] = newVal.trim();
+                this.saveRecords();
+                showToast('更新成功', 'success');
+            },
+
+            handleSingleDelete(idx) {
+                if (!confirm('确定要删除这条记录吗？')) return;
+                this.records.splice(idx, 1);
+                this.selectedIndices.delete(idx);
+                this.saveRecords();
+                showToast('已删除记录', 'success');
+            },
+
+            render() {
+                const tbody = document.getElementById('records-table-body');
+                const emptyState = document.getElementById('empty-state');
+                const filtered = this.getFilteredRecords();
+
+                document.getElementById('filtered-count').textContent = filtered.length;
+                document.getElementById('selected-count').textContent = this.selectedIndices.size;
+                document.getElementById('select-all-cb').checked = filtered.length > 0 && filtered.every(item => this.selectedIndices.has(item.originalIdx));
+
+                if (filtered.length === 0) {
+                    tbody.innerHTML = '';
+                    emptyState.classList.remove('hidden');
+                    return;
+                }
+
+                emptyState.classList.add('hidden');
+                tbody.innerHTML = filtered.map(item => {
+                    const isSelected = this.selectedIndices.has(item.originalIdx);
+                    return `
+                        <tr class="hover:bg-black/5 transition-colors ${isSelected ? 'bg-blue-500/5' : ''}">
+                            <td class="p-3 text-center">
+                                <input type="checkbox" ${isSelected ? 'checked' : ''} onchange="dataRepairApp.toggleSelect(${item.originalIdx})" class="rounded cursor-pointer">
+                            </td>
+                            <td class="p-3 font-mono cursor-pointer hover:underline" onclick="dataRepairApp.handleQuickEdit(${item.originalIdx}, 'time')" title="点击修改时间">
+                                <div class="flex items-center gap-1.5 flex-wrap">
+                                    <span>${item.time}</span>
+                                    ${item.isDuplicate ? '<span class="px-1.5 py-0.2 rounded text-[10px] bg-red-500/10 text-red-500 font-sans font-medium">同日多余</span>' : ''}
+                                </div>
+                            </td>
+                            <td class="p-3 cursor-pointer hover:opacity-80" onclick="dataRepairApp.handleQuickEdit(${item.originalIdx}, 'remark')" title="点击修改备注">
+                                ${item.remark ? `<span class="break-all font-medium">${item.remark}</span>` : '<span class="opacity-30 italic">无备注 (点击添加)</span>'}
+                            </td>
+                            <td class="p-3 text-right">
+                                <div class="flex items-center justify-end gap-1.5">
+                                    <button onclick="dataRepairApp.handleQuickEdit(${item.originalIdx}, 'remark')" class="p-1.5 rounded hover:bg-black/5 text-blue-500" title="编辑备注">
+                                        <i class="fa fa-pencil"></i>
+                                    </button>
+                                    <button onclick="dataRepairApp.handleSingleDelete(${item.originalIdx})" class="p-1.5 rounded hover:bg-black/5 text-red-500" title="删除记录">
+                                        <i class="fa fa-trash-o"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            dataRepairApp.init();
+        });
+    </script>
+</body>
+</html>
