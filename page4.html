@@ -222,7 +222,7 @@
             }
         }
 
-        // --- 核心算法：双向只读时间轴匹配 (过滤 0 间隔，<=12小时) ---
+        // --- 核心算法：双向只读时间轴匹配 (过滤 <1分钟 间隔，<=12小时) ---
         function matchRecordsReadOnly() {
             allMatchedPairs = [];
             if (!localRecords.length || !gistRecords.length) return;
@@ -256,6 +256,7 @@
             });
 
             unifiedEvents.sort((a, b) => a.timestamp - b.timestamp);
+            const MIN_INTERVAL_MS = 60 * 1000; // 小于1分钟判定为无效记录
             const MAX_INTERVAL_MS = 12 * 60 * 60 * 1000;
 
             for (let i = 0; i < unifiedEvents.length; i++) {
@@ -267,7 +268,7 @@
                     if (!target.used && target.type !== current.type) {
                         const diffMs = target.timestamp - current.timestamp;
 
-                        if (diffMs > 0 && diffMs <= MAX_INTERVAL_MS) {
+                        if (diffMs >= MIN_INTERVAL_MS && diffMs <= MAX_INTERVAL_MS) {
                             current.used = true;
                             target.used = true;
 
@@ -354,7 +355,7 @@
                         <i class="fa fa-hourglass-o text-3xl text-slate-300 mb-3"></i>
                         <h3 class="text-base font-bold text-slate-700">暂无有效的使用间隔</h3>
                         <p class="text-slate-400 my-1 max-w-sm mx-auto text-xs leading-relaxed">
-                            未能匹配到 0~12 小时以内的「本地与云端」行为闭环（0 间隔打卡已自动剔除）。
+                            未能匹配到 1分钟~12小时 以内的「本地与云端」行为闭环（小于1分钟间隔已自动剔除）。
                         </p>
                     </div>
                 `;
@@ -386,7 +387,7 @@
                     <div class="flex items-center justify-between">
                         <div>
                             <h2 class="text-sm sm:text-base font-bold text-slate-800">使用间隔趋势</h2>
-                            <p class="text-[11px] sm:text-xs text-slate-400">已自动剔除 0 间隔打卡</p>
+                            <p class="text-[11px] sm:text-xs text-slate-400">已自动剔除小于 1 分钟的短间隔</p>
                         </div>
                         <span class="text-xs px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-600 font-bold">
                             有效配对 ${allMatchedPairs.length} 次
