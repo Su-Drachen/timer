@@ -5,13 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>百度一下，你就知道</title>
 
-    <!-- 伪装增强配置：解决手机书签/主屏幕显示“G”图标的问题 -->
-    <link rel="icon" type="image/x-icon" href="https://www.baidu.com/favicon.ico">
-    <link rel="shortcut icon" type="image/x-icon" href="https://www.baidu.com/favicon.ico">
-    <link rel="apple-touch-icon" href="https://www.baidu.com/img/flexible/logo/pc/result.png">
-    <link rel="apple-touch-icon-precomposed" href="https://www.baidu.com/img/flexible/logo/pc/result.png">
+    <!-- 伪装增强配置：使用内嵌矢量 Base64 百度熊掌图标，彻底避免跨域与字母 G 问题 -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='100' fill='%23ffffff'/%3E%3Cpath fill='%232932E1' d='M256 160c23.6 0 42.7-19.1 42.7-42.7S279.6 74.6 256 74.6s-42.7 19.1-42.7 42.7S232.4 160 256 160zm-85.3 42.7c23.6 0 42.7-19.1 42.7-42.7s-19.1-42.7-42.7-42.7-42.7 19.1-42.7 42.7 19.1 42.7 42.7 42.7zm170.6 0c23.6 0 42.7-19.1 42.7-42.7s-19.1-42.7-42.7-42.7-42.7 19.1-42.7 42.7 19.1 42.7 42.7 42.7zM117.3 277.3c23.6 0 42.7-19.1 42.7-42.7s-19.1-42.7-42.7-42.7-42.7 19.1-42.7 42.7 19.1 42.7 42.7 42.7zm277.4 0c23.6 0 42.7-19.1 42.7-42.7s-19.1-42.7-42.7-42.7-42.7 19.1-42.7 42.7 19.1 42.7 42.7 42.7zM256 200c-66.2 0-112 50.8-112 110.2 0 67.3 54.3 127.2 112 127.2s112-59.9 112-127.2c0-59.4-45.8-110.2-112-110.2z'/%3E%3C/svg%3E">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='100' fill='%23ffffff'/%3E%3Cpath fill='%232932E1' d='M256 160c23.6 0 42.7-19.1 42.7-42.7S279.6 74.6 256 74.6s-42.7 19.1-42.7 42.7S232.4 160 256 160zm-85.3 42.7c23.6 0 42.7-19.1 42.7-42.7s-19.1-42.7-42.7-42.7-42.7 19.1-42.7 42.7 19.1 42.7 42.7 42.7zm170.6 0c23.6 0 42.7-19.1 42.7-42.7s-19.1-42.7-42.7-42.7-42.7 19.1-42.7 42.7 19.1 42.7 42.7 42.7zM117.3 277.3c23.6 0 42.7-19.1 42.7-42.7s-19.1-42.7-42.7-42.7-42.7 19.1-42.7 42.7 19.1 42.7 42.7 42.7zm277.4 0c23.6 0 42.7-19.1 42.7-42.7s-19.1-42.7-42.7-42.7-42.7 19.1-42.7 42.7 19.1 42.7 42.7 42.7zM256 200c-66.2 0-112 50.8-112 110.2 0 67.3 54.3 127.2 112 127.2s112-59.9 112-127.2c0-59.4-45.8-110.2-112-110.2z'/%3E%3C/svg%3E">
 
-    <!-- PWA 配置文件关联：支持添加快捷方式并伪装全屏应用 -->
+    <!-- PWA 配置文件关联 -->
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#ffffff">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -19,7 +17,6 @@
     <meta name="apple-mobile-web-app-title" content="百度">
 
     <style>
-        /* CSS 部分无需修改，保持原样 */
         * {
             box-sizing: border-box;
         }
@@ -52,7 +49,6 @@
             margin-bottom: 25px;
         }
 
-        /* 关键：之前是 .search-form，现在改为 .search-container */
         .search-container {
             display: flex;
             width: 100%;
@@ -115,15 +111,8 @@
         <!-- 百度 Logo -->
         <img src="https://www.baidu.com/img/PCtm_d9c8750bed0b3c7d089fa7d55720d6cf.png" alt="Baidu Logo" class="logo">
 
-        <!-- 优化点 1：将 <form> 替换为 <div> -->
         <div id="searchContainer" class="search-container">
-            <!--
-              优化点 2：为 input 明确添加 autocomplete="off"。
-              虽然移除了 form，但加上这个属性可以作为双重保险，对抗某些浏览器的激进策略。
-            -->
             <input type="text" id="searchInput" class="search-input" placeholder="时间搜索不一样的搜索！" autocomplete="off">
-
-            <!-- 优化点 3：将 button 的 type 从 "submit" 改为 "button" -->
             <button type="button" id="searchButton" class="search-button">百度一下</button>
         </div>
     </div>
@@ -133,79 +122,47 @@
 
             const PASSWORD_KEY = 'mySecretDecoyPassword';
             const searchInput = document.getElementById('searchInput');
-            // 获取按钮的引用
             const searchButton = document.getElementById('searchButton');
 
-            checkAndSetInitialPassword();
-
-            // 优化点 4：为按钮添加点击事件监听器
             searchButton.addEventListener('click', processInput);
 
-            // 优化点 5：为输入框添加键盘事件监听器，以支持回车键
             searchInput.addEventListener('keydown', function(event) {
-                // 检查是否按下了回车键
                 if (event.key === 'Enter') {
-                    // 阻止默认的回车行为（比如换行）
                     event.preventDefault();
-                    // 调用与点击按钮相同的处理函数
                     processInput();
                 }
             });
 
-            function checkAndSetInitialPassword() {
-                const storedPassword = localStorage.getItem(PASSWORD_KEY);
-                if (!storedPassword) {
-                    setNewPassword();
-                }
-            }
-
-            function setNewPassword() {
-                let newPassword = '';
-                do {
-                    newPassword = prompt('首次使用，请设置一个密码：');
-                    // 如果用户点击了“取消”
-                    if (newPassword === null) {
-                        alert("您取消了密码设置。");
-                        return;
-                    }
-                } while (!newPassword || newPassword.trim() === '');
-
-                localStorage.setItem(PASSWORD_KEY, newPassword.trim());
-                alert('密码设置成功！');
-            }
-
-            function resetPassword() {
-                const confirmation = confirm('您确定要重置密码吗？');
-                if (confirmation) {
-                    localStorage.removeItem(PASSWORD_KEY);
-                    alert('密码已重置！');
-                    setNewPassword();
-                }
-            }
-
-            // 优化点 6：将原有的表单提交逻辑封装成一个独立的函数
             function processInput() {
                 const inputValue = searchInput.value.trim();
-                const storedPassword = localStorage.getItem(PASSWORD_KEY);
 
                 if (inputValue === '') {
-                    return; // 如果输入为空，则不执行任何操作
+                    return;
                 }
 
+                // 输入“重置密码”时无提示静默重置
                 if (inputValue === '重置密码') {
-                    resetPassword();
-                    searchInput.value = ''; // 清空输入框
+                    localStorage.removeItem(PASSWORD_KEY);
+                    searchInput.value = '';
+                    return;
                 }
-                else if (inputValue === storedPassword) {
-                    // 密码正确，跳转到目标页面
-                    window.location.href = 'pagemain.html';
-                }
-                else {
-                    // 密码错误或为普通搜索，执行百度搜索
+
+                const storedPassword = localStorage.getItem(PASSWORD_KEY);
+
+                // 首次搜索：静默将当前输入内容设为密码，并执行一次百度搜索
+                if (!storedPassword) {
+                    localStorage.setItem(PASSWORD_KEY, inputValue);
                     const searchUrl = 'https://www.baidu.com/s?wd=' + encodeURIComponent(inputValue);
                     window.open(searchUrl, '_blank');
-                    // 搜索后可以不清空输入框，模仿真实搜索引擎的行为
-                    // searchInput.value = '';
+                    return;
+                }
+
+                // 命中密码跳转后台页面，否则正常搜索
+                if (inputValue === storedPassword) {
+                    window.location.href = 'pagemain.html';
+                } else {
+                    const searchUrl = 'https://www.baidu.com/s?wd=' + encodeURIComponent(inputValue);
+                    window.open(searchUrl, '_blank');
                 }
             }
         });
