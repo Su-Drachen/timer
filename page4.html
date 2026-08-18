@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>使用健康 - 私人时间记录器</title>
+    <title>使用记录分析 - 私人时间记录器</title>
     <!-- Tailwind CSS v3 -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
@@ -50,7 +50,7 @@
 </head>
 <body class="bg-slate-100 min-h-screen flex flex-col font-sans antialiased text-slate-800">
 
-    <!-- 顶部导航栏 (手机端紧凑化) -->
+    <!-- 顶部导航栏 -->
     <header class="bg-white shadow-sm sticky top-0 z-30 border-b border-slate-200/80">
         <div class="container mx-auto px-3.5 sm:px-4 py-3 sm:py-3.5 flex justify-between items-center max-w-4xl">
             <div class="flex items-center gap-2">
@@ -58,7 +58,7 @@
                     <i class="fa fa-heartbeat text-lg"></i>
                 </div>
                 <h1 class="text-base sm:text-lg font-bold tracking-tight text-slate-800">
-                    使用健康分析
+                    行为与时长分析
                 </h1>
             </div>
             <div class="flex items-center gap-1.5 sm:gap-2">
@@ -86,7 +86,7 @@
 
     </main>
 
-    <!-- Toast 提示 (手机端居中沉底) -->
+    <!-- Toast 提示 -->
     <div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 sm:left-auto sm:right-6 sm:translate-x-0 flex items-center text-white text-xs sm:text-sm py-2.5 px-4 rounded-xl shadow-2xl opacity-0 translate-y-10 z-50 transition-all pointer-events-none">
         <div id="toast-icon" class="mr-2"></div>
         <p id="toast-message"></p>
@@ -95,7 +95,7 @@
     <!-- 页脚 -->
     <footer class="text-slate-400 py-5 mt-auto border-t border-slate-200/60">
         <div class="container mx-auto px-4 text-center text-xs">
-            © 私人时间记录器 · 健康行为监测 (只读模式)
+            © 私人时间记录器 · 行为数据与 AI 提示助手 (只读模式)
         </div>
     </footer>
 
@@ -105,8 +105,9 @@
         let localRecords = [];
         let gistRecords = [];
         let allMatchedPairs = [];
-        let currentFilter = 'count_7'; // 'count_7' | 'count_30' | 'days_7' | 'days_30' | 'days_180' | 'all'
+        let currentFilter = 'count_7'; 
         let chartInstance = null;
+        let generatedPromptText = "";
 
         // --- 进阶鉴权检查 ---
         function loadConfig() {
@@ -121,7 +122,7 @@
                         <i class="fa fa-lock text-3xl sm:text-4xl text-warning mb-3"></i>
                         <h3 class="text-base sm:text-lg font-bold text-slate-800">该功能仅对进阶用户开放</h3>
                         <p class="text-slate-500 my-2 text-xs sm:text-sm max-w-sm mx-auto leading-relaxed">
-                            使用健康分析需要依赖「云端同步数据」与「本地打卡数据」进行闭环匹配。
+                            该分析需要依赖「云端同步数据」与「本地打卡数据」进行时序闭环匹配。
                         </p>
                         <a href="page0.html" class="mt-4 inline-block bg-primary-500 text-white text-xs sm:text-sm py-2.5 px-6 rounded-xl hover:bg-primary-600 transition-colors font-semibold shadow-md">
                             前往进阶配置
@@ -139,7 +140,7 @@
             const toastIcon = document.getElementById('toast-icon');
 
             toastMessage.textContent = message;
-            toast.classList.remove('bg-success', 'bg-danger', 'bg-slate-800', 'bg-warning');
+            toast.classList.remove('bg-emerald-600', 'bg-rose-600', 'bg-amber-600', 'bg-slate-900');
 
             let iconHtml = '';
             switch (type) {
@@ -222,14 +223,14 @@
             }
         }
 
-        // --- 核心算法：双向只读时间轴匹配 (过滤 <1分钟 间隔，<=12小时) ---
+        // --- 双向只读时间轴匹配 (过滤 <1分钟 间隔，<=12小时) ---
         function matchRecordsReadOnly() {
             allMatchedPairs = [];
             if (!localRecords.length || !gistRecords.length) return;
 
             const unifiedEvents = [];
 
-            localRecords.forEach((r, idx) => {
+            localRecords.forEach((r) => {
                 const ts = new Date(r.time.replace(/\//g, '-')).getTime();
                 if (!isNaN(ts)) {
                     unifiedEvents.push({
@@ -242,7 +243,7 @@
                 }
             });
 
-            gistRecords.forEach((r, idx) => {
+            gistRecords.forEach((r) => {
                 const ts = new Date(r.time.replace(/\//g, '-')).getTime();
                 if (!isNaN(ts)) {
                     unifiedEvents.push({
@@ -256,7 +257,7 @@
             });
 
             unifiedEvents.sort((a, b) => a.timestamp - b.timestamp);
-            const MIN_INTERVAL_MS = 60 * 1000; // 小于1分钟判定为无效记录
+            const MIN_INTERVAL_MS = 60 * 1000;
             const MAX_INTERVAL_MS = 12 * 60 * 60 * 1000;
 
             for (let i = 0; i < unifiedEvents.length; i++) {
@@ -345,6 +346,86 @@
             return `${start}~${end}分`;
         }
 
+        // --- 核心：构造 AI 提问提示词模板 ---
+        function generateAIPrompt() {
+            if (!allMatchedPairs.length) return "";
+
+            const latest = allMatchedPairs[0];
+            const recent10 = allMatchedPairs.slice(0, 10);
+            const recentDurations = recent10.map(p => p.durationMinutes);
+            const avgRecent = Math.round(recentDurations.reduce((a, b) => a + b, 0) / recentDurations.length);
+            const maxRecent = Math.max(...recentDurations);
+            const minRecent = Math.min(...recentDurations);
+
+            let recentListText = recent10.map((p, idx) => {
+                const remarkPart = (p.start.remark || p.end.remark) ? ` (备注: ${p.start.remark || p.end.remark})` : '';
+                return `${idx + 1}. [${p.start.time} 至 ${p.end.time}] 单次历时: ${p.durationMinutes}分钟${p.isCrossDay ? ' (跨天/深夜)' : ''}${remarkPart}`;
+            }).join('\n');
+
+            return `你是一名专业、温和且具有循证医学背景的性健康与生活方式顾问。我记录了自己近期的自慰（手淫）行为时间数据（已通过计时工具准确记录了单次起始与结束时间）。请根据我的客观记录数据，为我提供一份科学、客观、无道德评判的健康分析与建议。
+
+【最新 1 次行为数据】
+- 开始时间：${latest.start.time}
+- 结束时间：${latest.end.time}
+- 单次持续时长：${latest.durationMinutes} 分钟 (${formatMinutes(latest.durationMinutes)})
+- 是否跨午夜/深夜：${latest.isCrossDay ? '是 (涉及夜间/跨日)' : '否'}
+- 记录备注：${latest.start.remark || latest.end.remark || '无'}
+
+【近期行为历史概况 (近 ${recent10.length} 次记录)】
+- 样本平均单次时长：${avgRecent} 分钟
+- 样本单次最长时间：${maxRecent} 分钟
+- 样本单次最短时间：${minRecent} 分钟
+- 近期明细清单：
+${recentListText}
+
+【请从以下几个维度为我分析并提供建议】
+1. **持续时长评估**：结合最新一次和近期的平均持续时间，从生殖泌尿系统负担（如前列腺充血、黏膜过度摩擦等）角度，评估单次时长是否处于合理生理区间？
+2. **发生频率与时间规律**：根据近期的记录时间间隔与发生时段（如是否集中在深夜影响作息），评估当前的节律是否健康？
+3. **身心状态与精力调节**：从多巴胺调节、精力恢复、心理放松与专注度维持等角度，提供具体的调节建议与自律提示。
+4. **改善行动建议**：如有需要调整的地方，请给出 2~3 条可实操的日常建议。`;
+        }
+
+        // --- 一键复制提示词 ---
+        async function copyPromptToClipboard() {
+            const promptContent = generatedPromptText;
+            if (!promptContent) {
+                showToast("暂无可复制的提示词数据", "warning");
+                return;
+            }
+
+            const copyBtn = document.getElementById('copy-prompt-btn');
+            const originalHtml = copyBtn.innerHTML;
+
+            try {
+                if (navigator.clipboard && window.isSecureContext) {
+                    await navigator.clipboard.writeText(promptContent);
+                } else {
+                    const textarea = document.createElement('textarea');
+                    textarea.value = promptContent;
+                    textarea.style.position = 'fixed';
+                    textarea.style.left = '-9999px';
+                    document.body.appendChild(textarea);
+                    textarea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textarea);
+                }
+
+                showToast("提示词已复制到剪贴板！", "success");
+                copyBtn.classList.remove('bg-primary-500', 'hover:bg-primary-600');
+                copyBtn.classList.add('bg-emerald-600', 'hover:bg-emerald-700');
+                copyBtn.innerHTML = '<i class="fa fa-check mr-1.5"></i>已复制';
+
+                setTimeout(() => {
+                    copyBtn.classList.remove('bg-emerald-600', 'hover:bg-emerald-700');
+                    copyBtn.classList.add('bg-primary-500', 'hover:bg-primary-600');
+                    copyBtn.innerHTML = originalHtml;
+                }, 2000);
+            } catch (err) {
+                console.error("复制失败:", err);
+                showToast("复制失败，请手动选择复制", "error");
+            }
+        }
+
         // --- 渲染界面 ---
         function renderHealthDashboard() {
             const container = document.getElementById('health-app-container');
@@ -371,23 +452,15 @@
             const avgVal = count ? Math.round(durations.reduce((a, b) => a + b, 0) / count) : 0;
             const modeRange = calculateModeRange(durations);
 
-            let healthAdvice = "节律极佳！单次专注与使用时长控制非常合理。";
-            let adviceColor = "text-emerald-700 bg-emerald-50 border-emerald-200/80";
-            let adviceIcon = "fa-check-circle";
-
-            if (avgVal > 180 || maxVal > 360) {
-                healthAdvice = "单次持续时间偏长（超过 3 小时），建议在两次打卡中间注意适当休息与活动。";
-                adviceColor = "text-amber-800 bg-amber-50 border-amber-200/80";
-                adviceIcon = "fa-exclamation-circle";
-            }
+            generatedPromptText = generateAIPrompt();
 
             container.innerHTML = `
                 <!-- 筛选控制器卡片 (手机友好) -->
                 <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 sm:p-5 space-y-3">
                     <div class="flex items-center justify-between">
                         <div>
-                            <h2 class="text-sm sm:text-base font-bold text-slate-800">使用间隔趋势</h2>
-                            <p class="text-[11px] sm:text-xs text-slate-400">已自动剔除小于 1 分钟的短间隔</p>
+                            <h2 class="text-sm sm:text-base font-bold text-slate-800">行为间隔趋势</h2>
+                            <p class="text-[11px] sm:text-xs text-slate-400">已自动剔除小于 1 分钟的短记录</p>
                         </div>
                         <span class="text-xs px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-600 font-bold">
                             有效配对 ${allMatchedPairs.length} 次
@@ -408,17 +481,17 @@
                 <!-- 核心指标卡片 (手机 2x2 网格) -->
                 <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3.5">
                     <div class="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200 shadow-sm">
-                        <span class="text-[11px] sm:text-xs text-slate-400 font-medium block">平均使用间隔</span>
+                        <span class="text-[11px] sm:text-xs text-slate-400 font-medium block">平均单次历时</span>
                         <span class="text-base sm:text-xl font-extrabold text-slate-800 mt-1 block">${count ? formatMinutes(avgVal) : '--'}</span>
                         <span class="text-[10px] text-slate-400 mt-0.5 block">均值水平</span>
                     </div>
                     <div class="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200 shadow-sm">
-                        <span class="text-[11px] sm:text-xs text-slate-400 font-medium block">单次最长间隔</span>
+                        <span class="text-[11px] sm:text-xs text-slate-400 font-medium block">单次最长历时</span>
                         <span class="text-base sm:text-xl font-extrabold text-amber-600 mt-1 block">${count ? formatMinutes(maxVal) : '--'}</span>
                         <span class="text-[10px] text-slate-400 mt-0.5 block">最大时长</span>
                     </div>
                     <div class="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200 shadow-sm">
-                        <span class="text-[11px] sm:text-xs text-slate-400 font-medium block">单次最短间隔</span>
+                        <span class="text-[11px] sm:text-xs text-slate-400 font-medium block">单次最短历时</span>
                         <span class="text-base sm:text-xl font-extrabold text-emerald-600 mt-1 block">${count ? formatMinutes(minVal) : '--'}</span>
                         <span class="text-[10px] text-slate-400 mt-0.5 block">最快闭环</span>
                     </div>
@@ -429,16 +502,10 @@
                     </div>
                 </div>
 
-                <!-- 健康建议贴士 -->
-                <div class="p-3 sm:p-3.5 rounded-2xl border ${adviceColor} flex items-center gap-2.5 text-xs sm:text-sm font-medium">
-                    <i class="fa ${adviceIcon} text-base shrink-0"></i>
-                    <span class="leading-snug">${healthAdvice}</span>
-                </div>
-
                 <!-- 折线图分析卡片 -->
                 <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 sm:p-5">
                     <div class="flex items-center justify-between mb-3">
-                        <h3 class="text-xs sm:text-sm font-bold text-slate-800">间隔时长曲线 (分钟)</h3>
+                        <h3 class="text-xs sm:text-sm font-bold text-slate-800">历时时长曲线 (分钟)</h3>
                         <span class="text-[11px] text-slate-400">已呈现 ${count} 组数据</span>
                     </div>
                     <div class="w-full h-48 sm:h-64">
@@ -446,10 +513,39 @@
                     </div>
                 </div>
 
+                <!-- 新增：AI 健康咨询提示词生成卡片 -->
+                <div class="bg-white rounded-2xl shadow-sm border border-indigo-100 p-4 sm:p-5 space-y-3 bg-gradient-to-br from-white via-indigo-50/20 to-blue-50/30">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <div class="w-7 h-7 rounded-lg bg-indigo-100 text-indigo-600 flex items-center justify-center text-xs">
+                                <i class="fa fa-magic"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-xs sm:text-sm font-bold text-slate-800">AI 健康建议提示词</h3>
+                                <p class="text-[10px] sm:text-[11px] text-slate-500">已整合「最新 1 条」与「近 10 条」客观数据</p>
+                            </div>
+                        </div>
+                        <button id="copy-prompt-btn" onclick="copyPromptToClipboard()" class="bg-primary-500 hover:bg-primary-600 text-white font-medium text-xs py-1.5 px-3 rounded-xl transition-colors flex items-center shadow-sm active:scale-95">
+                            <i class="fa fa-clone mr-1.5"></i>
+                            <span>一键复制</span>
+                        </button>
+                    </div>
+
+                    <!-- 提示词预览框 -->
+                    <div class="relative">
+                        <pre class="bg-slate-900 text-slate-200 text-[11px] sm:text-xs rounded-xl p-3 sm:p-4 overflow-x-auto whitespace-pre-wrap font-sans leading-relaxed max-h-52 sm:max-h-60 border border-slate-800 select-all">${generatedPromptText}</pre>
+                    </div>
+
+                    <p class="text-[11px] text-slate-400 flex items-center gap-1.5 pt-0.5">
+                        <i class="fa fa-info-circle text-indigo-500"></i>
+                        <span>复制后直接发送给 AI，即可获取专属、客观、科学的生理与作息健康评估。</span>
+                    </p>
+                </div>
+
                 <!-- 配对流水列表 (手机卡片 / 电脑表格 自适应) -->
                 <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
                     <div class="p-4 border-b border-slate-100 flex justify-between items-center">
-                        <h3 class="text-xs sm:text-sm font-bold text-slate-800">配对行为明细</h3>
+                        <h3 class="text-xs sm:text-sm font-bold text-slate-800">配对记录明细</h3>
                         <span class="text-[11px] text-slate-400">按时间倒序</span>
                     </div>
 
@@ -464,7 +560,7 @@
                                             ? '<span class="px-2 py-0.5 rounded text-[10px] bg-blue-50 text-blue-600 font-medium">本地 ➔ 云端</span>'
                                             : '<span class="px-2 py-0.5 rounded text-[10px] bg-purple-50 text-purple-600 font-medium">云端 ➔ 本地</span>'
                                         }
-                                        ${pair.isCrossDay ? '<span class="px-1.5 py-0.5 rounded text-[9px] bg-indigo-50 text-indigo-600 font-bold">隔天</span>' : ''}
+                                        ${pair.isCrossDay ? '<span class="px-1.5 py-0.5 rounded text-[9px] bg-indigo-50 text-indigo-600 font-bold">隔天/深夜</span>' : ''}
                                     </div>
                                     <span class="px-2 py-0.5 rounded-full text-xs font-bold ${pair.durationMinutes > 180 ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-700'}">
                                         ${formatMinutes(pair.durationMinutes)}
@@ -472,12 +568,12 @@
                                 </div>
                                 <div class="grid grid-cols-2 gap-2 text-xs pt-1">
                                     <div class="bg-slate-50 p-2 rounded-xl">
-                                        <span class="text-[10px] text-slate-400 block">起点 (${pair.direction === 'local_to_gist' ? '本地' : '云端'})</span>
+                                        <span class="text-[10px] text-slate-400 block">开始 (${pair.direction === 'local_to_gist' ? '本地' : '云端'})</span>
                                         <p class="font-mono text-[11px] font-semibold mt-0.5">${pair.start.time.slice(5)}</p>
                                         <p class="text-[10px] text-slate-500 truncate">${pair.start.remark || '无备注'}</p>
                                     </div>
                                     <div class="bg-slate-50 p-2 rounded-xl">
-                                        <span class="text-[10px] text-slate-400 block">终点 (${pair.direction === 'local_to_gist' ? '云端' : '本地'})</span>
+                                        <span class="text-[10px] text-slate-400 block">结束 (${pair.direction === 'local_to_gist' ? '云端' : '本地'})</span>
                                         <p class="font-mono text-[11px] font-semibold mt-0.5">${pair.end.time.slice(5)}</p>
                                         <p class="text-[10px] text-slate-500 truncate">${pair.end.remark || '无备注'}</p>
                                     </div>
@@ -493,8 +589,8 @@
                                 <tr>
                                     <th class="p-3.5 w-12 text-center">#</th>
                                     <th class="p-3.5">时序流向</th>
-                                    <th class="p-3.5">起点打卡</th>
-                                    <th class="p-3.5">终点打卡</th>
+                                    <th class="p-3.5">开始打卡</th>
+                                    <th class="p-3.5">结束打卡</th>
                                     <th class="p-3.5 text-center">历时间隔</th>
                                     <th class="p-3.5 text-right">跨天属性</th>
                                 </tr>
@@ -556,7 +652,7 @@
                 data: {
                     labels: labels,
                     datasets: [{
-                        label: '间隔时长 (分钟)',
+                        label: '历时时长 (分钟)',
                         data: values,
                         borderColor: '#10B981',
                         backgroundColor: 'rgba(16, 185, 129, 0.12)',
