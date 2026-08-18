@@ -659,8 +659,8 @@ const localApp = {
         if (this.records.length > 3) {
             expandWrapper.classList.remove('hidden');
             expandBtn.innerHTML = this.isExpanded
-                ? '<span>收起至前 3 条</span><i class="fa fa-chevron-up text-[10px]"></i>'
-                : `<span>展开全部数据 (${this.records.length}条，可滑动)</span><i class="fa fa-chevron-down text-[10px]"></i>`;
+                ? '<span>收起</span><i class="fa fa-chevron-up text-[10px]"></i>'
+                : `<span>展开全部数据 (${this.records.length}条)</span><i class="fa fa-chevron-down text-[10px]"></i>`;
         } else {
             expandWrapper.classList.add('hidden');
         }
@@ -1024,7 +1024,7 @@ const gistApp = {
         if (this.records.length > 3) {
             expandWrapper.classList.remove('hidden');
             expandBtn.innerHTML = this.isExpanded
-                ? '<span>收起至前 3 条</span><i class="fa fa-chevron-up text-[10px]"></i>'
+                ? '<span>收起</span><i class="fa fa-chevron-up text-[10px]"></i>'
                 : `<span>展开全部数据 (${this.records.length}条)</span><i class="fa fa-chevron-down text-[10px]"></i>`;
         } else {
             expandWrapper.classList.add('hidden');
