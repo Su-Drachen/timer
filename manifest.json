@@ -7,7 +7,7 @@
   "theme_color": "#ffffff",
   "icons": [
     {
-      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='100' fill='%23ffffff'/%3E%3Cpath fill='%232932E1' d='M256 160c23.6 0 42.7-19.1 42.7-42.7S279.6 74.6 256 74.6s-42.7 19.1-42.7 42.7S232.4 160 256 160zm-85.3 42.7c23.6 0 42.7-19.1 42.7-42.7s-19.1-42.7-42.7-42.7-42.7 19.1-42.7 42.7 19.1 42.7 42.7 42.7zm170.6 0c23.6 0 42.7-19.1 42.7-42.7s-19.1-42.7-42.7-42.7-42.7 19.1-42.7 42.7 19.1 42.7 42.7 42.7zM117.3 277.3c23.6 0 42.7-19.1 42.7-42.7s-19.1-42.7-42.7-42.7-42.7 19.1-42.7 42.7 19.1 42.7 42.7 42.7zm277.4 0c23.6 0 42.7-19.1 42.7-42.7s-19.1-42.7-42.7-42.7-42.7 19.1-42.7 42.7 19.1 42.7 42.7 42.7zM256 200c-66.2 0-112 50.8-112 110.2 0 67.3 54.3 127.2 112 127.2s112-59.9 112-127.2c0-59.4-45.8-110.2-112-110.2z'/%3E%3C/svg%3E",
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='115' fill='%23ffffff'/%3E%3Ccircle cx='256' cy='256' r='160' fill='none' stroke='%23333333' stroke-width='24'/%3E%3Cline x1='256' y1='256' x2='256' y2='135' stroke='%23333333' stroke-width='18' stroke-linecap='round'/%3E%3Cline x1='256' y1='256' x2='345' y2='256' stroke='%23333333' stroke-width='22' stroke-linecap='round'/%3E%3Ccircle cx='256' cy='256' r='12' fill='%23333333'/%3E%3C/svg%3E",
       "sizes": "192x192 512x512",
       "type": "image/svg+xml",
       "purpose": "any maskable"
