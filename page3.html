@@ -128,9 +128,23 @@
         <!-- 操作控制面板 -->
         <div class="card-box rounded-2xl p-4 sm:p-5 space-y-4 shadow-sm">
 
-            <!-- 快捷条件筛选按钮组 -->
-            <div>
-                <p class="text-xs font-semibold uppercase tracking-wider opacity-60 mb-2">条件筛选器</p>
+            <!-- 快捷条件与年月筛选栏 -->
+            <div class="space-y-3">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                    <p class="text-xs font-semibold uppercase tracking-wider opacity-60">条件筛选器</p>
+
+                    <!-- 年月选择下拉菜单 -->
+                    <div class="flex items-center gap-2">
+                        <label class="text-xs font-medium opacity-70 flex items-center gap-1">
+                            <i class="fa fa-calendar"></i> 月份:
+                        </label>
+                        <select id="month-select" class="px-2.5 py-1.5 rounded-xl border text-xs font-medium bg-transparent focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer" style="border-color: var(--border-color);">
+                            <option value="all">全部月份</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- 标签按钮组 -->
                 <div class="flex flex-wrap gap-2 text-xs">
                     <button class="filter-btn active px-3 py-1.5 rounded-xl font-medium" data-filter="all">全部数据</button>
                     <button class="filter-btn px-3 py-1.5 rounded-xl font-medium" data-filter="has_remark">
@@ -149,7 +163,7 @@
             <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-3 pt-3 border-t" style="border-color: var(--border-color);">
                 <div class="relative flex-1">
                     <i class="fa fa-search absolute left-3.5 top-1/2 -translate-y-1/2 text-xs opacity-50"></i>
-                    <input type="text" id="search-input" placeholder="在当前筛选结果中搜索时间或备注..." class="w-full pl-9 pr-3.5 py-2 rounded-xl border bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" style="border-color: var(--border-color);">
+                    <input type="text" id="search-input" placeholder="在当前月份和筛选中搜索时间或备注..." class="w-full pl-9 pr-3.5 py-2 rounded-xl border bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" style="border-color: var(--border-color);">
                 </div>
 
                 <div class="flex items-center gap-2 text-xs flex-shrink-0">
@@ -236,6 +250,7 @@
             selectedIndices: new Set(),
             searchKeyword: '',
             currentFilter: 'all', // 'all' | 'has_remark' | 'no_remark' | 'duplicates_only'
+            selectedMonth: 'all', // 'all' | 'YYYY-MM'
 
             init() {
                 this.loadRecords();
@@ -249,6 +264,13 @@
                         this.selectedIndices.clear();
                         this.render();
                     });
+                });
+
+                // 年月选择切换
+                document.getElementById('month-select').addEventListener('change', (e) => {
+                    this.selectedMonth = e.target.value;
+                    this.selectedIndices.clear();
+                    this.render();
                 });
 
                 document.getElementById('search-input').addEventListener('input', (e) => {
@@ -276,24 +298,68 @@
             loadRecords() {
                 const saved = localStorage.getItem('timeRecords');
                 this.records = saved ? JSON.parse(saved) : [];
+                this.updateMonthOptions();
                 this.render();
             },
 
             saveRecords() {
                 localStorage.setItem('timeRecords', JSON.stringify(this.records));
+                this.updateMonthOptions();
                 this.render();
             },
 
-            // 提取日期的 YYYY/MM/DD 或 YYYY-MM-DD
+            // 提取日期的 YYYY/MM/DD
             getDateKey(timeStr) {
                 if (!timeStr) return '';
                 const match = timeStr.match(/^(\d{4}[/-]\d{1,2}[/-]\d{1,2})/);
                 return match ? match[1].replace(/-/g, '/') : timeStr.split(' ')[0];
             },
 
+            // 提取年月的 YYYY-MM
+            getMonthKey(timeStr) {
+                if (!timeStr) return '';
+                const dateKey = this.getDateKey(timeStr);
+                const parts = dateKey.split('/');
+                if (parts.length >= 2) {
+                    const year = parts[0];
+                    const month = parts[1].padStart(2, '0');
+                    return `${year}-${month}`;
+                }
+                return '';
+            },
+
+            // 动态生成所有年月下拉选项
+            updateMonthOptions() {
+                const select = document.getElementById('month-select');
+                const monthCountMap = {};
+
+                this.records.forEach(r => {
+                    const mKey = this.getMonthKey(r.time);
+                    if (mKey) {
+                        monthCountMap[mKey] = (monthCountMap[mKey] || 0) + 1;
+                    }
+                });
+
+                // 按月份降序排序（最新月份排最前）
+                const sortedMonths = Object.keys(monthCountMap).sort((a, b) => b.localeCompare(a));
+
+                let optionsHtml = `<option value="all">全部月份 (共 ${this.records.length} 条)</option>`;
+                sortedMonths.forEach(m => {
+                    const [y, mon] = m.split('-');
+                    const isSelected = this.selectedMonth === m ? 'selected' : '';
+                    optionsHtml += `<option value="${m}" ${isSelected}>${y}年 ${mon}月 (${monthCountMap[m]}条)</option>`;
+                });
+
+                // 若之前选中的月份已被全删，则重置为 all
+                if (this.selectedMonth !== 'all' && !monthCountMap[this.selectedMonth]) {
+                    this.selectedMonth = 'all';
+                }
+
+                select.innerHTML = optionsHtml;
+            },
+
             getFilteredRecords() {
-                // 先标记出每日最早的第一条记录与同日重复的记录
-                // 原数组按时间正序排列进行同日分组（识别出每天最早的那一条）
+                // 原数组按时间正序排列标记每天的第一条及同日重复记录
                 const sortedWithIdx = this.records.map((r, originalIdx) => ({ ...r, originalIdx }))
                     .sort((a, b) => new Date(a.time.replace(/\//g, '-')) - new Date(b.time.replace(/\//g, '-')));
 
@@ -314,10 +380,16 @@
                 return this.records.map((r, originalIdx) => ({
                     ...r,
                     originalIdx,
+                    monthKey: this.getMonthKey(r.time),
                     isDuplicate: duplicateOriginalIdxSet.has(originalIdx),
                     isFirstOfDay: firstRecordOriginalIdxSet.has(originalIdx)
                 })).filter(item => {
-                    // 1. 条件筛选逻辑
+                    // 1. 年月过滤
+                    if (this.selectedMonth !== 'all' && item.monthKey !== this.selectedMonth) {
+                        return false;
+                    }
+
+                    // 2. 状态条件筛选
                     if (this.currentFilter === 'has_remark') {
                         if (!item.remark || !item.remark.trim()) return false;
                     } else if (this.currentFilter === 'no_remark') {
@@ -326,7 +398,7 @@
                         if (!item.isDuplicate) return false;
                     }
 
-                    // 2. 关键词模糊搜索
+                    // 3. 关键词搜索过滤
                     if (this.searchKeyword) {
                         const matchTime = item.time.toLowerCase().includes(this.searchKeyword);
                         const matchRemark = item.remark && item.remark.toLowerCase().includes(this.searchKeyword);
@@ -385,7 +457,6 @@
             handleQuickDedup() {
                 if (this.records.length <= 1) return showToast('当前记录数无需去重', 'info');
 
-                // 按时间升序排序
                 const sorted = [...this.records].sort((a, b) => new Date(a.time.replace(/\//g, '-')) - new Date(b.time.replace(/\//g, '-')));
                 const uniqueRecords = [];
                 const seenDates = new Set();
@@ -407,7 +478,6 @@
                     return;
                 }
 
-                // 恢复为默认倒序排序保存
                 this.records = uniqueRecords.sort((a, b) => new Date(b.time.replace(/\//g, '-')) - new Date(a.time.replace(/\//g, '-')));
                 this.selectedIndices.clear();
                 this.saveRecords();
