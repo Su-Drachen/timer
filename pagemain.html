@@ -385,6 +385,15 @@
                     <i class="fa fa-wrench"></i>
                 </div>
             </a>
+            <a href="page4.html" target="_blank" class="group card-box rounded-2xl p-4 flex items-center justify-between hover:shadow-md transition-all">
+                <div class="min-w-0 pr-2">
+                    <h3 class="font-bold text-sm">使用健康</h3>
+                    <p class="text-xs opacity-60 mt-0.5 truncate">使用分析与健康提示</p>
+                </div>
+                <div class="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+                        <i class="fa fa-heartbeat text-base"></i>
+                </div>
+            </a>
             <a href="page1.html" target="_blank" class="card-box rounded-2xl p-4 flex items-center justify-between hover:shadow-md transition-shadow">
                 <div>
                     <h3 class="font-bold text-sm">词条分析</h3>
@@ -403,15 +412,7 @@
                     <i class="fa fa-trophy"></i>
                 </div>
             </a>
-            <a href="page4.html" target="_blank" class="group card-box rounded-2xl p-4 flex items-center justify-between hover:shadow-md transition-all">
-                <div class="min-w-0 pr-2">
-                    <h3 class="font-bold text-sm">使用健康</h3>
-                    <p class="text-xs opacity-60 mt-0.5 truncate">使用分析与健康提示</p>
-                </div>
-                <div class="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
-                        <i class="fa fa-heartbeat text-base"></i>
-                </div>
-            </a>
+
             <a href="page0.html" target="_blank" class="card-box rounded-2xl p-4 flex items-center justify-between hover:shadow-md transition-shadow">
                 <div>
                     <h3 class="font-bold text-sm">进阶网页</h3>
@@ -716,6 +717,7 @@ const localApp = {
 // --- 云端版 (Gist) 核心逻辑 ---
 const gistApp = {
     isInitialized: false,
+    isLoading: false, // 增加加载状态标识
     config: {},
     records: [],
     recordsChart: null,
@@ -788,6 +790,7 @@ const gistApp = {
             document.getElementById('gist-records-container').innerHTML = '<p class="text-center py-6 text-xs opacity-50">请先在弹窗中配置 Gist</p>';
             return;
         }
+        this.isLoading = true;
         showToast("正在连接云端同步数据...", "info");
         try {
             const data = await this.fetchDirectFromApi();
@@ -798,6 +801,8 @@ const gistApp = {
             console.error(error);
             showToast(`同步失败: ${error.message}`, "error");
             this.renderRecords();
+        } finally {
+            this.isLoading = false;
         }
     },
 
@@ -831,6 +836,10 @@ const gistApp = {
     },
 
     async handleAddRecord() {
+        if (this.isLoading) {
+            return showToast("云端数据正在加载中，请稍候再试", "error");
+        }
+
         const btn = document.getElementById('gist-record-btn');
         const originHtml = btn.innerHTML;
         const remark = prompt("请输入本次记录的备注（可选）：", "");
@@ -857,6 +866,9 @@ const gistApp = {
     },
 
     async handleDeleteRecord(index) {
+        if (this.isLoading) {
+            return showToast("云端数据正在加载中，请稍候再试", "error");
+        }
         if (!confirm('确定要从云端删除此记录吗？')) return;
         const newRecords = [...this.records];
         newRecords.splice(index, 1);
@@ -873,6 +885,9 @@ const gistApp = {
     },
 
     async handleEditSave(index, newTime, newRemark) {
+        if (this.isLoading) {
+            return showToast("云端数据正在加载中，请稍候再试", "error");
+        }
         if (!newTime) return showToast('时间不能为空', 'error');
 
         const btn = document.getElementById('save-edit-btn');
@@ -898,6 +913,9 @@ const gistApp = {
     },
 
     async importFromCsv(csvContent) {
+        if (this.isLoading) {
+            return showToast("云端数据正在加载中，请稍候再试", "error");
+        }
         showToast('正在解析合并并同步云端...', 'info');
         try {
             const fileRecords = csvContent.trim().split('\n').slice(1).map(line => {
@@ -928,6 +946,9 @@ const gistApp = {
     },
 
     exportToCsv() {
+        if (this.isLoading) {
+            return showToast("云端数据正在加载中，请稍候再试", "error");
+        }
         if (this.records.length === 0) return showToast('暂无记录可导出', 'error');
         let csv = "序号,时间,备注\n";
         const sorted = [...this.records].sort((a, b) => new Date(b.time.replace(/\//g, '-')) - new Date(a.time.replace(/\//g, '-')));
