@@ -1,0 +1,524 @@
+--- START OF FILE page4.html ---
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>使用健康 - 私人时间记录器</title>
+    <!-- Tailwind CSS v3 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            '50': '#eff6ff', '100': '#dbeafe', '200': '#bfdbfe', '300': '#93c5fd', '400': '#60a5fa', '500': '#3b82f6', '600': '#2563eb', '700': '#1d4ed8', '800': '#1e40af', '900': '#1e3a8a',
+                        },
+                        success: '#22c55e',
+                        danger: '#ef4444',
+                        warning: '#f97316',
+                    },
+                }
+            }
+        }
+    </script>
+    <style>
+        .transition-all {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .filter-btn {
+            border: 1px solid #e2e8f0;
+            color: #64748b;
+            background: #ffffff;
+            transition: all 0.2s ease;
+        }
+        .filter-btn.active {
+            background-color: #3b82f6;
+            color: #ffffff;
+            border-color: #3b82f6;
+        }
+    </style>
+</head>
+<body class="bg-slate-100 min-h-screen flex flex-col font-sans">
+
+    <!-- 顶部导航栏 -->
+    <header class="bg-white shadow-sm sticky top-0 z-20">
+        <div class="container mx-auto px-4 py-4 flex justify-between items-center">
+            <h1 class="text-xl font-bold text-slate-800 flex items-center">
+                <i class="fa fa-heartbeat text-emerald-500 mr-3 text-2xl"></i>
+                使用健康与行为分析
+            </h1>
+            <a href="pagemain.html" class="bg-slate-200 text-slate-700 hover:bg-slate-300 transition-colors flex items-center text-sm font-semibold py-1.5 px-3 rounded-lg">
+                <i class="fa fa-arrow-left mr-2"></i>
+                返回主页
+            </a>
+        </div>
+    </header>
+
+    <main class="flex-grow container mx-auto px-4 py-6 sm:py-8 max-w-4xl space-y-6">
+
+        <!-- 主要内容挂载点 -->
+        <div id="health-app-container" class="space-y-6">
+            <div class="bg-white rounded-xl shadow-md border border-slate-200 p-8 text-center text-slate-500">
+                <i class="fa fa-spinner fa-spin text-2xl mr-2 text-primary-500"></i>
+                <span>正在检查进阶配置并同步数据...</span>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Toast 提示 -->
+    <div id="toast" class="fixed bottom-5 right-5 flex items-center text-white py-3 px-5 rounded-lg shadow-xl opacity-0 translate-y-10 z-50 transition-all">
+        <div id="toast-icon" class="mr-3"></div>
+        <p id="toast-message"></p>
+    </div>
+
+    <!-- 页脚 -->
+    <footer class="text-slate-500 py-6 mt-auto">
+        <div class="container mx-auto px-4 text-center text-sm">
+            © 私人时间记录器 · 健康使用监测
+        </div>
+    </footer>
+
+    <script>
+        // --- 全局状态 ---
+        let config = { GITHUB_USERNAME: "", GIST_ID: "", GITHUB_PAT: "" };
+        let localRecords = [];
+        let gistRecords = [];
+        let allMatchedPairs = []; // 存储所有成功配对的数据
+        let currentFilter = 'count_7'; // 'count_7' | 'count_30' | 'days_7' | 'days_30' | 'days_180' | 'all'
+        let chartInstance = null;
+
+        // --- 进阶鉴权检查 ---
+        function loadConfig() {
+            const savedConfig = localStorage.getItem('timeRecorderConfig');
+            if (savedConfig) {
+                config = JSON.parse(savedConfig);
+                return true;
+            } else {
+                const container = document.getElementById('health-app-container');
+                container.innerHTML = `
+                    <div class="bg-white rounded-xl shadow-md border border-slate-200 text-center py-12 px-4">
+                        <i class="fa fa-lock text-4xl text-warning mb-4"></i>
+                        <h3 class="text-lg font-semibold text-slate-700">该功能仅对进阶用户开放</h3>
+                        <p class="text-slate-500 my-2">使用健康分析需要依赖「云端同步数据」与「本地打卡数据」进行闭环匹配。</p>
+                        <a href="page0.html" class="mt-4 inline-block bg-primary-500 text-white py-2 px-6 rounded-lg hover:bg-primary-600 transition-colors font-semibold shadow-md">
+                            前往进阶配置
+                        </a>
+                    </div>
+                `;
+                return false;
+            }
+        }
+
+        // --- Toast 提示函数 ---
+        function showToast(message, type = 'info') {
+            const toast = document.getElementById('toast');
+            const toastMessage = document.getElementById('toast-message');
+            const toastIcon = document.getElementById('toast-icon');
+
+            toastMessage.textContent = message;
+            toast.classList.remove('bg-success', 'bg-danger', 'bg-slate-800', 'bg-warning');
+
+            let iconHtml = '';
+            switch (type) {
+                case 'success':
+                    toast.classList.add('bg-success');
+                    iconHtml = '<i class="fa fa-check-circle"></i>';
+                    break;
+                case 'error':
+                    toast.classList.add('bg-danger');
+                    iconHtml = '<i class="fa fa-times-circle"></i>';
+                    break;
+                case 'warning':
+                    toast.classList.add('bg-warning');
+                    iconHtml = '<i class="fa fa-exclamation-triangle"></i>';
+                    break;
+                default:
+                    toast.classList.add('bg-slate-800');
+                    iconHtml = '<i class="fa fa-info-circle"></i>';
+            }
+            toastIcon.innerHTML = iconHtml;
+
+            toast.classList.remove('opacity-0', 'translate-y-10');
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-10');
+            }, 3000);
+        }
+
+        // --- 数据加载 ---
+        async function fetchRecordsAndProcess() {
+            // 1. 读取本地数据
+            const savedLocal = localStorage.getItem('timeRecords');
+            localRecords = savedLocal ? JSON.parse(savedLocal) : [];
+
+            // 2. 从 Gist 读取云端数据
+            try {
+                const response = await fetch(`https://gist.githubusercontent.com/${config.GITHUB_USERNAME}/${config.GIST_ID}/raw/records.json?t=${new Date().getTime()}`);
+                if (!response.ok) throw new Error(`云端接口异常 (${response.statusText})`);
+                const data = await response.json();
+                gistRecords = Array.isArray(data) ? data : [];
+
+                // 3. 执行配对与统计
+                matchRecords();
+                renderHealthDashboard();
+                showToast("数据匹配与健康分析完成！", "success");
+            } catch (error) {
+                console.error("加载云端记录失败:", error);
+                showToast("同步云端数据失败，请检查网络", "error");
+                document.getElementById('health-app-container').innerHTML = `
+                    <div class="bg-white rounded-xl shadow-md border border-slate-200 text-center py-10 px-4 text-danger">
+                        <i class="fa fa-cloud-download text-4xl mb-4"></i>
+                        <h3 class="text-lg font-semibold">云端数据同步失败</h3>
+                        <p class="my-2 text-slate-500">无法拉取云端记录进行匹配，请检查网络或 Gist 授权。</p>
+                        <button onclick="fetchRecordsAndProcess()" class="mt-3 px-4 py-2 bg-slate-800 text-white rounded-lg text-sm">重试</button>
+                    </div>
+                `;
+            }
+        }
+
+        // --- 核心算法：本地与云端 1对1 智能间隔匹配 (支持跨天，<=12小时) ---
+        function matchRecords() {
+            allMatchedPairs = [];
+            if (!localRecords.length || !gistRecords.length) return;
+
+            // 格式化并升序排列（按时间先后）
+            const parsedLocals = localRecords.map(r => ({
+                raw: r,
+                timestamp: new Date(r.time.replace(/\//g, '-')).getTime()
+            })).filter(r => !isNaN(r.timestamp)).sort((a, b) => a.timestamp - b.timestamp);
+
+            const parsedGists = gistRecords.map(r => ({
+                raw: r,
+                timestamp: new Date(r.time.replace(/\//g, '-')).getTime(),
+                used: false
+            })).filter(r => !isNaN(r.timestamp)).sort((a, b) => a.timestamp - b.timestamp);
+
+            const MAX_INTERVAL_MS = 12 * 60 * 60 * 1000; // 12 小时
+
+            parsedLocals.forEach(loc => {
+                // 寻找在 loc 之后、在12小时以内、且未被使用的最早一条 Gist 记录
+                for (let i = 0; i < parsedGists.length; i++) {
+                    const gst = parsedGists[i];
+                    if (!gst.used && gst.timestamp > loc.timestamp) {
+                        const diffMs = gst.timestamp - loc.timestamp;
+                        if (diffMs <= MAX_INTERVAL_MS) {
+                            gst.used = true; // 独占匹配
+                            const diffMinutes = Math.round(diffMs / (1000 * 60));
+                            const isCrossDay = new Date(loc.timestamp).getDate() !== new Date(gst.timestamp).getDate();
+
+                            allMatchedPairs.push({
+                                local: loc.raw,
+                                gist: gst.raw,
+                                startTimestamp: loc.timestamp,
+                                endTimestamp: gst.timestamp,
+                                durationMinutes: diffMinutes,
+                                durationHours: (diffMinutes / 60).toFixed(1),
+                                isCrossDay: isCrossDay,
+                                dateKey: loc.raw.time.split(' ')[0]
+                            });
+                            break;
+                        }
+                    }
+                }
+            });
+
+            // 最终按时间降序（最新的排在最前）
+            allMatchedPairs.sort((a, b) => b.startTimestamp - a.startTimestamp);
+        }
+
+        // --- 格式化时长显示 ---
+        function formatMinutes(minutes) {
+            if (minutes < 60) return `${minutes} 分钟`;
+            const h = Math.floor(minutes / 60);
+            const m = minutes % 60;
+            return m === 0 ? `${h} 小时` : `${h} 小时 ${m} 分`;
+        }
+
+        // --- 根据 Filter 过滤配对列表 ---
+        function getFilteredPairs() {
+            if (allMatchedPairs.length === 0) return [];
+            const now = new Date().getTime();
+
+            switch (currentFilter) {
+                case 'count_7':
+                    return allMatchedPairs.slice(0, 7);
+                case 'count_30':
+                    return allMatchedPairs.slice(0, 30);
+                case 'days_7':
+                    const ms7 = 7 * 24 * 60 * 60 * 1000;
+                    return allMatchedPairs.filter(p => now - p.startTimestamp <= ms7);
+                case 'days_30':
+                    const ms30 = 30 * 24 * 60 * 60 * 1000;
+                    return allMatchedPairs.filter(p => now - p.startTimestamp <= ms30);
+                case 'days_180':
+                    const ms180 = 180 * 24 * 60 * 60 * 1000;
+                    return allMatchedPairs.filter(p => now - p.startTimestamp <= ms180);
+                case 'all':
+                default:
+                    return [...allMatchedPairs];
+            }
+        }
+
+        // --- 计算众数区间 (按 30 分钟步长分箱) ---
+        function calculateModeRange(minutesArray) {
+            if (!minutesArray.length) return '--';
+            const bucketCount = {};
+            const BUCKET_SIZE = 30; // 30分钟为一个统计区间
+
+            minutesArray.forEach(m => {
+                const bucketIndex = Math.floor(m / BUCKET_SIZE);
+                const bucketStart = bucketIndex * BUCKET_SIZE;
+                const bucketEnd = bucketStart + BUCKET_SIZE;
+                const key = `${bucketStart}-${bucketEnd}`;
+                bucketCount[key] = (bucketCount[key] || 0) + 1;
+            });
+
+            let maxFreq = 0;
+            let modeKey = '';
+            for (const key in bucketCount) {
+                if (bucketCount[key] > maxFreq) {
+                    maxFreq = bucketCount[key];
+                    modeKey = key;
+                }
+            }
+
+            if (!modeKey) return '--';
+            const [start, end] = modeKey.split('-');
+            return `${start}~${end} 分钟`;
+        }
+
+        // --- 渲染主要界面 ---
+        function renderHealthDashboard() {
+            const container = document.getElementById('health-app-container');
+
+            if (allMatchedPairs.length === 0) {
+                container.innerHTML = `
+                    <div class="bg-white rounded-xl shadow-md border border-slate-200 text-center py-12 px-4">
+                        <i class="fa fa-hourglass-o text-4xl text-slate-300 mb-4"></i>
+                        <h3 class="text-lg font-semibold text-slate-700">暂无有效的使用间隔</h3>
+                        <p class="text-slate-500 my-2 max-w-md mx-auto text-sm">
+                            系统尚未匹配到 12 小时以内的「先本地打卡、后云端同步」的行为闭环。请先正常记录本地时间并在完成操作后进行云端打卡。
+                        </p>
+                    </div>
+                `;
+                return;
+            }
+
+            const currentData = getFilteredPairs();
+            const durations = currentData.map(p => p.durationMinutes);
+
+            // 统计指标计算
+            const count = durations.length;
+            const minVal = count ? Math.min(...durations) : 0;
+            const maxVal = count ? Math.max(...durations) : 0;
+            const avgVal = count ? Math.round(durations.reduce((a, b) => a + b, 0) / count) : 0;
+            const modeRange = calculateModeRange(durations);
+
+            // 健康评语
+            let healthAdvice = "节律极佳！单次专注与使用时长控制非常合理。";
+            let adviceColor = "text-emerald-600 bg-emerald-50 border-emerald-200";
+            let adviceIcon = "fa-check-circle";
+
+            if (avgVal > 180 || maxVal > 360) {
+                healthAdvice = "单次持续时间偏长（超过 3 小时），建议在两次打卡中间注意适当远眺或活动身体。";
+                adviceColor = "text-amber-700 bg-amber-50 border-amber-200";
+                adviceIcon = "fa-exclamation-circle";
+            }
+
+            container.innerHTML = `
+                <!-- 筛选控制器卡片 -->
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 sm:p-5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                    <div>
+                        <h2 class="text-base font-bold text-slate-800 flex items-center gap-2">
+                            <span>使用间隔趋势分析</span>
+                            <span class="text-xs px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 font-semibold">有效配对 ${allMatchedPairs.length} 次</span>
+                        </h2>
+                        <p class="text-xs text-slate-400 mt-0.5">统计每次从本地记录到云端打卡的完整时长</p>
+                    </div>
+
+                    <!-- 维度选择胶囊 -->
+                    <div class="flex flex-wrap gap-1.5 text-xs w-full sm:w-auto">
+                        <button class="filter-btn ${currentFilter === 'count_7' ? 'active' : ''} px-2.5 py-1.5 rounded-lg font-medium" onclick="switchFilter('count_7')">近7条</button>
+                        <button class="filter-btn ${currentFilter === 'count_30' ? 'active' : ''} px-2.5 py-1.5 rounded-lg font-medium" onclick="switchFilter('count_30')">近30条</button>
+                        <button class="filter-btn ${currentFilter === 'days_7' ? 'active' : ''} px-2.5 py-1.5 rounded-lg font-medium" onclick="switchFilter('days_7')">近1周</button>
+                        <button class="filter-btn ${currentFilter === 'days_30' ? 'active' : ''} px-2.5 py-1.5 rounded-lg font-medium" onclick="switchFilter('days_30')">近1月</button>
+                        <button class="filter-btn ${currentFilter === 'days_180' ? 'active' : ''} px-2.5 py-1.5 rounded-lg font-medium" onclick="switchFilter('days_180')">近半年</button>
+                        <button class="filter-btn ${currentFilter === 'all' ? 'active' : ''} px-2.5 py-1.5 rounded-lg font-medium" onclick="switchFilter('all')">全部</button>
+                    </div>
+                </div>
+
+                <!-- 核心四大指标卡片 -->
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
+                    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                        <span class="text-xs text-slate-400 font-medium block">平均使用间隔</span>
+                        <span class="text-lg sm:text-xl font-extrabold text-slate-800 mt-1 block">${count ? formatMinutes(avgVal) : '--'}</span>
+                        <span class="text-[11px] text-slate-400 mt-0.5 block">均值水平</span>
+                    </div>
+                    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                        <span class="text-xs text-slate-400 font-medium block">单次最长间隔</span>
+                        <span class="text-lg sm:text-xl font-extrabold text-amber-600 mt-1 block">${count ? formatMinutes(maxVal) : '--'}</span>
+                        <span class="text-[11px] text-slate-400 mt-0.5 block">最大滞后/时长</span>
+                    </div>
+                    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                        <span class="text-xs text-slate-400 font-medium block">单次最短间隔</span>
+                        <span class="text-lg sm:text-xl font-extrabold text-emerald-600 mt-1 block">${count ? formatMinutes(minVal) : '--'}</span>
+                        <span class="text-[11px] text-slate-400 mt-0.5 block">最快闭环</span>
+                    </div>
+                    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                        <span class="text-xs text-slate-400 font-medium block">高频主力区间 (众数)</span>
+                        <span class="text-sm sm:text-base font-extrabold text-primary-600 mt-1.5 block">${modeRange}</span>
+                        <span class="text-[11px] text-slate-400 mt-0.5 block">最常出现的耗时</span>
+                    </div>
+                </div>
+
+                <!-- 健康建议贴士 -->
+                <div class="p-3.5 rounded-xl border ${adviceColor} flex items-center gap-2.5 text-xs sm:text-sm font-medium">
+                    <i class="fa ${adviceIcon} text-base flex-shrink-0"></i>
+                    <span>${healthAdvice}</span>
+                </div>
+
+                <!-- 折线图分析卡片 -->
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
+                    <h3 class="text-sm font-bold text-slate-800 mb-4 flex items-center justify-between">
+                        <span>间隔时长曲线 (分钟)</span>
+                        <span class="text-xs font-normal text-slate-400">当前展现: ${count} 组记录</span>
+                    </h3>
+                    <div class="w-full h-64 sm:h-72">
+                        <canvas id="interval-chart"></canvas>
+                    </div>
+                </div>
+
+                <!-- 配对明细记录流水表 -->
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="p-4 border-b border-slate-100 flex justify-between items-center">
+                        <h3 class="text-sm font-bold text-slate-800">配对行为流水明细</h3>
+                        <span class="text-xs text-slate-400">按发生时间倒序排列</span>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs sm:text-sm">
+                            <thead class="bg-slate-50 text-slate-500 uppercase text-[11px]">
+                                <tr>
+                                    <th class="p-3.5 w-12 text-center">#</th>
+                                    <th class="p-3.5">本地起点打卡</th>
+                                    <th class="p-3.5">云端终点打卡</th>
+                                    <th class="p-3.5 text-center">历时间隔</th>
+                                    <th class="p-3.5 text-right">跨天属性</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100 text-slate-700">
+                                ${currentData.map((pair, idx) => `
+                                    <tr class="hover:bg-slate-50/80 transition-colors">
+                                        <td class="p-3.5 text-center text-slate-400 font-mono text-xs">${idx + 1}</td>
+                                        <td class="p-3.5">
+                                            <div class="font-mono font-medium">${pair.local.time}</div>
+                                            <div class="text-[11px] text-slate-400 truncate max-w-[160px]">${pair.local.remark || '无备注'}</div>
+                                        </td>
+                                        <td class="p-3.5">
+                                            <div class="font-mono font-medium text-primary-600">${pair.gist.time}</div>
+                                            <div class="text-[11px] text-slate-400 truncate max-w-[160px]">${pair.gist.remark || '无备注'}</div>
+                                        </td>
+                                        <td class="p-3.5 text-center">
+                                            <span class="px-2.5 py-1 rounded-full text-xs font-bold ${pair.durationMinutes > 180 ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-700'}">
+                                                ${formatMinutes(pair.durationMinutes)}
+                                            </span>
+                                        </td>
+                                        <td class="p-3.5 text-right">
+                                            ${pair.isCrossDay
+                                                ? '<span class="px-2 py-0.5 rounded text-[10px] bg-indigo-50 text-indigo-600 font-semibold">隔天/跨午夜</span>'
+                                                : '<span class="text-slate-400 text-xs">当日完成</span>'}
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+
+            renderChart(currentData);
+        }
+
+        // --- 绘制折线图表 (正序展现时间流) ---
+        function renderChart(dataPairs) {
+            const ctx = document.getElementById('interval-chart');
+            if (!ctx) return;
+
+            if (chartInstance) {
+                chartInstance.destroy();
+            }
+
+            // 图表展示时，按时间先后（正序）排布折线
+            const chronologicalData = [...dataPairs].reverse();
+            const labels = chronologicalData.map(p => p.local.time.slice(5, 16)); // MM/DD HH:MM
+            const values = chronologicalData.map(p => p.durationMinutes);
+
+            chartInstance = new Chart(ctx.getContext('2d'), {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: '间隔时长 (分钟)',
+                        data: values,
+                        borderColor: '#10B981',
+                        backgroundColor: 'rgba(16, 185, 129, 0.12)',
+                        borderWidth: 2.5,
+                        pointBackgroundColor: '#10B981',
+                        pointBorderColor: '#ffffff',
+                        pointBorderWidth: 2,
+                        pointRadius: 4,
+                        pointHoverRadius: 6,
+                        tension: 0.35,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            grid: { display: false },
+                            ticks: { font: { size: 10 }, color: '#94a3b8' }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: 'rgba(226, 232, 240, 0.6)' },
+                            ticks: {
+                                font: { size: 10 },
+                                color: '#94a3b8',
+                                callback: function(val) { return val + ' 分'; }
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(ctx) {
+                                    return ` 耗时: ${formatMinutes(ctx.raw)}`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // --- 切换筛选维度 ---
+        function switchFilter(filterKey) {
+            currentFilter = filterKey;
+            renderHealthDashboard();
+        }
+
+        // --- 启动初始化 ---
+        document.addEventListener('DOMContentLoaded', () => {
+            if (loadConfig()) {
+                fetchRecordsAndProcess();
+            }
+        });
+    </script>
+</body>
+</html>
