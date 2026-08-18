@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>时间笔记</title>
-    <!-- 基础 CDN 依赖 -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -103,7 +102,7 @@
             color: var(--header-text);
         }
 
-        /* 精细自定义滑动条 */
+        /* 自定义精细滑动条 */
         .custom-scrollbar::-webkit-scrollbar {
             width: 5px;
         }
@@ -133,6 +132,7 @@
             border-color: var(--primary);
         }
         .hidden { display: none !important; }
+        #toast { transition: opacity 0.3s, transform 0.3s; }
     </style>
 </head>
 <body class="min-h-screen flex flex-col font-sans antialiased">
@@ -162,13 +162,13 @@
         </div>
     </div>
 
-    <!-- 通用编辑记录模态框 -->
+    <!-- 通用编辑模态框 -->
     <div id="edit-modal-overlay" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 hidden">
         <div class="card-box rounded-2xl shadow-2xl p-6 w-full max-w-md">
             <h2 class="text-xl font-bold mb-4">编辑记录</h2>
             <form id="edit-form" class="space-y-4">
-                <input type="hidden" id="edit-version">
                 <input type="hidden" id="edit-index">
+                <input type="hidden" id="edit-version">
                 <div>
                     <label class="block text-xs font-semibold uppercase tracking-wider mb-1 opacity-80">记录时间</label>
                     <input type="text" id="edit-time" class="w-full px-3.5 py-2.5 rounded-xl border bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" style="border-color: var(--border-color);" required>
@@ -186,10 +186,7 @@
         </div>
     </div>
 
-    <!-- 隐藏 CSV 文件导入控件 -->
     <input type="file" id="csv-file-input" class="hidden" accept=".csv">
-
-    <!-- Toast 弹窗 -->
     <div id="toast" class="fixed bottom-6 left-1/2 transform -translate-x-1/2 sm:left-auto sm:right-6 sm:translate-x-0 bg-gray-900/90 text-white backdrop-blur px-5 py-3 rounded-2xl shadow-2xl opacity-0 translate-y-10 z-50 text-sm font-medium flex items-center gap-2 pointer-events-none transition-all duration-300">
         <i id="toast-icon" class="fa fa-info-circle"></i>
         <span id="toast-message"></span>
@@ -207,15 +204,15 @@
 
             <!-- 主题切换胶囊 -->
             <div class="flex items-center p-1 rounded-xl bg-black/10 backdrop-blur text-xs font-medium gap-1">
-                <button type="button" onclick="AppUI.switchTheme('blue')" id="theme-btn-blue" class="px-2.5 py-1 rounded-lg transition-all flex items-center gap-1">
+                <button type="button" onclick="switchTheme('blue')" id="theme-btn-blue" class="px-2.5 py-1 rounded-lg transition-all flex items-center gap-1">
                     <span class="w-2.5 h-2.5 rounded-full bg-[#165DFF] inline-block"></span>
                     <span class="hidden sm:inline">科技蓝</span>
                 </button>
-                <button type="button" onclick="AppUI.switchTheme('white')" id="theme-btn-white" class="px-2.5 py-1 rounded-lg transition-all flex items-center gap-1">
+                <button type="button" onclick="switchTheme('white')" id="theme-btn-white" class="px-2.5 py-1 rounded-lg transition-all flex items-center gap-1">
                     <span class="w-2.5 h-2.5 rounded-full bg-white border border-gray-400 inline-block"></span>
                     <span class="hidden sm:inline">极简白</span>
                 </button>
-                <button type="button" onclick="AppUI.switchTheme('dark')" id="theme-btn-dark" class="px-2.5 py-1 rounded-lg transition-all flex items-center gap-1">
+                <button type="button" onclick="switchTheme('dark')" id="theme-btn-dark" class="px-2.5 py-1 rounded-lg transition-all flex items-center gap-1">
                     <span class="w-2.5 h-2.5 rounded-full bg-slate-900 border border-slate-700 inline-block"></span>
                     <span class="hidden sm:inline">暗夜黑</span>
                 </button>
@@ -224,6 +221,7 @@
     </header>
 
     <main class="flex-grow container mx-auto px-3.5 sm:px-4 py-4 sm:py-6">
+
         <!-- 标签页切换 -->
         <div class="max-w-xl mx-auto mb-5 p-1 rounded-2xl grid grid-cols-2 gap-1 border" style="background-color: var(--bg-card); border-color: var(--border-color);">
             <button id="tab-local" class="tab-btn active py-2.5 rounded-xl font-semibold text-sm transition-all shadow-sm">本地离线版</button>
@@ -260,7 +258,7 @@
                         </div>
                     </div>
 
-                    <!-- 动态高度/滑动容器 -->
+                    <!-- 动态高/滑动容器 -->
                     <div id="local-records-container" class="space-y-2.5 custom-scrollbar transition-all duration-200">
                         <p class="text-center py-6 text-xs opacity-50">暂无任何记录</p>
                     </div>
@@ -268,7 +266,7 @@
                     <!-- 展开 / 收起 切换按钮 -->
                     <div id="local-expand-wrapper" class="mt-3 pt-3 border-t text-center hidden" style="border-color: var(--border-color);">
                         <button id="local-expand-btn" class="text-xs font-semibold py-1.5 px-4 rounded-xl border hover:opacity-80 inline-flex items-center gap-1.5" style="border-color: var(--border-color); color: var(--primary);">
-                            <span>展开全部数据</span>
+                            <span>展开滑动查看全部</span>
                             <i class="fa fa-chevron-down text-[10px]"></i>
                         </button>
                     </div>
@@ -333,7 +331,7 @@
                         </div>
                     </div>
 
-                    <!-- 动态高度/滑动容器 -->
+                    <!-- 动态高/滑动容器 -->
                     <div id="gist-records-container" class="space-y-2.5 custom-scrollbar transition-all duration-200">
                         <p class="text-center py-6 text-xs opacity-50">正在连接云端...</p>
                     </div>
@@ -341,7 +339,7 @@
                     <!-- 展开 / 收起 切换按钮 -->
                     <div id="gist-expand-wrapper" class="mt-3 pt-3 border-t text-center hidden" style="border-color: var(--border-color);">
                         <button id="gist-expand-btn" class="text-xs font-semibold py-1.5 px-4 rounded-xl border hover:opacity-80 inline-flex items-center gap-1.5" style="border-color: var(--border-color); color: var(--primary);">
-                            <span>展开全部数据</span>
+                            <span>展开滑动查看全部</span>
                             <i class="fa fa-chevron-down text-[10px]"></i>
                         </button>
                     </div>
@@ -376,7 +374,7 @@
             </div>
         </div>
 
-        <!-- 扩展功能快捷入口 (外部链接) -->
+        <!-- 扩展功能快捷入口 -->
         <div class="max-w-xl mx-auto grid grid-cols-1 sm:grid-cols-3 gap-3 mt-4 sm:mt-5">
             <a href="page1.html" target="_blank" class="card-box rounded-2xl p-4 flex items-center justify-between hover:shadow-md transition-shadow">
                 <div>
@@ -406,108 +404,709 @@
                 </div>
             </a>
         </div>
+
     </main>
 
     <footer class="mt-auto py-5 text-center text-xs opacity-50 border-t" style="border-color: var(--border-color);">
-        <p>© 时间笔记2.0 · 简单记录每一瞬间</p>
+        <p>© 时间笔记 · 简单记录每一瞬间</p>
     </footer>
 
-    <!-- 依次引入分离的各功能模块 JS -->
-    <script src="store.js"></script>
-    <script src="stats.js"></script>
-    <script src="record.js"></script>
+<script>
+// --- 主题管理 ---
+function switchTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('userTheme', theme);
 
-    <!-- 应用全局调度脚本 -->
-    <script>
-        const AppUI = {
-            toastTimer: null,
-            gistInitialized: false,
+    const themes = ['blue', 'white', 'dark'];
+    themes.forEach(t => {
+        const btn = document.getElementById(`theme-btn-${t}`);
+        if (!btn) return;
+        if (t === theme) {
+            btn.classList.add('bg-white/20', 'shadow-sm');
+        } else {
+            btn.classList.remove('bg-white/20', 'shadow-sm');
+        }
+    });
 
-            showToast(message, type = 'info') {
-                const toast = document.getElementById('toast');
-                const toastMessage = document.getElementById('toast-message');
-                const toastIcon = document.getElementById('toast-icon');
+    if (localApp.recordsChart) localApp.updateStatistics();
+    if (gistApp.recordsChart) gistApp.updateStatistics();
+}
 
-                toastMessage.textContent = message;
-                toastIcon.className = 'fa ' + (type === 'success' ? 'fa-check-circle text-green-400' : type === 'error' ? 'fa-times-circle text-red-400' : 'fa-info-circle text-blue-400');
+function initTheme() {
+    const savedTheme = localStorage.getItem('userTheme') || 'blue';
+    switchTheme(savedTheme);
+}
 
-                toast.classList.remove('opacity-0', 'translate-y-10');
-                if (this.toastTimer) clearTimeout(this.toastTimer);
-                this.toastTimer = setTimeout(() => {
-                    toast.classList.add('opacity-0', 'translate-y-10');
-                }, 2800);
+// --- 通用工具函数 ---
+function showToast(message, type = 'info') {
+    const toast = document.getElementById('toast');
+    const toastMessage = document.getElementById('toast-message');
+    const toastIcon = document.getElementById('toast-icon');
+
+    toastMessage.textContent = message;
+    toastIcon.className = 'fa ' + (type === 'success' ? 'fa-check-circle text-green-400' : type === 'error' ? 'fa-times-circle text-red-400' : 'fa-info-circle text-blue-400');
+
+    toast.classList.remove('opacity-0', 'translate-y-10');
+    setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-y-10');
+    }, 2800);
+}
+
+function updateAllCurrentTime() {
+    const now = new Date();
+    const timeString = now.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+    document.getElementById('local-current-time').textContent = timeString;
+    document.getElementById('gist-current-time').textContent = timeString;
+}
+
+function openEditModal(version, index) {
+    const app = version === 'local' ? localApp : gistApp;
+    const record = app.records[index];
+    document.getElementById('edit-version').value = version;
+    document.getElementById('edit-index').value = index;
+    document.getElementById('edit-time').value = record.time;
+    document.getElementById('edit-remark').value = record.remark || '';
+    document.getElementById('edit-modal-overlay').classList.remove('hidden');
+}
+
+function closeEditModal() {
+    document.getElementById('edit-modal-overlay').classList.add('hidden');
+}
+
+// --- 本地版 (Local) 核心逻辑 ---
+const localApp = {
+    records: [],
+    recordsChart: null,
+    isExpanded: false,
+    selectedYear: new Date().getFullYear(),
+
+    init() {
+        this.loadRecordsFromLocal();
+        document.getElementById('local-record-btn').addEventListener('click', () => this.handleAddRecord());
+        document.getElementById('local-download-btn').addEventListener('click', () => this.exportToCsv());
+        document.getElementById('local-import-btn').addEventListener('click', () => document.getElementById('csv-file-input').click());
+        document.getElementById('local-expand-btn').addEventListener('click', () => {
+            this.isExpanded = !this.isExpanded;
+            this.renderRecords();
+        });
+        document.getElementById('local-year-select').addEventListener('change', (e) => {
+            this.selectedYear = parseInt(e.target.value, 10);
+            this.updateStatistics();
+        });
+    },
+
+    loadRecordsFromLocal() {
+        const saved = localStorage.getItem('timeRecords');
+        this.records = saved ? JSON.parse(saved) : [];
+        this.renderRecords();
+    },
+
+    saveRecordsToLocal() {
+        localStorage.setItem('timeRecords', JSON.stringify(this.records));
+    },
+
+    handleAddRecord() {
+        const remark = prompt("请输入本次记录的备注（可选）：", "");
+        if (remark === null) return showToast("已取消记录", "info");
+
+        const now = new Date();
+        const timeString = now.toLocaleString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }).replace(/\//g, '/');
+        this.records.unshift({ time: timeString, remark: remark.trim() });
+        this.saveRecordsToLocal();
+        this.renderRecords();
+        showToast("已记录当前时间 (本地)", "success");
+    },
+
+    handleDeleteRecord(index) {
+        if (!confirm('确定要删除此条记录吗？')) return;
+        this.records.splice(index, 1);
+        this.saveRecordsToLocal();
+        this.renderRecords();
+        showToast('已删除记录', 'success');
+    },
+
+    handleEditSave(index, newTime, newRemark) {
+        if (!newTime) return showToast('时间不能为空', 'error');
+        this.records[index] = { time: newTime, remark: newRemark };
+        this.saveRecordsToLocal();
+        this.renderRecords();
+        closeEditModal();
+        showToast('本地记录已更新', 'success');
+    },
+
+    importFromCsv(csvContent) {
+        try {
+            const fileRecords = csvContent.trim().split('\n').slice(1).map(line => {
+                const parts = line.split(',');
+                if (parts.length < 2) return null;
+                const time = parts[1].replace(/"/g, '').trim();
+                const remark = parts.slice(2).join(',').replace(/^"|"$/g, '').replace(/""/g, '"').trim();
+                return time ? { time, remark } : null;
+            }).filter(Boolean);
+
+            const map = new Map(this.records.map(r => [r.time, r]));
+            const originSize = map.size;
+            fileRecords.forEach(r => map.set(r.time, r));
+            const newRecords = Array.from(map.values());
+            const added = newRecords.length - originSize;
+
+            if (added > 0) {
+                this.records = newRecords;
+                this.saveRecordsToLocal();
+                this.renderRecords();
+                showToast(`导入成功！新增 ${added} 条记录`, 'success');
+            } else {
+                showToast('数据已是最新，无需导入', 'info');
+            }
+        } catch (e) {
+            showToast(`导入失败: ${e.message}`, 'error');
+        }
+    },
+
+    exportToCsv() {
+        if (this.records.length === 0) return showToast('暂无记录可导出', 'error');
+        let csv = "序号,时间,备注\n";
+        const sorted = [...this.records].sort((a, b) => new Date(b.time.replace(/\//g, '-')) - new Date(a.time.replace(/\//g, '-')));
+        sorted.forEach((r, idx) => {
+            const remarkText = r.remark ? `"${r.remark.replace(/"/g, '""')}"` : '""';
+            csv += `${sorted.length - idx},"${r.time}",${remarkText}\n`;
+        });
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.setAttribute('download', `时间记录_本地_${new Date().toISOString().slice(0,10)}.csv`);
+        link.click();
+    },
+
+    renderRecords() {
+        const container = document.getElementById('local-records-container');
+        const badge = document.getElementById('local-record-count-badge');
+        const expandWrapper = document.getElementById('local-expand-wrapper');
+        const expandBtn = document.getElementById('local-expand-btn');
+
+        this.records.sort((a, b) => new Date(b.time.replace(/\//g, '-')) - new Date(a.time.replace(/\//g, '-')));
+        badge.textContent = this.records.length;
+
+        if (this.records.length === 0) {
+            container.innerHTML = '<p class="text-center py-6 text-xs opacity-50">暂无任何记录</p>';
+            container.className = 'space-y-2.5 custom-scrollbar';
+            expandWrapper.classList.add('hidden');
+            this.updateYearOptions();
+            this.updateStatistics();
+            return;
+        }
+
+        // 展开时固定高度+可滑动；收起时自适应展示前3条
+        if (this.isExpanded) {
+            container.className = 'space-y-2.5 max-h-72 overflow-y-auto pr-1.5 custom-scrollbar';
+        } else {
+            container.className = 'space-y-2.5 custom-scrollbar';
+        }
+
+        const displayRecords = this.isExpanded ? this.records : this.records.slice(0, 3);
+
+        container.innerHTML = displayRecords.map((item, idx) => `
+            <div class="flex items-center justify-between p-3 rounded-xl border transition-all" style="border-color: var(--border-color); background-color: var(--bg-card);">
+                <div class="min-w-0 flex-1 pr-2">
+                    <p class="text-xs sm:text-sm font-semibold font-mono tracking-tight">${item.time}</p>
+                    <p class="text-xs opacity-60 truncate mt-0.5" title="${item.remark || ''}">${item.remark || '无备注'}</p>
+                </div>
+                <div class="flex items-center gap-1 flex-shrink-0">
+                    <button onclick="openEditModal('local', ${idx})" class="w-7 h-7 rounded-lg flex items-center justify-center opacity-70 hover:opacity-100 hover:bg-blue-500/10 text-blue-500"><i class="fa fa-pencil text-xs"></i></button>
+                    <button onclick="localApp.handleDeleteRecord(${idx})" class="w-7 h-7 rounded-lg flex items-center justify-center opacity-70 hover:opacity-100 hover:bg-red-500/10 text-red-500"><i class="fa fa-trash-o text-xs"></i></button>
+                </div>
+            </div>
+        `).join('');
+
+        if (this.records.length > 3) {
+            expandWrapper.classList.remove('hidden');
+            expandBtn.innerHTML = this.isExpanded
+                ? '<span>收起至前 3 条</span><i class="fa fa-chevron-up text-[10px]"></i>'
+                : `<span>展开全部数据 (${this.records.length}条，可滑动)</span><i class="fa fa-chevron-down text-[10px]"></i>`;
+        } else {
+            expandWrapper.classList.add('hidden');
+        }
+
+        this.updateYearOptions();
+        this.updateStatistics();
+    },
+
+    updateYearOptions() {
+        const select = document.getElementById('local-year-select');
+        const currentRealYear = new Date().getFullYear();
+        const yearsSet = new Set([currentRealYear]);
+
+        this.records.forEach(r => {
+            const y = new Date(r.time.replace(/\//g, '-')).getFullYear();
+            if (!isNaN(y)) yearsSet.add(y);
+        });
+
+        const sortedYears = Array.from(yearsSet).sort((a, b) => b - a);
+        select.innerHTML = sortedYears.map(y => `<option value="${y}" ${y === this.selectedYear ? 'selected' : ''}>${y} 年</option>`).join('');
+    },
+
+    updateStatistics() {
+        const yearRecords = this.records.filter(r => new Date(r.time.replace(/\//g, '-')).getFullYear() === this.selectedYear);
+
+        document.getElementById('local-summary-label').textContent = `${this.selectedYear} 年度总打卡`;
+        document.getElementById('local-summary-value').textContent = `${yearRecords.length} 次`;
+
+        const monthlyCounts = Array(12).fill(0);
+        yearRecords.forEach(r => {
+            const m = new Date(r.time.replace(/\//g, '-')).getMonth();
+            if (!isNaN(m)) monthlyCounts[m]++;
+        });
+
+        const ctx = document.getElementById('local-records-chart').getContext('2d');
+        if (this.recordsChart) this.recordsChart.destroy();
+
+        const computedStyle = getComputedStyle(document.documentElement);
+        const chartBorder = computedStyle.getPropertyValue('--chart-border').trim() || '#165DFF';
+        const chartBg = computedStyle.getPropertyValue('--chart-bg').trim() || 'rgba(22, 93, 255, 0.15)';
+        const textSub = computedStyle.getPropertyValue('--text-sub').trim() || '#86909C';
+
+        this.recordsChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'],
+                datasets: [{
+                    label: '打卡频次',
+                    data: monthlyCounts,
+                    backgroundColor: chartBg,
+                    borderColor: chartBorder,
+                    borderWidth: 2,
+                    pointRadius: 3,
+                    pointHoverRadius: 5,
+                    tension: 0.3,
+                    fill: true
+                }]
             },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: { grid: { display: false }, ticks: { color: textSub, font: { size: 10 } } },
+                    y: { beginAtZero: true, ticks: { stepSize: 1, color: textSub, font: { size: 10 } }, grid: { color: 'rgba(128,128,128,0.08)' } }
+                },
+                plugins: { legend: { display: false } }
+            }
+        });
+    }
+};
 
-            switchTheme(theme) {
-                document.documentElement.setAttribute('data-theme', theme);
-                localStorage.setItem('userTheme', theme);
 
-                ['blue', 'white', 'dark'].forEach(t => {
-                    const btn = document.getElementById(`theme-btn-${t}`);
-                    if (!btn) return;
-                    if (t === theme) {
-                        btn.classList.add('bg-white/20', 'shadow-sm');
-                    } else {
-                        btn.classList.remove('bg-white/20', 'shadow-sm');
-                    }
-                });
+// --- 云端版 (Gist) 核心逻辑 ---
+const gistApp = {
+    isInitialized: false,
+    config: {},
+    records: [],
+    recordsChart: null,
+    isExpanded: false,
+    selectedYear: new Date().getFullYear(),
 
-                if (window.StatsManager) {
-                    StatsManager.updateChartsTheme();
+    init() {
+        if (this.loadConfig()) {
+            this.loadRecordsFromGist();
+        }
+        document.getElementById('gist-config-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.saveConfig(
+                document.getElementById('gist-username').value.trim(),
+                document.getElementById('gist-gistId').value.trim(),
+                document.getElementById('gist-pat').value.trim()
+            );
+        });
+        document.getElementById('gist-record-btn').addEventListener('click', () => this.handleAddRecord());
+        document.getElementById('gist-download-btn').addEventListener('click', () => this.exportToCsv());
+        document.getElementById('gist-import-btn').addEventListener('click', () => document.getElementById('csv-file-input').click());
+        document.getElementById('gist-expand-btn').addEventListener('click', () => {
+            this.isExpanded = !this.isExpanded;
+            this.renderRecords();
+        });
+        document.getElementById('gist-year-select').addEventListener('change', (e) => {
+            this.selectedYear = parseInt(e.target.value, 10);
+            this.updateStatistics();
+        });
+    },
+
+    loadConfig() {
+        const savedConfig = localStorage.getItem('timeRecorderConfig');
+        if (savedConfig) {
+            this.config = JSON.parse(savedConfig);
+            document.getElementById('gist-config-overlay').classList.add('hidden');
+            return true;
+        } else {
+            document.getElementById('gist-config-overlay').classList.remove('hidden');
+            return false;
+        }
+    },
+
+    saveConfig(username, gistId, pat) {
+        this.config = { GITHUB_USERNAME: username, GIST_ID: gistId, GITHUB_PAT: pat };
+        localStorage.setItem('timeRecorderConfig', JSON.stringify(this.config));
+        document.getElementById('gist-config-overlay').classList.add('hidden');
+        this.loadRecordsFromGist();
+    },
+
+    async fetchDirectFromApi() {
+        const res = await fetch(`https://api.github.com/gists/${this.config.GIST_ID}`, {
+            headers: {
+                'Authorization': `token ${this.config.GITHUB_PAT}`,
+                'Accept': 'application/vnd.github.v3+json'
+            },
+            cache: 'no-store'
+        });
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err.message || `API 请求错误 (${res.status})`);
+        }
+        const data = await res.json();
+        const file = data.files && data.files['records.json'];
+        return file && file.content ? JSON.parse(file.content) : [];
+    },
+
+    async loadRecordsFromGist() {
+        if (!this.config.GIST_ID || !this.config.GITHUB_PAT) {
+            document.getElementById('gist-records-container').innerHTML = '<p class="text-center py-6 text-xs opacity-50">请先在弹窗中配置 Gist</p>';
+            return;
+        }
+        showToast("正在连接云端同步数据...", "info");
+        try {
+            const data = await this.fetchDirectFromApi();
+            this.records = Array.isArray(data) ? data : [];
+            this.renderRecords();
+            showToast("云端同步完成！", "success");
+        } catch (error) {
+            console.error(error);
+            showToast(`同步失败: ${error.message}`, "error");
+            this.renderRecords();
+        }
+    },
+
+    async saveAndVerify(targetRecords) {
+        if (!this.config.GIST_ID || !this.config.GITHUB_PAT) {
+            throw new Error("云端账号配置缺失");
+        }
+        const jsonContent = JSON.stringify(targetRecords, null, 2);
+
+        const res = await fetch(`https://api.github.com/gists/${this.config.GIST_ID}`, {
+            method: 'PATCH',
+            headers: {
+                'Authorization': `token ${this.config.GITHUB_PAT}`,
+                'Accept': 'application/vnd.github.v3+json',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                files: { 'records.json': { content: jsonContent } }
+            })
+        });
+        if (!res.ok) {
+            const errData = await res.json().catch(() => ({}));
+            throw new Error(errData.message || `上传失败 (${res.status})`);
+        }
+
+        const verified = await this.fetchDirectFromApi();
+        if (JSON.stringify(verified) !== JSON.stringify(targetRecords)) {
+            throw new Error("云端与本地校验不一致，正在重新确认");
+        }
+        return verified;
+    },
+
+    async handleAddRecord() {
+        const btn = document.getElementById('gist-record-btn');
+        const originHtml = btn.innerHTML;
+        const remark = prompt("请输入本次记录的备注（可选）：", "");
+        if (remark === null) return showToast("已取消操作", "info");
+
+        const now = new Date();
+        const timeString = now.toLocaleString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }).replace(/\//g, '/');
+        const newRecords = [{ time: timeString, remark: remark.trim() }, ...this.records];
+
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i><span>云端保存并校验中...</span>';
+
+        try {
+            const confirmed = await this.saveAndVerify(newRecords);
+            this.records = confirmed;
+            this.renderRecords();
+            showToast("云端已成功保存并完成验证！", "success");
+        } catch (error) {
+            showToast(`保存失败: ${error.message}`, "error");
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = originHtml;
+        }
+    },
+
+    async handleDeleteRecord(index) {
+        if (!confirm('确定要从云端删除此记录吗？')) return;
+        const newRecords = [...this.records];
+        newRecords.splice(index, 1);
+
+        showToast("正在删除并同步云端...", "info");
+        try {
+            const confirmed = await this.saveAndVerify(newRecords);
+            this.records = confirmed;
+            this.renderRecords();
+            showToast('云端记录已删除', 'success');
+        } catch (error) {
+            showToast(`删除失败: ${error.message}`, 'error');
+        }
+    },
+
+    async handleEditSave(index, newTime, newRemark) {
+        if (!newTime) return showToast('时间不能为空', 'error');
+
+        const btn = document.getElementById('save-edit-btn');
+        const originText = btn.textContent;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa fa-spinner fa-spin mr-1"></i>保存校验中...';
+
+        const newRecords = [...this.records];
+        newRecords[index] = { time: newTime, remark: newRemark };
+
+        try {
+            const confirmed = await this.saveAndVerify(newRecords);
+            this.records = confirmed;
+            this.renderRecords();
+            closeEditModal();
+            showToast('云端记录已更新并验证成功！', 'success');
+        } catch (error) {
+            showToast(`修改失败: ${error.message}`, 'error');
+        } finally {
+            btn.disabled = false;
+            btn.textContent = originText;
+        }
+    },
+
+    async importFromCsv(csvContent) {
+        showToast('正在解析合并并同步云端...', 'info');
+        try {
+            const fileRecords = csvContent.trim().split('\n').slice(1).map(line => {
+                const parts = line.split(',');
+                if (parts.length < 2) return null;
+                const time = parts[1].replace(/"/g, '').trim();
+                const remark = parts.slice(2).join(',').replace(/^"|"$/g, '').replace(/""/g, '"').trim();
+                return time ? { time, remark } : null;
+            }).filter(Boolean);
+
+            const map = new Map(this.records.map(r => [r.time, r]));
+            const originSize = map.size;
+            fileRecords.forEach(r => map.set(r.time, r));
+            const newRecords = Array.from(map.values());
+            const added = newRecords.length - originSize;
+
+            if (added > 0) {
+                const confirmed = await this.saveAndVerify(newRecords);
+                this.records = confirmed;
+                this.renderRecords();
+                showToast(`导入成功！新增并同步 ${added} 条数据`, 'success');
+            } else {
+                showToast('云端数据已是最新', 'info');
+            }
+        } catch (error) {
+            showToast(`导入失败: ${error.message}`, 'error');
+        }
+    },
+
+    exportToCsv() {
+        if (this.records.length === 0) return showToast('暂无记录可导出', 'error');
+        let csv = "序号,时间,备注\n";
+        const sorted = [...this.records].sort((a, b) => new Date(b.time.replace(/\//g, '-')) - new Date(a.time.replace(/\//g, '-')));
+        sorted.forEach((r, idx) => {
+            const remarkText = r.remark ? `"${r.remark.replace(/"/g, '""')}"` : '""';
+            csv += `${sorted.length - idx},"${r.time}",${remarkText}\n`;
+        });
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.setAttribute('download', `时间记录_云端_${new Date().toISOString().slice(0,10)}.csv`);
+        link.click();
+    },
+
+    renderRecords() {
+        const container = document.getElementById('gist-records-container');
+        const badge = document.getElementById('gist-record-count-badge');
+        const expandWrapper = document.getElementById('gist-expand-wrapper');
+        const expandBtn = document.getElementById('gist-expand-btn');
+
+        this.records.sort((a, b) => new Date(b.time.replace(/\//g, '-')) - new Date(a.time.replace(/\//g, '-')));
+        badge.textContent = this.records.length;
+
+        if (this.records.length === 0 && this.config.GIST_ID) {
+            container.innerHTML = '<p class="text-center py-6 text-xs opacity-50">云端暂无任何记录</p>';
+            container.className = 'space-y-2.5 custom-scrollbar';
+            expandWrapper.classList.add('hidden');
+            this.updateYearOptions();
+            this.updateStatistics();
+            return;
+        }
+
+        if (this.isExpanded) {
+            container.className = 'space-y-2.5 max-h-72 overflow-y-auto pr-1.5 custom-scrollbar';
+        } else {
+            container.className = 'space-y-2.5 custom-scrollbar';
+        }
+
+        const displayRecords = this.isExpanded ? this.records : this.records.slice(0, 3);
+
+        container.innerHTML = displayRecords.map((item, idx) => `
+            <div class="flex items-center justify-between p-3 rounded-xl border transition-all" style="border-color: var(--border-color); background-color: var(--bg-card);">
+                <div class="min-w-0 flex-1 pr-2">
+                    <p class="text-xs sm:text-sm font-semibold font-mono tracking-tight">${item.time}</p>
+                    <p class="text-xs opacity-60 truncate mt-0.5" title="${item.remark || ''}">${item.remark || '无备注'}</p>
+                </div>
+                <div class="flex items-center gap-1 flex-shrink-0">
+                    <button onclick="openEditModal('gist', ${idx})" class="w-7 h-7 rounded-lg flex items-center justify-center opacity-70 hover:opacity-100 hover:bg-blue-500/10 text-blue-500"><i class="fa fa-pencil text-xs"></i></button>
+                    <button onclick="gistApp.handleDeleteRecord(${idx})" class="w-7 h-7 rounded-lg flex items-center justify-center opacity-70 hover:opacity-100 hover:bg-red-500/10 text-red-500"><i class="fa fa-trash-o text-xs"></i></button>
+                </div>
+            </div>
+        `).join('');
+
+        if (this.records.length > 3) {
+            expandWrapper.classList.remove('hidden');
+            expandBtn.innerHTML = this.isExpanded
+                ? '<span>收起至前 3 条</span><i class="fa fa-chevron-up text-[10px]"></i>'
+                : `<span>展开全部数据 (${this.records.length}条，可滑动)</span><i class="fa fa-chevron-down text-[10px]"></i>`;
+        } else {
+            expandWrapper.classList.add('hidden');
+        }
+
+        this.updateYearOptions();
+        this.updateStatistics();
+    },
+
+    updateYearOptions() {
+        const select = document.getElementById('gist-year-select');
+        const currentRealYear = new Date().getFullYear();
+        const yearsSet = new Set([currentRealYear]);
+
+        this.records.forEach(r => {
+            const y = new Date(r.time.replace(/\//g, '-')).getFullYear();
+            if (!isNaN(y)) yearsSet.add(y);
+        });
+
+        const sortedYears = Array.from(yearsSet).sort((a, b) => b - a);
+        select.innerHTML = sortedYears.map(y => `<option value="${y}" ${y === this.selectedYear ? 'selected' : ''}>${y} 年</option>`).join('');
+    },
+
+    updateStatistics() {
+        const yearRecords = this.records.filter(r => new Date(r.time.replace(/\//g, '-')).getFullYear() === this.selectedYear);
+
+        document.getElementById('gist-summary-label').textContent = `${this.selectedYear} 年度总打卡`;
+        document.getElementById('gist-summary-value').textContent = `${yearRecords.length} 次`;
+
+        const monthlyCounts = Array(12).fill(0);
+        yearRecords.forEach(r => {
+            const m = new Date(r.time.replace(/\//g, '-')).getMonth();
+            if (!isNaN(m)) monthlyCounts[m]++;
+        });
+
+        const ctx = document.getElementById('gist-records-chart').getContext('2d');
+        if (this.recordsChart) this.recordsChart.destroy();
+
+        const computedStyle = getComputedStyle(document.documentElement);
+        const chartBorder = computedStyle.getPropertyValue('--chart-border').trim() || '#165DFF';
+        const chartBg = computedStyle.getPropertyValue('--chart-bg').trim() || 'rgba(22, 93, 255, 0.15)';
+        const textSub = computedStyle.getPropertyValue('--text-sub').trim() || '#86909C';
+
+        this.recordsChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'],
+                datasets: [{
+                    label: '打卡频次',
+                    data: monthlyCounts,
+                    backgroundColor: chartBg,
+                    borderColor: chartBorder,
+                    borderWidth: 2,
+                    pointRadius: 3,
+                    pointHoverRadius: 5,
+                    tension: 0.3,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: { grid: { display: false }, ticks: { color: textSub, font: { size: 10 } } },
+                    y: { beginAtZero: true, ticks: { stepSize: 1, color: textSub, font: { size: 10 } }, grid: { color: 'rgba(128,128,128,0.08)' } }
+                },
+                plugins: { legend: { display: false } }
+            }
+        });
+    }
+};
+
+// --- 启动初始化 ---
+document.addEventListener('DOMContentLoaded', () => {
+    initTheme();
+    localApp.init();
+    updateAllCurrentTime();
+    setInterval(updateAllCurrentTime, 1000);
+
+    const tabLocal = document.getElementById('tab-local');
+    const tabGist = document.getElementById('tab-gist');
+    const contentLocal = document.getElementById('content-local');
+    const contentGist = document.getElementById('content-gist');
+
+    tabLocal.addEventListener('click', () => {
+        tabLocal.classList.add('active');
+        tabGist.classList.remove('active');
+        contentLocal.classList.remove('hidden');
+        contentGist.classList.add('hidden');
+    });
+
+    tabGist.addEventListener('click', () => {
+        tabGist.classList.add('active');
+        tabLocal.classList.remove('active');
+        contentGist.classList.remove('hidden');
+        contentLocal.classList.add('hidden');
+
+        if (!gistApp.isInitialized) {
+            gistApp.init();
+            gistApp.isInitialized = true;
+        }
+    });
+
+    document.getElementById('edit-form').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const ver = document.getElementById('edit-version').value;
+        const idx = parseInt(document.getElementById('edit-index').value, 10);
+        const time = document.getElementById('edit-time').value.trim();
+        const remark = document.getElementById('edit-remark').value.trim();
+
+        if (ver === 'local') localApp.handleEditSave(idx, time, remark);
+        else gistApp.handleEditSave(idx, time, remark);
+    });
+
+    document.getElementById('cancel-edit-btn').addEventListener('click', closeEditModal);
+    document.getElementById('edit-modal-overlay').addEventListener('click', (e) => {
+        if (e.target === e.currentTarget) closeEditModal();
+    });
+
+    document.getElementById('csv-file-input').addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(evt) {
+            const activeTab = document.querySelector('.tab-btn.active').id;
+            if (activeTab === 'tab-local') {
+                localApp.importFromCsv(evt.target.result);
+            } else {
+                if (!gistApp.isInitialized) {
+                    gistApp.init();
+                    gistApp.isInitialized = true;
                 }
-            },
-
-            initTheme() {
-                const savedTheme = localStorage.getItem('userTheme') || 'blue';
-                this.switchTheme(savedTheme);
-            },
-
-            updateClock() {
-                const now = new Date();
-                const timeString = now.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
-                const localClock = document.getElementById('local-current-time');
-                const gistClock = document.getElementById('gist-current-time');
-                if (localClock) localClock.textContent = timeString;
-                if (gistClock) gistClock.textContent = timeString;
+                gistApp.importFromCsv(evt.target.result);
             }
         };
-
-        // DOM 加载就绪后启动整体流程
-        document.addEventListener('DOMContentLoaded', () => {
-            AppUI.initTheme();
-            AppUI.updateClock();
-            setInterval(() => AppUI.updateClock(), 1000);
-
-            // 初始化数据层与视图层
-            DataStore.init();
-            RecordManager.init();
-            StatsManager.init();
-
-            // 选项卡切换
-            const tabLocal = document.getElementById('tab-local');
-            const tabGist = document.getElementById('tab-gist');
-            const contentLocal = document.getElementById('content-local');
-            const contentGist = document.getElementById('content-gist');
-
-            tabLocal.addEventListener('click', () => {
-                tabLocal.classList.add('active');
-                tabGist.classList.remove('active');
-                contentLocal.classList.remove('hidden');
-                contentGist.classList.add('hidden');
-            });
-
-            tabGist.addEventListener('click', () => {
-                tabGist.classList.add('active');
-                tabLocal.classList.remove('active');
-                contentGist.classList.remove('hidden');
-                contentLocal.classList.add('hidden');
-
-                if (!AppUI.gistInitialized) {
-                    DataStore.initGist();
-                    AppUI.gistInitialized = true;
-                }
-            });
-        });
-    </script>
+        reader.readAsText(file);
+        e.target.value = null;
+    });
+});
+</script>
 </body>
 </html>
