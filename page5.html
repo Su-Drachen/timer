@@ -22,9 +22,77 @@
         }
     </script>
     <style>
-        body { -webkit-tap-highlight-color: transparent; }
+        html, body { height: 100%; }
+        body {
+            -webkit-tap-highlight-color: transparent;
+            overflow: hidden;
+        }
+
         .scrollbar-hide::-webkit-scrollbar { display: none; }
         .scrollbar-hide { scrollbar-width: none; -ms-overflow-style: none; }
+
+        /* 关键布局：允许 flex 子元素真正收缩，从而让内部滚动条正常工作 */
+        .app-main {
+            height: calc(100dvh - 65px - 57px);
+            min-height: 0;
+            overflow: hidden;
+        }
+
+        .chat-card {
+            height: 100%;
+            min-height: 0;
+            overflow: hidden;
+        }
+
+        .chat-scroll {
+            min-height: 0;
+            overflow-y: auto;
+            overscroll-behavior: contain;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: thin;
+            scrollbar-color: #cbd5e1 transparent;
+        }
+
+        .chat-scroll::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .chat-scroll::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .chat-scroll::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 999px;
+        }
+
+        /* 防止 Markdown 长内容把气泡/父容器撑破 */
+        .message-row {
+            min-width: 0;
+        }
+
+        .message-bubble {
+            min-width: 0;
+            max-width: min(85%, 760px);
+            overflow-wrap: anywhere;
+            word-break: break-word;
+        }
+
+        .message-content {
+            min-width: 0;
+            overflow-wrap: anywhere;
+            word-break: break-word;
+        }
+
+        @media (max-width: 640px) {
+            .app-main {
+                height: calc(100dvh - 60px - 57px);
+            }
+
+            .message-bubble {
+                max-width: 88%;
+            }
+        }
 
         /* 简单动画 */
         @keyframes fadeIn {
@@ -61,7 +129,7 @@
     </header>
 
     <!-- 主体区域 -->
-    <main class="flex-grow container mx-auto px-3.5 sm:px-4 py-4 max-w-3xl flex flex-col">
+    <main class="app-main container mx-auto px-3.5 sm:px-4 py-4 max-w-3xl flex flex-col w-full">
 
         <!-- 概览状态栏 (简明数据背景) -->
         <div id="status-bar" class="mb-3 bg-white rounded-xl p-3 border border-slate-200 shadow-sm flex items-center justify-between text-xs text-slate-600">
@@ -73,8 +141,8 @@
         </div>
 
         <!-- 聊天/分析对话容器 -->
-        <div class="flex-grow bg-white rounded-2xl shadow-sm border border-slate-200 p-4 sm:p-5 flex flex-col min-h-[460px] overflow-hidden">
-            <div id="chatResponseArea" class="flex-grow overflow-y-auto space-y-4 pb-4 scrollbar-hide">
+        <div class="chat-card flex-grow bg-white rounded-2xl shadow-sm border border-slate-200 p-4 sm:p-5 flex flex-col">
+            <div id="chatResponseArea" class="chat-scroll flex-grow space-y-4 pb-4 min-h-0">
                 <!-- 消息内容将动态插入 -->
             </div>
 
@@ -127,6 +195,7 @@
         const loadingIndicator = document.getElementById('loadingIndicator');
         const userInput = document.getElementById('userInput');
         const refreshBtn = document.getElementById('refresh-btn');
+        const sendBtn = document.getElementById('sendBtn');
         const dataSummary = document.getElementById('data-summary');
         const latestDurationText = document.getElementById('latest-duration');
 
@@ -295,6 +364,7 @@ ${recentListText}
         async function streamGLMResponse(prompt, messageElement) {
             const token = await get_access_token();
             const url = "https://chatglm.cn/chatglm/assistant-api/v1/stream";
+
             const response = await fetch(url, {
                 method: 'POST',
                 headers: {
@@ -307,55 +377,121 @@ ${recentListText}
                 })
             });
 
-            if (!response.ok) throw new Error(`API 响应异常: ${response.status}`);
+            if (!response.ok) {
+                throw new Error(`API 响应异常: ${response.status}`);
+            }
 
-            let complete_output = "";
+            if (!response.body) {
+                throw new Error('浏览器未提供流式响应读取能力');
+            }
+
             const reader = response.body.getReader();
-            let last_length = 0;
+            const decoder = new TextDecoder('utf-8');
+
+            let buffer = "";
+            let completeOutput = "";
+            let lastFullOutput = "";
+            let userWasAtBottom = true;
+
+            const applyOutput = (output) => {
+                if (!output) return;
+
+                // ChatGLM 不同返回版本有两种常见形式：
+                // A. 每次返回“完整文本”
+                // B. 每次只返回“新增文本”
+                // 这里自动判断，避免重复拼接或丢字。
+                if (output.startsWith(lastFullOutput)) {
+                    completeOutput = output;
+                } else if (lastFullOutput && lastFullOutput.startsWith(output)) {
+                    // 收到较短的重复/回退片段，忽略
+                    return;
+                } else if (!completeOutput) {
+                    completeOutput = output;
+                } else {
+                    completeOutput += output;
+                }
+
+                lastFullOutput = output;
+
+                messageElement.innerHTML = formatMarkdown(completeOutput);
+
+                if (userWasAtBottom) {
+                    scrollToBottom(true);
+                }
+            };
+
+            const processSSELine = (line) => {
+                const trimmed = line.trim();
+                if (!trimmed || !trimmed.startsWith('data:')) return;
+
+                const raw = trimmed.slice(5).trim();
+                if (!raw || raw === '[DONE]') return;
+
+                try {
+                    const data_dict = JSON.parse(raw);
+                    const output = handle_response(data_dict);
+                    if (output) applyOutput(output);
+                } catch (e) {
+                    // 单条流数据不是完整 JSON 时忽略，后续数据继续处理。
+                    // 不因为一条损坏/非 JSON 的 SSE 数据导致整个会话失败。
+                    console.debug('SSE 数据解析跳过:', raw);
+                }
+            };
+
+            userWasAtBottom = isChatAtBottom();
 
             while (true) {
                 const { done, value } = await reader.read();
+
                 if (done) break;
 
-                const decoded_line = new TextDecoder().decode(value);
-                const lines = decoded_line.split('\n');
+                buffer += decoder.decode(value, { stream: true });
+
+                // 处理完整行，保留最后一个未完成行。
+                const lines = buffer.split(/\r?\n/);
+                buffer = lines.pop() || "";
 
                 for (const line of lines) {
-                    if (line.startsWith('data:')) {
-                        try {
-                            const data_dict = JSON.parse(line.slice(5));
-                            const output = handle_response(data_dict);
-                            if (output) {
-                                const new_text = output.slice(last_length);
-                                complete_output += new_text;
-                                last_length = output.length;
-                                messageElement.innerHTML = formatMarkdown(complete_output);
-                                scrollToBottom();
-                            }
-                        } catch (e) {}
-                    }
+                    processSSELine(line);
+                }
+
+                // 流式内容更新时检查用户是否仍停留在底部。
+                userWasAtBottom = isChatAtBottom();
+            }
+
+            // flush TextDecoder，并处理最后残留的一行。
+            buffer += decoder.decode();
+            if (buffer.trim()) {
+                for (const line of buffer.split(/\r?\n/)) {
+                    processSSELine(line);
                 }
             }
-            return complete_output;
+
+            return completeOutput;
         }
 
         // ==================== UI 消息渲染 ====================
         function appendMessageBubble(type, content = "") {
             const isUser = type === 'user';
-            const bubbleId = 'msg-' + Date.now();
+            const bubbleId = 'msg-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8);
+
             const html = `
-                <div class="flex items-start gap-2.5 ${isUser ? 'justify-end' : ''} animate-fade-in">
+                <div class="message-row flex items-start gap-2.5 ${isUser ? 'justify-end' : ''} animate-fade-in">
                     ${!isUser ? `
                         <div class="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center flex-shrink-0 text-sm">
                             <i class="fa fa-user-md"></i>
                         </div>` : ''
                     }
-                    <div class="max-w-[85%] rounded-2xl px-4 py-3 text-xs sm:text-sm leading-relaxed shadow-sm ${
+                    <div class="message-bubble rounded-2xl px-4 py-3 text-xs sm:text-sm leading-relaxed shadow-sm ${
                         isUser
                             ? 'bg-primary text-white rounded-br-none'
                             : 'bg-slate-50 border border-slate-200 text-slate-800 rounded-tl-none'
                     }">
-                        <div id="${bubbleId}">${content ? (isUser ? escapeHtml(content) : formatMarkdown(content)) : ''}</div>
+                        <div class="message-content" id="${bubbleId}">${
+                            content
+                                ? (isUser ? escapeHtml(content) : formatMarkdown(content))
+                                : ''
+                        }</div>
                     </div>
                     ${isUser ? `
                         <div class="w-8 h-8 rounded-full bg-slate-200 text-slate-600 flex items-center justify-center flex-shrink-0 text-xs">
@@ -364,12 +500,36 @@ ${recentListText}
                     }
                 </div>
             `;
+
             chatResponseArea.insertAdjacentHTML('beforeend', html);
             scrollToBottom();
             return document.getElementById(bubbleId);
         }
 
-        function scrollToBottom() {
+        function scrollToBottom(force = false) {
+            // 只有用户已经在底部，或者明确要求 force 时，才自动吸到底部，
+            // 避免用户阅读历史消息时被新流式内容强行拉到底。
+            const distanceFromBottom =
+                chatResponseArea.scrollHeight -
+                chatResponseArea.scrollTop -
+                chatResponseArea.clientHeight;
+
+            const shouldStick = force || distanceFromBottom <= 80;
+
+            if (shouldStick) {
+                chatResponseArea.scrollTop = chatResponseArea.scrollHeight;
+            }
+        }
+
+        function isChatAtBottom() {
+            return (
+                chatResponseArea.scrollHeight -
+                chatResponseArea.scrollTop -
+                chatResponseArea.clientHeight
+            ) <= 80;
+        }
+
+() {
             chatResponseArea.scrollTop = chatResponseArea.scrollHeight;
         }
 
@@ -400,6 +560,7 @@ ${recentListText}
             }
 
             chatResponseArea.innerHTML = '';
+            chatResponseArea.scrollTop = 0;
             loadingIndicator.classList.remove('hidden');
 
             const savedLocal = localStorage.getItem('timeRecords');
@@ -444,11 +605,20 @@ ${recentListText}
         }
 
         // 用户追问发送
+        let followUpSending = false;
+
         async function sendUserFollowUpMessage() {
+            if (followUpSending) return;
+
             const text = userInput.value.trim();
             if (!text) return;
 
             userInput.value = '';
+            followUpSending = true;
+            userInput.disabled = true;
+            sendBtn.disabled = true;
+            sendBtn.classList.add('opacity-60', 'cursor-not-allowed');
+
             appendMessageBubble('user', text);
             loadingIndicator.classList.remove('hidden');
 
@@ -459,6 +629,11 @@ ${recentListText}
                 appendMessageBubble('assistant', `抱歉，响应请求时遇到错误：${error.message}`);
             } finally {
                 loadingIndicator.classList.add('hidden');
+                followUpSending = false;
+                userInput.disabled = false;
+                sendBtn.disabled = false;
+                sendBtn.classList.remove('opacity-60', 'cursor-not-allowed');
+                userInput.focus();
             }
         }
 
