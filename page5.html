@@ -22,77 +22,9 @@
         }
     </script>
     <style>
-        html, body { height: 100%; }
-        body {
-            -webkit-tap-highlight-color: transparent;
-            overflow: hidden;
-        }
-
+        body { -webkit-tap-highlight-color: transparent; }
         .scrollbar-hide::-webkit-scrollbar { display: none; }
         .scrollbar-hide { scrollbar-width: none; -ms-overflow-style: none; }
-
-        /* 关键布局：允许 flex 子元素真正收缩，从而让内部滚动条正常工作 */
-        .app-main {
-            height: calc(100dvh - 65px - 57px);
-            min-height: 0;
-            overflow: hidden;
-        }
-
-        .chat-card {
-            height: 100%;
-            min-height: 0;
-            overflow: hidden;
-        }
-
-        .chat-scroll {
-            min-height: 0;
-            overflow-y: auto;
-            overscroll-behavior: contain;
-            -webkit-overflow-scrolling: touch;
-            scrollbar-width: thin;
-            scrollbar-color: #cbd5e1 transparent;
-        }
-
-        .chat-scroll::-webkit-scrollbar {
-            width: 6px;
-        }
-
-        .chat-scroll::-webkit-scrollbar-track {
-            background: transparent;
-        }
-
-        .chat-scroll::-webkit-scrollbar-thumb {
-            background: #cbd5e1;
-            border-radius: 999px;
-        }
-
-        /* 防止 Markdown 长内容把气泡/父容器撑破 */
-        .message-row {
-            min-width: 0;
-        }
-
-        .message-bubble {
-            min-width: 0;
-            max-width: min(85%, 760px);
-            overflow-wrap: anywhere;
-            word-break: break-word;
-        }
-
-        .message-content {
-            min-width: 0;
-            overflow-wrap: anywhere;
-            word-break: break-word;
-        }
-
-        @media (max-width: 640px) {
-            .app-main {
-                height: calc(100dvh - 60px - 57px);
-            }
-
-            .message-bubble {
-                max-width: 88%;
-            }
-        }
 
         /* 简单动画 */
         @keyframes fadeIn {
@@ -102,16 +34,17 @@
         .animate-fade-in { animation: fadeIn 0.3s ease-out forwards; }
     </style>
 </head>
-<body class="bg-slate-100 min-h-screen flex flex-col font-sans antialiased text-slate-800">
+<!-- 设置为固定视口高度 100dvh 并禁止全局外层溢出，适配手机端浏览器地址栏 -->
+<body class="bg-slate-100 h-screen h-[100dvh] flex flex-col font-sans antialiased text-slate-800 overflow-hidden">
 
     <!-- 顶部导航栏 -->
-    <header class="bg-white shadow-sm sticky top-0 z-30 border-b border-slate-200/80">
-        <div class="container mx-auto px-4 py-3 flex justify-between items-center max-w-3xl">
+    <header class="bg-white shadow-sm sticky top-0 z-30 border-b border-slate-200/80 flex-shrink-0">
+        <div class="container mx-auto px-4 py-2.5 sm:py-3 flex justify-between items-center max-w-3xl">
             <div class="flex items-center gap-2">
-                <div class="w-8 h-8 rounded-lg bg-blue-50 text-primary flex items-center justify-center">
+                <div class="w-8 h-8 rounded-lg bg-blue-50 text-primary flex items-center justify-center flex-shrink-0">
                     <i class="fa fa-user-md text-lg"></i>
                 </div>
-                <h1 class="text-base sm:text-lg font-bold tracking-tight text-slate-800">
+                <h1 class="text-sm sm:text-base font-bold tracking-tight text-slate-800">
                     AI 健康评估与建议
                 </h1>
             </div>
@@ -129,38 +62,39 @@
     </header>
 
     <!-- 主体区域 -->
-    <main class="app-main container mx-auto px-3.5 sm:px-4 py-4 max-w-3xl flex flex-col w-full">
+    <main class="flex-1 min-h-0 container mx-auto px-3 sm:px-4 py-2.5 sm:py-3 max-w-3xl flex flex-col overflow-hidden">
 
         <!-- 概览状态栏 (简明数据背景) -->
-        <div id="status-bar" class="mb-3 bg-white rounded-xl p-3 border border-slate-200 shadow-sm flex items-center justify-between text-xs text-slate-600">
-            <div class="flex items-center gap-2">
-                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                <span id="data-summary">正在同步数据并准备分析...</span>
+        <div id="status-bar" class="flex-shrink-0 mb-2.5 bg-white rounded-xl p-2.5 sm:p-3 border border-slate-200 shadow-sm flex items-center justify-between text-xs text-slate-600">
+            <div class="flex items-center gap-2 overflow-hidden">
+                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse flex-shrink-0"></span>
+                <span id="data-summary" class="truncate">正在同步数据并准备分析...</span>
             </div>
-            <span id="latest-duration" class="font-semibold text-primary"></span>
+            <span id="latest-duration" class="font-semibold text-primary flex-shrink-0 ml-2"></span>
         </div>
 
-        <!-- 聊天/分析对话容器 -->
-        <div class="chat-card flex-grow bg-white rounded-2xl shadow-sm border border-slate-200 p-4 sm:p-5 flex flex-col">
-            <div id="chatResponseArea" class="chat-scroll flex-grow space-y-4 pb-4 min-h-0">
+        <!-- 聊天/分析对话容器 (高度自适应且内嵌滚动) -->
+        <div class="flex-1 min-h-0 bg-white rounded-2xl shadow-sm border border-slate-200 p-3.5 sm:p-4 flex flex-col overflow-hidden">
+            <!-- 滚动聊天消息区域 -->
+            <div id="chatResponseArea" class="flex-1 min-h-0 overflow-y-auto space-y-4 pb-2 scrollbar-hide break-words">
                 <!-- 消息内容将动态插入 -->
             </div>
 
             <!-- 加载中指示器 -->
-            <div id="loadingIndicator" class="hidden flex items-center space-x-2 py-3 px-2">
+            <div id="loadingIndicator" class="flex-shrink-0 hidden flex items-center space-x-2 py-2 px-1">
                 <div class="w-2 h-2 rounded-full bg-primary animate-bounce"></div>
                 <div class="w-2 h-2 rounded-full bg-primary animate-bounce" style="animation-delay: 0.2s"></div>
                 <div class="w-2 h-2 rounded-full bg-primary animate-bounce" style="animation-delay: 0.4s"></div>
-                <span class="text-xs text-slate-400 font-medium">AI 顾问正在结合生理与医学模型深度评估...</span>
+                <span class="text-xs text-slate-400 font-medium">AI 顾问正在深度评估中...</span>
             </div>
 
-            <!-- 追问输入框区域 -->
-            <div class="pt-3 border-t border-slate-100 mt-auto">
+            <!-- 追问输入框区域 (固定在聊天框底部) -->
+            <div class="flex-shrink-0 pt-2.5 sm:pt-3 border-t border-slate-100 mt-1">
                 <div class="flex gap-2">
-                    <input type="text" id="userInput" placeholder="对分析结果有疑问？可在此继续向 AI 追问..."
-                        class="flex-grow px-3.5 py-2.5 text-xs sm:text-sm rounded-xl border border-slate-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all bg-slate-50 text-slate-800 placeholder-slate-400"
+                    <input type="text" id="userInput" placeholder="对分析结果有疑问？可在此追问..."
+                        class="flex-grow px-3.5 py-2 sm:py-2.5 text-xs sm:text-sm rounded-xl border border-slate-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all bg-slate-50 text-slate-800 placeholder-slate-400"
                         onkeydown="if(event.key === 'Enter') sendUserFollowUpMessage()">
-                    <button id="sendBtn" onclick="sendUserFollowUpMessage()" class="px-4 py-2.5 bg-primary hover:bg-primary/90 text-white rounded-xl text-xs font-semibold shadow-sm transition-all flex items-center gap-1">
+                    <button id="sendBtn" onclick="sendUserFollowUpMessage()" class="px-4 py-2 sm:py-2.5 bg-primary hover:bg-primary/90 text-white rounded-xl text-xs font-semibold shadow-sm transition-all flex items-center gap-1 flex-shrink-0">
                         <i class="fa fa-paper-plane-o"></i>
                         <span class="hidden sm:inline">发送</span>
                     </button>
@@ -171,7 +105,7 @@
     </main>
 
     <!-- 页脚 -->
-    <footer class="text-slate-400 py-4 mt-auto border-t border-slate-200/60">
+    <footer class="flex-shrink-0 text-slate-400 py-2 sm:py-2.5 border-t border-slate-200/60 bg-white/50 sm:bg-transparent">
         <div class="container mx-auto px-4 text-center text-[11px]">
             © 私人时间记录器 · AI 辅助健康评估 (仅供日常自律与健康参考)
         </div>
@@ -189,13 +123,13 @@
         let gistRecords = [];
         let allMatchedPairs = [];
         let cachedAccessToken = null;
+        let bubbleUniqueCounter = 0; // 保证消息气泡 ID 唯一
 
         // DOM 元素
         const chatResponseArea = document.getElementById('chatResponseArea');
         const loadingIndicator = document.getElementById('loadingIndicator');
         const userInput = document.getElementById('userInput');
         const refreshBtn = document.getElementById('refresh-btn');
-        const sendBtn = document.getElementById('sendBtn');
         const dataSummary = document.getElementById('data-summary');
         const latestDurationText = document.getElementById('latest-duration');
 
@@ -364,7 +298,6 @@ ${recentListText}
         async function streamGLMResponse(prompt, messageElement) {
             const token = await get_access_token();
             const url = "https://chatglm.cn/chatglm/assistant-api/v1/stream";
-
             const response = await fetch(url, {
                 method: 'POST',
                 headers: {
@@ -377,121 +310,57 @@ ${recentListText}
                 })
             });
 
-            if (!response.ok) {
-                throw new Error(`API 响应异常: ${response.status}`);
-            }
+            if (!response.ok) throw new Error(`API 响应异常: ${response.status}`);
 
-            if (!response.body) {
-                throw new Error('浏览器未提供流式响应读取能力');
-            }
-
+            let complete_output = "";
             const reader = response.body.getReader();
-            const decoder = new TextDecoder('utf-8');
-
-            let buffer = "";
-            let completeOutput = "";
-            let lastFullOutput = "";
-            let userWasAtBottom = true;
-
-            const applyOutput = (output) => {
-                if (!output) return;
-
-                // ChatGLM 不同返回版本有两种常见形式：
-                // A. 每次返回“完整文本”
-                // B. 每次只返回“新增文本”
-                // 这里自动判断，避免重复拼接或丢字。
-                if (output.startsWith(lastFullOutput)) {
-                    completeOutput = output;
-                } else if (lastFullOutput && lastFullOutput.startsWith(output)) {
-                    // 收到较短的重复/回退片段，忽略
-                    return;
-                } else if (!completeOutput) {
-                    completeOutput = output;
-                } else {
-                    completeOutput += output;
-                }
-
-                lastFullOutput = output;
-
-                messageElement.innerHTML = formatMarkdown(completeOutput);
-
-                if (userWasAtBottom) {
-                    scrollToBottom(true);
-                }
-            };
-
-            const processSSELine = (line) => {
-                const trimmed = line.trim();
-                if (!trimmed || !trimmed.startsWith('data:')) return;
-
-                const raw = trimmed.slice(5).trim();
-                if (!raw || raw === '[DONE]') return;
-
-                try {
-                    const data_dict = JSON.parse(raw);
-                    const output = handle_response(data_dict);
-                    if (output) applyOutput(output);
-                } catch (e) {
-                    // 单条流数据不是完整 JSON 时忽略，后续数据继续处理。
-                    // 不因为一条损坏/非 JSON 的 SSE 数据导致整个会话失败。
-                    console.debug('SSE 数据解析跳过:', raw);
-                }
-            };
-
-            userWasAtBottom = isChatAtBottom();
+            let last_length = 0;
 
             while (true) {
                 const { done, value } = await reader.read();
-
                 if (done) break;
 
-                buffer += decoder.decode(value, { stream: true });
-
-                // 处理完整行，保留最后一个未完成行。
-                const lines = buffer.split(/\r?\n/);
-                buffer = lines.pop() || "";
+                const decoded_line = new TextDecoder().decode(value);
+                const lines = decoded_line.split('\n');
 
                 for (const line of lines) {
-                    processSSELine(line);
+                    if (line.startsWith('data:')) {
+                        try {
+                            const data_dict = JSON.parse(line.slice(5));
+                            const output = handle_response(data_dict);
+                            if (output) {
+                                const new_text = output.slice(last_length);
+                                complete_output += new_text;
+                                last_length = output.length;
+                                messageElement.innerHTML = formatMarkdown(complete_output);
+                                scrollToBottom();
+                            }
+                        } catch (e) {}
+                    }
                 }
-
-                // 流式内容更新时检查用户是否仍停留在底部。
-                userWasAtBottom = isChatAtBottom();
             }
-
-            // flush TextDecoder，并处理最后残留的一行。
-            buffer += decoder.decode();
-            if (buffer.trim()) {
-                for (const line of buffer.split(/\r?\n/)) {
-                    processSSELine(line);
-                }
-            }
-
-            return completeOutput;
+            return complete_output;
         }
 
         // ==================== UI 消息渲染 ====================
         function appendMessageBubble(type, content = "") {
             const isUser = type === 'user';
-            const bubbleId = 'msg-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8);
+            bubbleUniqueCounter++;
+            const bubbleId = 'msg-' + Date.now() + '-' + bubbleUniqueCounter; // 彻底解决 ID 重复 bug
 
             const html = `
-                <div class="message-row flex items-start gap-2.5 ${isUser ? 'justify-end' : ''} animate-fade-in">
+                <div class="flex items-start gap-2.5 ${isUser ? 'justify-end' : 'justify-start'} animate-fade-in w-full">
                     ${!isUser ? `
                         <div class="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center flex-shrink-0 text-sm">
                             <i class="fa fa-user-md"></i>
                         </div>` : ''
                     }
-                    <div class="message-bubble rounded-2xl px-4 py-3 text-xs sm:text-sm leading-relaxed shadow-sm ${
+                    <div class="max-w-[85%] sm:max-w-[80%] rounded-2xl px-3.5 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm leading-relaxed shadow-sm break-words ${
                         isUser
                             ? 'bg-primary text-white rounded-br-none'
                             : 'bg-slate-50 border border-slate-200 text-slate-800 rounded-tl-none'
                     }">
-                        <div class="message-content" id="${bubbleId}">${
-                            content
-                                ? (isUser ? escapeHtml(content) : formatMarkdown(content))
-                                : ''
-                        }</div>
+                        <div id="${bubbleId}">${content ? (isUser ? escapeHtml(content) : formatMarkdown(content)) : ''}</div>
                     </div>
                     ${isUser ? `
                         <div class="w-8 h-8 rounded-full bg-slate-200 text-slate-600 flex items-center justify-center flex-shrink-0 text-xs">
@@ -500,36 +369,12 @@ ${recentListText}
                     }
                 </div>
             `;
-
             chatResponseArea.insertAdjacentHTML('beforeend', html);
             scrollToBottom();
             return document.getElementById(bubbleId);
         }
 
-        function scrollToBottom(force = false) {
-            // 只有用户已经在底部，或者明确要求 force 时，才自动吸到底部，
-            // 避免用户阅读历史消息时被新流式内容强行拉到底。
-            const distanceFromBottom =
-                chatResponseArea.scrollHeight -
-                chatResponseArea.scrollTop -
-                chatResponseArea.clientHeight;
-
-            const shouldStick = force || distanceFromBottom <= 80;
-
-            if (shouldStick) {
-                chatResponseArea.scrollTop = chatResponseArea.scrollHeight;
-            }
-        }
-
-        function isChatAtBottom() {
-            return (
-                chatResponseArea.scrollHeight -
-                chatResponseArea.scrollTop -
-                chatResponseArea.clientHeight
-            ) <= 80;
-        }
-
-() {
+        function scrollToBottom() {
             chatResponseArea.scrollTop = chatResponseArea.scrollHeight;
         }
 
@@ -560,7 +405,6 @@ ${recentListText}
             }
 
             chatResponseArea.innerHTML = '';
-            chatResponseArea.scrollTop = 0;
             loadingIndicator.classList.remove('hidden');
 
             const savedLocal = localStorage.getItem('timeRecords');
@@ -605,20 +449,11 @@ ${recentListText}
         }
 
         // 用户追问发送
-        let followUpSending = false;
-
         async function sendUserFollowUpMessage() {
-            if (followUpSending) return;
-
             const text = userInput.value.trim();
             if (!text) return;
 
             userInput.value = '';
-            followUpSending = true;
-            userInput.disabled = true;
-            sendBtn.disabled = true;
-            sendBtn.classList.add('opacity-60', 'cursor-not-allowed');
-
             appendMessageBubble('user', text);
             loadingIndicator.classList.remove('hidden');
 
@@ -629,11 +464,6 @@ ${recentListText}
                 appendMessageBubble('assistant', `抱歉，响应请求时遇到错误：${error.message}`);
             } finally {
                 loadingIndicator.classList.add('hidden');
-                followUpSending = false;
-                userInput.disabled = false;
-                sendBtn.disabled = false;
-                sendBtn.classList.remove('opacity-60', 'cursor-not-allowed');
-                userInput.focus();
             }
         }
 
