@@ -61,13 +61,50 @@
 
     <main class="flex-grow max-w-3xl w-full mx-auto px-3 sm:px-4 py-4 sm:py-6">
         <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-            <!-- 头部说明 -->
-            <div class="p-4 sm:p-5 border-b border-slate-100 bg-white">
-                <div class="flex items-center justify-between">
-                    <h2 class="text-base sm:text-lg font-semibold text-slate-800">词条频率排行</h2>
-                    <span id="stats-badge" class="text-xs font-medium px-2 py-0.5 bg-slate-100 text-slate-600 rounded-full">统计中...</span>
+            <!-- 头部说明与控制区 -->
+            <div class="p-3.5 sm:p-5 border-b border-slate-100 bg-white">
+                <div class="flex items-center justify-between mb-3">
+                    <div>
+                        <h2 class="text-base sm:text-lg font-semibold text-slate-800">词条统计排行</h2>
+                        <p class="text-xs text-slate-400 mt-0.5">点击长词条可展开查看全文</p>
+                    </div>
+                    <span id="stats-badge" class="text-xs font-medium px-2 py-0.5 bg-slate-100 text-slate-600 rounded-full shrink-0">统计中...</span>
                 </div>
-                <p class="text-xs sm:text-sm text-slate-500 mt-1">点击长词条可展开查看全文</p>
+
+                <!-- 搜索与筛选工具栏（适配移动端） -->
+                <div id="filter-controls" class="hidden flex-col sm:flex-row gap-2 pt-2 border-t border-slate-100">
+                    <!-- 搜索框 -->
+                    <div class="relative flex-1">
+                        <i class="fa fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs sm:text-sm"></i>
+                        <input
+                            type="text"
+                            id="search-input"
+                            placeholder="搜索词条内容..."
+                            class="w-full pl-8 pr-8 py-1.5 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all placeholder:text-slate-400"
+                            oninput="handleSearch(this.value)"
+                        >
+                        <button id="clear-search-btn" onclick="clearSearch()" class="hidden absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs p-1">
+                            <i class="fa fa-times-circle"></i>
+                        </button>
+                    </div>
+
+                    <!-- 排序选择器 -->
+                    <div class="flex items-center gap-1.5 shrink-0">
+                        <div class="relative w-full sm:w-auto">
+                            <select
+                                id="sort-select"
+                                onchange="handleSortChange(this.value)"
+                                class="w-full sm:w-auto appearance-none bg-slate-50 border border-slate-200 text-slate-700 text-xs sm:text-sm py-1.5 pl-3 pr-8 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 cursor-pointer"
+                            >
+                                <option value="count_desc">频次：从高到低</option>
+                                <option value="count_asc">频次：从低到高</option>
+                                <option value="time_desc">时间：最近记录优先</option>
+                                <option value="time_asc">时间：最早记录优先</option>
+                            </select>
+                            <i class="fa fa-chevron-down absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] text-slate-400 pointer-events-none"></i>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- 内容/表格区域 -->
@@ -92,6 +129,9 @@
     <script>
         let config = { GITHUB_USERNAME: "", GIST_ID: "", GITHUB_PAT: "" };
         let records = [];
+        let allStats = []; // 存储统计好的词条原始聚合数据
+        let searchQuery = "";
+        let sortType = "count_desc";
 
         function escapeHtml(str) {
             if (!str) return '';
@@ -174,7 +214,7 @@
                 if (!response.ok) throw new Error(`无法加载Gist: ${response.statusText}`);
                 const data = await response.json();
                 records = Array.isArray(data) ? data : [];
-                processAndRenderStats();
+                processRawRecords();
             } catch (error) {
                 console.error("加载记录失败:", error);
                 showToast("同步失败，请检查网络", "error");
@@ -187,6 +227,95 @@
                     </div>
                 `;
             }
+        }
+
+        // 解析每条记录对应的时间戳
+        function extractTimestamp(r) {
+            const timeStr = r.endTime || r.startTime || r.date || r.timestamp || r.createTime || r.time;
+            if (!timeStr) return 0;
+            const t = new Date(timeStr).getTime();
+            return isNaN(t) ? 0 : t;
+        }
+
+        // 处理并聚合词条数据
+        function processRawRecords() {
+            const container = document.getElementById('stats-container');
+            const badge = document.getElementById('stats-badge');
+            const controls = document.getElementById('filter-controls');
+
+            if (records.length === 0) {
+                badge.style.display = 'none';
+                controls.classList.add('hidden');
+                container.innerHTML = `
+                    <div class="text-center py-10 px-4">
+                        <i class="fa fa-folder-open-o text-3xl text-slate-300 mb-3"></i>
+                        <h3 class="text-base font-medium text-slate-700">暂无任何记录</h3>
+                    </div>
+                `;
+                return;
+            }
+
+            const map = new Map();
+
+            records.forEach(record => {
+                const remark = record.remark ? record.remark.trim() : '';
+                if (remark) {
+                    const time = extractTimestamp(record);
+                    if (!map.has(remark)) {
+                        map.set(remark, {
+                            remark: remark,
+                            count: 1,
+                            latestTime: time,
+                            earliestTime: time
+                        });
+                    } else {
+                        const item = map.get(remark);
+                        item.count += 1;
+                        if (time > item.latestTime) item.latestTime = time;
+                        if (time > 0 && (item.earliestTime === 0 || time < item.earliestTime)) item.earliestTime = time;
+                    }
+                }
+            });
+
+            if (map.size === 0) {
+                badge.style.display = 'none';
+                controls.classList.add('hidden');
+                container.innerHTML = `
+                    <div class="text-center py-10 px-4">
+                        <i class="fa fa-commenting-o text-3xl text-slate-300 mb-3"></i>
+                        <h3 class="text-base font-medium text-slate-700">暂无带备注的记录</h3>
+                        <p class="text-xs text-slate-400 mt-1">记录时间时添加备注，此处将生成词频统计</p>
+                    </div>
+                `;
+                return;
+            }
+
+            allStats = Array.from(map.values());
+            controls.classList.remove('hidden');
+            controls.classList.add('flex');
+            renderStats();
+        }
+
+        function handleSearch(val) {
+            searchQuery = (val || '').trim().toLowerCase();
+            const clearBtn = document.getElementById('clear-search-btn');
+            if (searchQuery) {
+                clearBtn.classList.remove('hidden');
+            } else {
+                clearBtn.classList.add('hidden');
+            }
+            renderStats();
+        }
+
+        function clearSearch() {
+            const input = document.getElementById('search-input');
+            input.value = '';
+            handleSearch('');
+        }
+
+        function handleSortChange(val) {
+            sortType = val;
+            renderStats();
         }
 
         function getRankBadge(index) {
@@ -206,6 +335,7 @@
         function toggleRemark(elementId) {
             const el = document.getElementById(elementId);
             const btn = document.getElementById('btn-' + elementId);
+            if (!el) return;
             if (el.classList.contains('remark-clamp')) {
                 el.classList.remove('remark-clamp');
                 el.classList.add('remark-expanded');
@@ -217,48 +347,46 @@
             }
         }
 
-        function processAndRenderStats() {
+        function renderStats() {
             const container = document.getElementById('stats-container');
             const badge = document.getElementById('stats-badge');
 
-            if (records.length === 0) {
-                badge.style.display = 'none';
-                container.innerHTML = `
-                    <div class="text-center py-10 px-4">
-                        <i class="fa fa-folder-open-o text-3xl text-slate-300 mb-3"></i>
-                        <h3 class="text-base font-medium text-slate-700">暂无任何记录</h3>
-                    </div>
-                `;
-                return;
-            }
-
-            const remarkCounts = new Map();
-            let totalWithRemark = 0;
-            records.forEach(record => {
-                const remark = record.remark ? record.remark.trim() : '';
-                if (remark) {
-                    remarkCounts.set(remark, (remarkCounts.get(remark) || 0) + 1);
-                    totalWithRemark++;
-                }
+            // 1. 关键词过滤
+            let filtered = allStats.filter(item => {
+                if (!searchQuery) return true;
+                return item.remark.toLowerCase().includes(searchQuery);
             });
 
-            if (remarkCounts.size === 0) {
-                badge.style.display = 'none';
+            // 2. 排序
+            filtered.sort((a, b) => {
+                if (sortType === 'count_desc') {
+                    return b.count - a.count || b.latestTime - a.latestTime;
+                } else if (sortType === 'count_asc') {
+                    return a.count - b.count || a.latestTime - b.latestTime;
+                } else if (sortType === 'time_desc') {
+                    return b.latestTime - a.latestTime || b.count - a.count;
+                } else if (sortType === 'time_asc') {
+                    return a.earliestTime - b.earliestTime || b.count - a.count;
+                }
+                return b.count - a.count;
+            });
+
+            badge.style.display = 'inline-block';
+            if (searchQuery) {
+                badge.textContent = `匹配 ${filtered.length} / 共 ${allStats.length} 个`;
+            } else {
+                badge.textContent = `共 ${allStats.length} 个词条`;
+            }
+
+            if (filtered.length === 0) {
                 container.innerHTML = `
                     <div class="text-center py-10 px-4">
-                        <i class="fa fa-commenting-o text-3xl text-slate-300 mb-3"></i>
-                        <h3 class="text-base font-medium text-slate-700">暂无带备注的记录</h3>
-                        <p class="text-xs text-slate-400 mt-1">记录时间时添加备注，此处将生成词频统计</p>
+                        <i class="fa fa-search text-3xl text-slate-300 mb-2"></i>
+                        <p class="text-sm text-slate-500">未找到匹配“${escapeHtml(searchQuery)}”的词条</p>
                     </div>
                 `;
                 return;
             }
-
-            const sortedStats = Array.from(remarkCounts.entries())
-                .map(([remark, count]) => ({ remark, count }))
-                .sort((a, b) => b.count - a.count);
-
-            badge.textContent = `共 ${sortedStats.length} 个词条`;
 
             // 构建响应式表格
             let tableHtml = `
@@ -266,7 +394,7 @@
                     <table class="w-full text-left border-collapse table-fixed">
                         <thead>
                             <tr class="border-b border-slate-100 bg-slate-50/75 text-slate-500 text-xs">
-                                <th class="w-12 sm:w-16 py-2.5 sm:py-3 text-center font-medium">排名</th>
+                                <th class="w-12 sm:w-16 py-2.5 sm:py-3 text-center font-medium">序号</th>
                                 <th class="py-2.5 sm:py-3 px-2 font-medium">词条内容</th>
                                 <th class="w-16 sm:w-24 py-2.5 sm:py-3 text-center font-medium">频次</th>
                             </tr>
@@ -274,7 +402,7 @@
                         <tbody class="divide-y divide-slate-100 text-xs sm:text-sm">
             `;
 
-            sortedStats.forEach((stat, index) => {
+            filtered.forEach((stat, index) => {
                 const isLong = stat.remark.length > 35;
                 const uniqueId = `remark-${index}`;
                 const safeRemark = escapeHtml(stat.remark);
