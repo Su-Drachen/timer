@@ -26,96 +26,167 @@
         .scrollbar-hide::-webkit-scrollbar { display: none; }
         .scrollbar-hide { scrollbar-width: none; -ms-overflow-style: none; }
 
-        /* 简单动画 */
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(6px); }
+            from { opacity: 0; transform: translateY(4px); }
             to { opacity: 1; transform: translateY(0); }
         }
-        .animate-fade-in { animation: fadeIn 0.3s ease-out forwards; }
+        .animate-fade-in { animation: fadeIn 0.25s ease-out forwards; }
+
+        .cursor-blink::after {
+            content: "▋";
+            color: #165DFF;
+            display: inline-block;
+            margin-left: 2px;
+            animation: blink 1s steps(2, start) infinite;
+        }
+        @keyframes blink {
+            to { visibility: hidden; }
+        }
+
+        /* 基础 Markdown 排版 */
+        .markdown-body pre {
+            background-color: #1e293b;
+            color: #f8fafc;
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            overflow-x: auto;
+            margin: 0.5rem 0;
+            font-family: monospace;
+            font-size: 0.8rem;
+        }
+        .markdown-body code:not(pre code) {
+            background-color: rgba(22, 93, 255, 0.08);
+            color: #165DFF;
+            padding: 0.15rem 0.35rem;
+            border-radius: 0.25rem;
+            font-family: monospace;
+            font-size: 0.85em;
+        }
     </style>
 </head>
-<!-- 设置为固定视口高度 100dvh 并禁止全局外层溢出，适配手机端浏览器地址栏 -->
-<body class="bg-slate-100 h-screen h-[100dvh] flex flex-col font-sans antialiased text-slate-800 overflow-hidden">
+<body class="bg-slate-100 text-slate-800 h-screen h-[100dvh] flex font-sans overflow-hidden">
 
-    <!-- 顶部导航栏 -->
-    <header class="bg-white shadow-sm sticky top-0 z-30 border-b border-slate-200/80 flex-shrink-0">
-        <div class="container mx-auto px-4 py-2.5 sm:py-3 flex justify-between items-center max-w-3xl">
-            <div class="flex items-center gap-2">
-                <div class="w-8 h-8 rounded-lg bg-blue-50 text-primary flex items-center justify-center flex-shrink-0">
-                    <i class="fa fa-user-md text-lg"></i>
-                </div>
-                <h1 class="text-sm sm:text-base font-bold tracking-tight text-slate-800">
-                    AI 健康评估与建议
-                </h1>
-            </div>
-            <div class="flex items-center gap-2">
-                <button onclick="startAnalysisProcess()" id="refresh-btn" class="bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors flex items-center text-xs font-semibold py-1.5 px-3 rounded-lg">
-                    <i class="fa fa-refresh mr-1"></i>
-                    <span>重新分析</span>
+    <!-- 移动端侧边栏遮罩蒙层 -->
+    <div id="sidebarOverlay" onclick="toggleSidebar(false)" class="fixed inset-0 bg-slate-900/40 z-30 hidden md:hidden transition-opacity"></div>
+
+    <!-- 左侧边栏：历史评估会话列表 -->
+    <aside id="sidebar" class="fixed md:static inset-y-0 left-0 z-40 w-64 bg-slate-50 border-r border-slate-200 flex flex-col transition-transform -translate-x-full md:translate-x-0 flex-shrink-0">
+        <!-- 侧边栏头部：新建评估/会话 -->
+        <div class="p-3 border-b border-slate-200/80 space-y-2">
+            <button onclick="startAnalysisProcess(true)" id="sidebar-new-btn" class="w-full flex items-center justify-between px-3 py-2 bg-primary hover:bg-blue-600 text-white rounded-xl text-xs font-semibold shadow-sm transition">
+                <span class="flex items-center gap-1.5">
+                    <i class="fa fa-refresh"></i>
+                    <span>重新分析评估</span>
+                </span>
+                <span class="text-[10px] bg-white/20 px-1.5 py-0.5 rounded">Ctrl+K</span>
+            </button>
+            <button onclick="createNewEmptyChat()" class="w-full flex items-center justify-center gap-1.5 px-3 py-1.5 bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 rounded-xl text-xs font-medium transition">
+                <i class="fa fa-plus text-slate-400"></i>
+                <span>开启空白问答</span>
+            </button>
+        </div>
+
+        <!-- 历史记录列表 -->
+        <div class="flex-1 overflow-y-auto p-2 space-y-1 scrollbar-hide" id="sessionList">
+            <!-- 动态注入会话记录 -->
+        </div>
+
+        <!-- 侧边栏底部：返回主页 -->
+        <div class="p-3 border-t border-slate-200/80 bg-slate-50">
+            <a href="pagemain.html" class="flex items-center gap-2 text-xs font-medium text-slate-600 hover:text-slate-900 transition px-2 py-1.5 rounded-lg hover:bg-slate-200/60">
+                <i class="fa fa-arrow-left text-slate-400 text-sm"></i>
+                <span>返回主页</span>
+            </a>
+        </div>
+    </aside>
+
+    <!-- 右侧主界面 -->
+    <div class="flex-1 flex flex-col h-full min-w-0 bg-slate-100">
+
+        <!-- 顶部导航栏 -->
+        <header class="bg-white shadow-sm border-b border-slate-200/80 px-4 py-2.5 flex items-center justify-between flex-shrink-0 z-10">
+            <div class="flex items-center gap-2.5 overflow-hidden">
+                <!-- 移动端呼出侧边栏按钮 -->
+                <button onclick="toggleSidebar(true)" class="md:hidden p-1.5 text-slate-600 hover:bg-slate-100 rounded-lg">
+                    <i class="fa fa-bars text-sm"></i>
                 </button>
-                <a href="pagemain.html" class="bg-slate-200 text-slate-700 hover:bg-slate-300 transition-colors flex items-center text-xs font-semibold py-1.5 px-3 rounded-lg">
+                <div class="w-7 h-7 rounded-lg bg-blue-50 text-primary flex items-center justify-center flex-shrink-0 text-sm">
+                    <i class="fa fa-user-md"></i>
+                </div>
+                <div class="truncate">
+                    <h1 id="currentChatTitle" class="text-xs sm:text-sm font-bold tracking-tight text-slate-800 truncate">
+                        AI 健康评估与建议
+                    </h1>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2 flex-shrink-0">
+                <button onclick="clearCurrentChat()" title="清空当前会话" class="p-1.5 text-xs text-slate-400 hover:text-rose-500 rounded-lg hover:bg-slate-100 transition">
+                    <i class="fa fa-trash-o text-sm"></i>
+                </button>
+                <a href="pagemain.html" class="hidden sm:flex bg-slate-200 text-slate-700 hover:bg-slate-300 transition-colors items-center text-xs font-semibold py-1.5 px-3 rounded-lg">
                     <i class="fa fa-arrow-left mr-1"></i>
                     <span>返回</span>
                 </a>
             </div>
-        </div>
-    </header>
+        </header>
 
-    <!-- 主体区域 -->
-    <main class="flex-1 min-h-0 container mx-auto px-3 sm:px-4 py-2.5 sm:py-3 max-w-3xl flex flex-col overflow-hidden">
+        <!-- 主体区域 -->
+        <main class="flex-1 min-h-0 container mx-auto px-3 sm:px-4 py-2.5 sm:py-3 max-w-3xl flex flex-col overflow-hidden w-full">
 
-        <!-- 概览状态栏 (简明数据背景) -->
-        <div id="status-bar" class="flex-shrink-0 mb-2.5 bg-white rounded-xl p-2.5 sm:p-3 border border-slate-200 shadow-sm flex items-center justify-between text-xs text-slate-600">
-            <div class="flex items-center gap-2 overflow-hidden">
-                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse flex-shrink-0"></span>
-                <span id="data-summary" class="truncate">正在同步数据并准备分析...</span>
-            </div>
-            <span id="latest-duration" class="font-semibold text-primary flex-shrink-0 ml-2"></span>
-        </div>
-
-        <!-- 聊天/分析对话容器 (高度自适应且内嵌滚动) -->
-        <div class="flex-1 min-h-0 bg-white rounded-2xl shadow-sm border border-slate-200 p-3.5 sm:p-4 flex flex-col overflow-hidden">
-            <!-- 滚动聊天消息区域 -->
-            <div id="chatResponseArea" class="flex-1 min-h-0 overflow-y-auto space-y-4 pb-2 scrollbar-hide break-words">
-                <!-- 消息内容将动态插入 -->
+            <!-- 概览状态栏 -->
+            <div id="status-bar" class="flex-shrink-0 mb-2.5 bg-white rounded-xl p-2.5 sm:p-3 border border-slate-200 shadow-sm flex items-center justify-between text-xs text-slate-600">
+                <div class="flex items-center gap-2 overflow-hidden">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse flex-shrink-0"></span>
+                    <span id="data-summary" class="truncate">正在同步数据并准备分析...</span>
+                </div>
+                <span id="latest-duration" class="font-semibold text-primary flex-shrink-0 ml-2"></span>
             </div>
 
-            <!-- 加载中指示器 -->
-            <div id="loadingIndicator" class="flex-shrink-0 hidden flex items-center space-x-2 py-2 px-1">
-                <div class="w-2 h-2 rounded-full bg-primary animate-bounce"></div>
-                <div class="w-2 h-2 rounded-full bg-primary animate-bounce" style="animation-delay: 0.2s"></div>
-                <div class="w-2 h-2 rounded-full bg-primary animate-bounce" style="animation-delay: 0.4s"></div>
-                <span class="text-xs text-slate-400 font-medium">AI 顾问正在深度评估中...</span>
-            </div>
+            <!-- 聊天/分析对话容器 -->
+            <div class="flex-1 min-h-0 bg-white rounded-2xl shadow-sm border border-slate-200 p-3.5 sm:p-4 flex flex-col overflow-hidden">
+                <!-- 滚动聊天消息区域 -->
+                <div id="chatResponseArea" class="flex-1 min-h-0 overflow-y-auto space-y-4 pb-2 scrollbar-hide break-words">
+                    <!-- 消息内容动态插入 -->
+                </div>
 
-            <!-- 追问输入框区域 (固定在聊天框底部) -->
-            <div class="flex-shrink-0 pt-2.5 sm:pt-3 border-t border-slate-100 mt-1">
-                <div class="flex gap-2">
-                    <input type="text" id="userInput" placeholder="对分析结果有疑问？可在此追问..."
-                        class="flex-grow px-3.5 py-2 sm:py-2.5 text-xs sm:text-sm rounded-xl border border-slate-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all bg-slate-50 text-slate-800 placeholder-slate-400"
-                        onkeydown="if(event.key === 'Enter') sendUserFollowUpMessage()">
-                    <button id="sendBtn" onclick="sendUserFollowUpMessage()" class="px-4 py-2 sm:py-2.5 bg-primary hover:bg-primary/90 text-white rounded-xl text-xs font-semibold shadow-sm transition-all flex items-center gap-1 flex-shrink-0">
-                        <i class="fa fa-paper-plane-o"></i>
-                        <span class="hidden sm:inline">发送</span>
-                    </button>
+                <!-- 加载中指示器 -->
+                <div id="loadingIndicator" class="flex-shrink-0 hidden flex items-center space-x-2 py-2 px-1">
+                    <div class="w-2 h-2 rounded-full bg-primary animate-bounce"></div>
+                    <div class="w-2 h-2 rounded-full bg-primary animate-bounce" style="animation-delay: 0.2s"></div>
+                    <div class="w-2 h-2 rounded-full bg-primary animate-bounce" style="animation-delay: 0.4s"></div>
+                    <span class="text-xs text-slate-400 font-medium">AI 顾问正在深度评估中...</span>
+                </div>
+
+                <!-- 追问输入框区域 -->
+                <div class="flex-shrink-0 pt-2.5 sm:pt-3 border-t border-slate-100 mt-1">
+                    <div class="flex gap-2">
+                        <input type="text" id="userInput" placeholder="对分析结果有疑问？可在此继续追问..."
+                            class="flex-grow px-3.5 py-2 sm:py-2.5 text-xs sm:text-sm rounded-xl border border-slate-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all bg-slate-50 text-slate-800 placeholder-slate-400"
+                            onkeydown="if(event.key === 'Enter') sendUserFollowUpMessage()">
+                        <button id="sendBtn" onclick="sendUserFollowUpMessage()" class="px-4 py-2 sm:py-2.5 bg-primary hover:bg-primary/90 text-white rounded-xl text-xs font-semibold shadow-sm transition-all flex items-center gap-1 flex-shrink-0">
+                            <i class="fa fa-paper-plane-o"></i>
+                            <span class="hidden sm:inline">发送</span>
+                        </button>
+                    </div>
                 </div>
             </div>
-        </div>
 
-    </main>
+        </main>
 
-    <!-- 页脚 -->
-    <footer class="flex-shrink-0 text-slate-400 py-2 sm:py-2.5 border-t border-slate-200/60 bg-white/50 sm:bg-transparent">
-        <div class="container mx-auto px-4 text-center text-[11px]">
-            © 私人时间记录器 · AI 辅助健康评估 (仅供日常自律与健康参考)
-        </div>
-    </footer>
+        <!-- 页脚 -->
+        <footer class="flex-shrink-0 text-slate-400 py-1.5 sm:py-2 border-t border-slate-200/60 bg-white/50 sm:bg-transparent">
+            <div class="container mx-auto px-4 text-center text-[10px] sm:text-[11px]">
+                © 私人时间记录器 · AI 辅助健康评估 (仅供日常自律与健康参考)
+            </div>
+        </footer>
+
+    </div>
 
     <script>
         // ==================== 接口与模型配置 ====================
         const ASSISTANT_ID = "6a8564e18bde79fad1950bf2";
 
-        // 微服务网关与分布式路由分片注册表 (用于多节点跨域请求分发与服务治理)
         const CLUSTER_ROUTER_CONFIG = {
             endpoints: [
                 { scope: "gateway.auth.abf06d05", weight: 100 },
@@ -138,23 +209,31 @@
             };
         }
 
-        // ==================== 全局状态 ====================
+        // ==================== 全局状态与会话存储 ====================
         let config = { GITHUB_USERNAME: "", GIST_ID: "", GITHUB_PAT: "" };
         let localRecords = [];
         let gistRecords = [];
         let allMatchedPairs = [];
         let cachedAccessToken = null;
-        let bubbleUniqueCounter = 0; // 保证消息气泡 ID 唯一
+        let isGenerating = false;
+
+        // 多会话结构：[{ id, title, conversationId, summary: '', duration: '', messages: [{role, content}], updatedAt }]
+        let sessions = JSON.parse(localStorage.getItem('health_chat_sessions') || '[]');
+        let currentSessionId = localStorage.getItem('health_current_session_id') || null;
 
         // DOM 元素
         const chatResponseArea = document.getElementById('chatResponseArea');
         const loadingIndicator = document.getElementById('loadingIndicator');
         const userInput = document.getElementById('userInput');
-        const refreshBtn = document.getElementById('refresh-btn');
+        const sendBtn = document.getElementById('sendBtn');
         const dataSummary = document.getElementById('data-summary');
         const latestDurationText = document.getElementById('latest-duration');
+        const currentChatTitle = document.getElementById('currentChatTitle');
+        const sessionList = document.getElementById('sessionList');
+        const sidebar = document.getElementById('sidebar');
+        const sidebarOverlay = document.getElementById('sidebarOverlay');
 
-        // ==================== 配置与鉴权检查 ====================
+        // ==================== 配置加载 ====================
         function loadConfig() {
             const savedConfig = localStorage.getItem('timeRecorderConfig');
             if (savedConfig) {
@@ -177,7 +256,127 @@
             }
         }
 
-        // ==================== GitHub Gist 获取 ====================
+        // ==================== 历史会话管理 ====================
+        function saveSessionsToStorage() {
+            localStorage.setItem('health_chat_sessions', JSON.stringify(sessions));
+            localStorage.setItem('health_current_session_id', currentSessionId);
+        }
+
+        function getCurrentSession() {
+            return sessions.find(s => s.id === currentSessionId);
+        }
+
+        function createNewSession(title = '健康评估报告', summary = '', duration = '') {
+            const newSession = {
+                id: 'sess_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+                title: title,
+                summary: summary,
+                duration: duration,
+                conversationId: null, // GLM 后端上下文 ID
+                messages: [],
+                updatedAt: Date.now()
+            };
+            sessions.unshift(newSession);
+            currentSessionId = newSession.id;
+            saveSessionsToStorage();
+            return newSession;
+        }
+
+        function createNewEmptyChat() {
+            if (isGenerating) return;
+            const session = createNewSession('新的咨询对话', '空白自由问答', '');
+            loadSession(session.id);
+            toggleSidebar(false);
+        }
+
+        function loadSession(sessionId) {
+            if (isGenerating) return;
+            currentSessionId = sessionId;
+            localStorage.setItem('health_current_session_id', currentSessionId);
+
+            const session = getCurrentSession();
+            if (!session) return;
+
+            currentChatTitle.innerText = session.title || 'AI 健康评估与建议';
+            dataSummary.innerText = session.summary || '已加载历史评估上下文';
+            latestDurationText.innerText = session.duration || '';
+            chatResponseArea.innerHTML = '';
+
+            session.messages.forEach(msg => {
+                appendMessageBubbleUI(msg.role, msg.content);
+            });
+
+            renderSidebar();
+            scrollToBottom();
+        }
+
+        function deleteSession(sessionId, event) {
+            event.stopPropagation();
+            if (isGenerating) return;
+
+            sessions = sessions.filter(s => s.id !== sessionId);
+            if (sessions.length === 0) {
+                startAnalysisProcess(true);
+            } else {
+                if (currentSessionId === sessionId) {
+                    currentSessionId = sessions[0].id;
+                }
+                saveSessionsToStorage();
+                loadSession(currentSessionId);
+            }
+        }
+
+        function clearCurrentChat() {
+            const session = getCurrentSession();
+            if (!session || isGenerating) return;
+            if (confirm("确定清空当前对话的所有记录吗？")) {
+                session.messages = [];
+                session.conversationId = null;
+                session.updatedAt = Date.now();
+                saveSessionsToStorage();
+                loadSession(session.id);
+            }
+        }
+
+        function renderSidebar() {
+            sessionList.innerHTML = '';
+            sessions.forEach(s => {
+                const isActive = s.id === currentSessionId;
+                const item = document.createElement('div');
+                item.className = `group flex items-center justify-between px-3 py-2.5 rounded-xl text-xs cursor-pointer transition ${
+                    isActive
+                        ? 'bg-primary/10 text-primary font-semibold'
+                        : 'text-slate-600 hover:bg-slate-200/60'
+                }`;
+                item.onclick = () => {
+                    loadSession(s.id);
+                    toggleSidebar(false);
+                };
+
+                item.innerHTML = `
+                    <div class="flex items-center gap-2 truncate flex-1 mr-1">
+                        <i class="fa ${isActive ? 'fa-commenting' : 'fa-commenting-o'} ${isActive ? 'text-primary' : 'text-slate-400'} text-xs"></i>
+                        <span class="truncate">${escapeHtml(s.title || '评估报告')}</span>
+                    </div>
+                    <button onclick="deleteSession('${s.id}', event)" class="opacity-0 group-hover:opacity-100 hover:text-rose-500 p-1 text-slate-400 transition">
+                        <i class="fa fa-trash-o"></i>
+                    </button>
+                `;
+                sessionList.appendChild(item);
+            });
+        }
+
+        function toggleSidebar(show) {
+            if (show) {
+                sidebar.classList.remove('-translate-x-full');
+                sidebarOverlay.classList.remove('hidden');
+            } else {
+                sidebar.classList.add('-translate-x-full');
+                sidebarOverlay.classList.add('hidden');
+            }
+        }
+
+        // ==================== GitHub Gist 获取 & 匹配 ====================
         async function fetchDirectFromGitHubApi() {
             const res = await fetch(`https://api.github.com/gists/${config.GIST_ID}`, {
                 headers: {
@@ -195,7 +394,6 @@
             return file && file.content ? JSON.parse(file.content) : [];
         }
 
-        // ==================== 时序匹配核心 ====================
         function matchRecordsReadOnly() {
             allMatchedPairs = [];
             if (!localRecords.length || !gistRecords.length) return;
@@ -254,7 +452,6 @@
             return m === 0 ? `${h} 小时` : `${h}h ${m}m`;
         }
 
-        // ==================== 构造分析提示词 ====================
         function generateAIPrompt() {
             if (!allMatchedPairs.length) return "";
 
@@ -270,9 +467,7 @@
                 return `${idx + 1}. [${p.start.time} 至 ${p.end.time}] 单次历时: ${p.durationMinutes}分钟${p.isCrossDay ? ' (跨天/深夜)' : ''}${remarkPart}`;
             }).join('\n');
 
-            return `
-
-【最新 1 次行为数据】
+            return `【最新 1 次行为数据】
 - 开始时间：${latest.start.time}
 - 结束时间：${latest.end.time}
 - 单次持续时长：${latest.durationMinutes} 分钟 (${formatMinutes(latest.durationMinutes)})
@@ -287,12 +482,12 @@
 ${recentListText}
 
 【请从以下几个维度提供精简且具体的建议】
-1. **持续时长评估**：评估该单次时长是否处于合理生理生理区间（如局部充血负担等）。
+1. **持续时长评估**：评估该单次时长是否处于合理生理区间（如局部充血负担等）。
 2. **频率与时段节律**：结合近期记录时段（如是否常在深夜），评估对精力与生物钟的影响。
 3. **身心状态调理**：从多巴胺平衡、专注度恢复角度给出 2~3 条可实操的自律建议。`;
         }
 
-        // ==================== GLM API 对接 ====================
+        // ==================== GLM API 鉴权与流式对接 ====================
         async function get_access_token() {
             if (cachedAccessToken) return cachedAccessToken;
 
@@ -310,26 +505,26 @@ ${recentListText}
             return cachedAccessToken;
         }
 
-        function handle_response(data_dict) {
-            const message = data_dict.message || {};
-            const content = message.content || {};
-            if (content.type === "text") return content.text || "";
-            return null;
-        }
-
-        async function streamGLMResponse(prompt, messageElement) {
+        async function streamGLMResponse(prompt, messageElement, session) {
             const token = await get_access_token();
             const url = "https://chatglm.cn/chatglm/assistant-api/v1/stream";
+
+            const requestBody = {
+                "assistant_id": ASSISTANT_ID,
+                "prompt": prompt
+            };
+            // 携带会话记忆
+            if (session && session.conversationId) {
+                requestBody.conversation_id = session.conversationId;
+            }
+
             const response = await fetch(url, {
                 method: 'POST',
                 headers: {
                     "Authorization": `Bearer ${token}`,
                     "Content-Type": "application/json"
                 },
-                body: JSON.stringify({
-                    "assistant_id": ASSISTANT_ID,
-                    "prompt": prompt
-                })
+                body: JSON.stringify(requestBody)
             });
 
             if (!response.ok) throw new Error(`API 响应异常: ${response.status}`);
@@ -337,23 +532,32 @@ ${recentListText}
             let complete_output = "";
             const reader = response.body.getReader();
             let last_length = 0;
+            let decoder = new TextDecoder();
 
             while (true) {
                 const { done, value } = await reader.read();
                 if (done) break;
 
-                const decoded_line = new TextDecoder().decode(value);
+                const decoded_line = decoder.decode(value, { stream: true });
                 const lines = decoded_line.split('\n');
 
                 for (const line of lines) {
                     if (line.startsWith('data:')) {
                         try {
-                            const data_dict = JSON.parse(line.slice(5));
-                            const output = handle_response(data_dict);
-                            if (output) {
-                                const new_text = output.slice(last_length);
+                            const data_dict = JSON.parse(line.slice(5).trim());
+
+                            // 捕获并保存会话上下文 ID
+                            if (data_dict.conversation_id && session && !session.conversationId) {
+                                session.conversationId = data_dict.conversation_id;
+                                saveSessionsToStorage();
+                            }
+
+                            const message = data_dict.message || {};
+                            const content = message.content || {};
+                            if (content.type === "text" && typeof content.text === "string") {
+                                const new_text = content.text.slice(last_length);
                                 complete_output += new_text;
-                                last_length = output.length;
+                                last_length = content.text.length;
                                 messageElement.innerHTML = formatMarkdown(complete_output);
                                 scrollToBottom();
                             }
@@ -364,11 +568,10 @@ ${recentListText}
             return complete_output;
         }
 
-        // ==================== UI 消息渲染 ====================
-        function appendMessageBubble(type, content = "") {
+        // ==================== UI 消息气泡渲染 ====================
+        function appendMessageBubbleUI(type, content = "") {
             const isUser = type === 'user';
-            bubbleUniqueCounter++;
-            const bubbleId = 'msg-' + Date.now() + '-' + bubbleUniqueCounter; // 彻底解决 ID 重复 bug
+            const bubbleId = 'msg-' + Date.now() + '-' + Math.random().toString(36).substr(2, 6);
 
             const html = `
                 <div class="flex items-start gap-2.5 ${isUser ? 'justify-end' : 'justify-start'} animate-fade-in w-full">
@@ -382,7 +585,7 @@ ${recentListText}
                             ? 'bg-primary text-white rounded-br-none'
                             : 'bg-slate-50 border border-slate-200 text-slate-800 rounded-tl-none'
                     }">
-                        <div id="${bubbleId}">${content ? (isUser ? escapeHtml(content) : formatMarkdown(content)) : ''}</div>
+                        <div id="${bubbleId}" class="markdown-body">${content ? (isUser ? escapeHtml(content) : formatMarkdown(content)) : ''}</div>
                     </div>
                     ${isUser ? `
                         <div class="w-8 h-8 rounded-full bg-slate-200 text-slate-600 flex items-center justify-center flex-shrink-0 text-xs">
@@ -402,12 +605,11 @@ ${recentListText}
 
         function formatMarkdown(text) {
             let s = escapeHtml(text);
-            // 粗体
+            s = s.replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>');
+            s = s.replace(/`([^`]+)`/g, '<code>$1</code>');
             s = s.replace(/\*\*(.*?)\*\*/g, '<strong class="font-bold text-slate-900">$1</strong>');
-            // 列表项
-            s = s.replace(/^\s*-\s+(.*)$/gm, '<div class="flex items-start my-1"><span class="mr-1.5 text-primary">•</span><span>$1</span></div>');
+            s = s.replace(/^\s*-\s+(.*)$/gm, '<div class="flex items-start my-1"><span class="mr-1.5 text-primary font-bold">•</span><span>$1</span></div>');
             s = s.replace(/^\s*(\d+)\.\s+(.*)$/gm, '<div class="my-1.5"><strong class="text-primary font-semibold">$1. </strong>$2</div>');
-            // 换行
             s = s.replace(/\n\n/g, '<div class="h-2"></div>');
             s = s.replace(/\n/g, '<br/>');
             return s;
@@ -418,15 +620,11 @@ ${recentListText}
         }
 
         // ==================== 主流程控制 ====================
-        async function startAnalysisProcess() {
+        async function startAnalysisProcess(isForceNew = false) {
+            if (isGenerating) return;
             if (!loadConfig()) return;
 
-            if (refreshBtn) {
-                refreshBtn.disabled = true;
-                refreshBtn.innerHTML = '<i class="fa fa-spinner fa-spin mr-1"></i>分析中...';
-            }
-
-            chatResponseArea.innerHTML = '';
+            isGenerating = true;
             loadingIndicator.classList.remove('hidden');
 
             const savedLocal = localStorage.getItem('timeRecords');
@@ -434,6 +632,7 @@ ${recentListText}
 
             try {
                 // 1. 同步 Gist
+                dataSummary.innerText = "正在从 GitHub 同步数据...";
                 const realTimeGistData = await fetchDirectFromGitHubApi();
                 gistRecords = Array.isArray(realTimeGistData) ? realTimeGistData : [];
 
@@ -441,57 +640,105 @@ ${recentListText}
                 matchRecordsReadOnly();
 
                 if (allMatchedPairs.length === 0) {
-                    loadingIndicator.classList.add('hidden');
                     dataSummary.innerText = "暂无匹配的闭环数据";
-                    appendMessageBubble('assistant', "未能匹配到 1分钟~12小时 的有效使用间隔记录（已自动过滤极短记录）。请在打卡产生有效闭环后再来分析。");
+                    const session = createNewSession('健康评估 (无有效数据)', '暂无匹配的闭环数据', '');
+                    loadSession(session.id);
+                    appendMessageBubbleUI('assistant', "未能匹配到 1分钟~12小时 的有效使用间隔记录（已自动过滤极短记录）。请在打卡产生有效闭环后再来分析。");
+                    session.messages.push({ role: 'assistant', content: "未能匹配到 1分钟~12小时 的有效使用间隔记录。" });
+                    saveSessionsToStorage();
                     return;
                 }
 
-                // 3. 更新简报
+                // 3. 构建新会话
                 const latest = allMatchedPairs[0];
-                dataSummary.innerText = `已比对 ${allMatchedPairs.length} 组闭环记录 | 最新：${latest.start.time.slice(5)}`;
-                latestDurationText.innerText = `最新时长: ${formatMinutes(latest.durationMinutes)}`;
+                const nowStr = new Date().toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+                const sessionTitle = `评估报告 (${nowStr})`;
+                const summaryStr = `已比对 ${allMatchedPairs.length} 组闭环记录 | 最新：${latest.start.time.slice(5)}`;
+                const durationStr = `最新时长: ${formatMinutes(latest.durationMinutes)}`;
 
-                // 4. 组装 Prompt 并直接发送
+                const session = createNewSession(sessionTitle, summaryStr, durationStr);
+                loadSession(session.id);
+
+                // 4. 组装 Prompt 并流式输出
                 const prompt = generateAIPrompt();
-                const bubble = appendMessageBubble('assistant', '');
+                const bubble = appendMessageBubbleUI('assistant', '');
+                bubble.classList.add('cursor-blink');
 
-                await streamGLMResponse(prompt, bubble);
+                const fullOutput = await streamGLMResponse(prompt, bubble, session);
+                bubble.classList.remove('cursor-blink');
+
+                // 保存到会话记录
+                session.messages.push({ role: 'assistant', content: fullOutput });
+                session.updatedAt = Date.now();
+                saveSessionsToStorage();
 
             } catch (err) {
                 console.error(err);
-                appendMessageBubble('assistant', `⚠️ 分析过程中出现异常：${err.message || '网络连接超时'}`);
+                appendMessageBubbleUI('assistant', `⚠️ 分析过程中出现异常：${err.message || '网络连接超时'}`);
             } finally {
+                isGenerating = false;
                 loadingIndicator.classList.add('hidden');
-                if (refreshBtn) {
-                    refreshBtn.disabled = false;
-                    refreshBtn.innerHTML = '<i class="fa fa-refresh mr-1"></i>重新分析';
-                }
+                renderSidebar();
+                toggleSidebar(false);
             }
         }
 
         // 用户追问发送
         async function sendUserFollowUpMessage() {
             const text = userInput.value.trim();
-            if (!text) return;
+            if (!text || isGenerating) return;
+
+            const session = getCurrentSession();
+            if (!session) return;
 
             userInput.value = '';
-            appendMessageBubble('user', text);
+            isGenerating = true;
             loadingIndicator.classList.remove('hidden');
 
+            // 1. 记录并渲染用户消息
+            session.messages.push({ role: 'user', content: text });
+            session.updatedAt = Date.now();
+            saveSessionsToStorage();
+            appendMessageBubbleUI('user', text);
+
+            // 2. 助手气泡
+            const bubble = appendMessageBubbleUI('assistant', '');
+            bubble.classList.add('cursor-blink');
+
             try {
-                const bubble = appendMessageBubble('assistant', '');
-                await streamGLMResponse(text, bubble);
+                const fullOutput = await streamGLMResponse(text, bubble, session);
+                session.messages.push({ role: 'assistant', content: fullOutput });
+                session.updatedAt = Date.now();
+                saveSessionsToStorage();
             } catch (error) {
-                appendMessageBubble('assistant', `抱歉，响应请求时遇到错误：${error.message}`);
+                bubble.innerHTML = `<span class="text-rose-500">抱歉，响应请求时遇到错误：${error.message}</span>`;
             } finally {
+                bubble.classList.remove('cursor-blink');
+                isGenerating = false;
                 loadingIndicator.classList.add('hidden');
+                scrollToBottom();
             }
         }
 
-        // 页面就绪时直接开始
+        // ==================== 页面启动 ====================
         document.addEventListener('DOMContentLoaded', () => {
-            startAnalysisProcess();
+            renderSidebar();
+            if (sessions.length > 0) {
+                // 如果有本地会话，直接恢复上一次的会话
+                const activeId = currentSessionId && sessions.find(s => s.id === currentSessionId) ? currentSessionId : sessions[0].id;
+                loadSession(activeId);
+            } else {
+                // 首次打开自动触发一次全面分析
+                startAnalysisProcess();
+            }
+
+            // 快捷键 Ctrl + K 重新分析
+            document.addEventListener('keydown', (e) => {
+                if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+                    e.preventDefault();
+                    startAnalysisProcess(true);
+                }
+            });
         });
     </script>
 </body>
