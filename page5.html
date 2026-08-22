@@ -147,7 +147,7 @@
     async function startHealthAnalysis(){
       if(generating)return;toggleSidebar(false);
       const session=newSession(`健康记录分析 ${new Date().toLocaleDateString('zh-CN',{month:'2-digit',day:'2-digit'})}`);
-      session.messages.push({role:'user',content:'请分析我最近的时间记录，并给出具体建议。'});persist();renderMessages();renderSidebar();
+      session.messages.push({role:'user',content:'请你以喵宝的身份，分析我最近的时间记录，并给出具体建议。'});persist();renderMessages();renderSidebar();
       controller=new AbortController();setGenerating(true);
       try{
         const cfg=json(localStorage.getItem('timeRecorderConfig'),{});
