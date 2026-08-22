@@ -143,29 +143,10 @@
                 .replace(/'/g, "&#039;");
         }
 
-        function readTimeRecorderConfig() {
-            let stored = {};
-            try {
-                const savedConfig = localStorage.getItem('timeRecorderConfig');
-                stored = savedConfig ? JSON.parse(savedConfig) : {};
-            } catch (error) {
-                console.warn('读取云端配置失败', error);
-            }
-            let sessionPat = sessionStorage.getItem('timeRecorderPat');
-            if (stored.GITHUB_PAT) {
-                if (!sessionPat) {
-                    sessionPat = stored.GITHUB_PAT;
-                    try { sessionStorage.setItem('timeRecorderPat', sessionPat); } catch (error) { console.warn('无法迁移会话令牌', error); }
-                }
-                delete stored.GITHUB_PAT;
-                try { localStorage.setItem('timeRecorderConfig', JSON.stringify(stored)); } catch (error) { console.warn('无法更新云端配置', error); }
-            }
-            return { ...stored, GITHUB_PAT: sessionPat || stored.GITHUB_PAT || '' };
-        }
-
         function loadConfig() {
-            config = readTimeRecorderConfig();
-            if (config.GIST_ID && config.GITHUB_PAT) {
+            const savedConfig = localStorage.getItem('timeRecorderConfig');
+            if (savedConfig) {
+                config = JSON.parse(savedConfig);
                 return true;
             } else {
                 const container = document.getElementById('stats-container');
@@ -173,10 +154,10 @@
                 container.innerHTML = `
                     <div class="text-center py-10 px-4">
                         <i class="fa fa-cogs text-3xl sm:text-4xl text-warning mb-3"></i>
-                        <h3 class="text-base font-semibold text-slate-700">云端配置不完整</h3>
-                        <p class="text-xs sm:text-sm text-slate-500 my-2">请在时间笔记中补充 Gist ID 和当前会话令牌</p>
-                        <a href="pagemain.html?tab=gist&config=1" class="mt-3 inline-block bg-primary-500 text-white text-sm py-1.5 px-4 rounded-lg hover:bg-primary-600 transition-colors font-medium">
-                            前往云端配置
+                        <h3 class="text-base font-semibold text-slate-700">未找到配置信息</h3>
+                        <p class="text-xs sm:text-sm text-slate-500 my-2">请先前往配置页同步 GitHub 凭证</p>
+                        <a href="page0.html" class="mt-3 inline-block bg-primary-500 text-white text-sm py-1.5 px-4 rounded-lg hover:bg-primary-600 transition-colors font-medium">
+                            前往配置
                         </a>
                     </div>
                 `;
@@ -219,7 +200,7 @@
         }
 
         async function loadRecordsFromGist() {
-            if (!config.GIST_ID || !config.GITHUB_PAT) return;
+            if (!config.GIST_ID) return;
 
             document.getElementById('stats-container').innerHTML = `
                 <div class="flex justify-center items-center py-12 text-slate-500 text-sm">
@@ -229,19 +210,10 @@
             `;
 
             try {
-                const response = await fetch(`https://api.github.com/gists/${encodeURIComponent(config.GIST_ID)}`, {
-                    headers: { 'Authorization': `token ${config.GITHUB_PAT}`, 'Accept': 'application/vnd.github.v3+json' },
-                    cache: 'no-store'
-                });
-                const data = await response.json().catch(() => ({}));
-                if (!response.ok) throw new Error(data.message || `无法加载 Gist (${response.status})`);
-                const file = data.files && data.files['records.json'];
-                try {
-                    records = file && file.content ? JSON.parse(file.content) : [];
-                } catch (error) {
-                    throw new Error('云端 records.json 格式无效');
-                }
-                if (!Array.isArray(records)) records = [];
+                const response = await fetch(`https://gist.githubusercontent.com/${config.GITHUB_USERNAME}/${config.GIST_ID}/raw/records.json?t=${new Date().getTime()}`);
+                if (!response.ok) throw new Error(`无法加载Gist: ${response.statusText}`);
+                const data = await response.json();
+                records = Array.isArray(data) ? data : [];
                 processRawRecords();
             } catch (error) {
                 console.error("加载记录失败:", error);
