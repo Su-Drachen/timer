@@ -101,6 +101,7 @@
     sessions=sessions.map(s=>({...s,messages:Array.isArray(s.messages)?s.messages:[],conversationId:s.conversationId||null}));
     let currentId=localStorage.getItem(STORE.current)||null,selectedFile=null,generating=false,controller=null,cachedToken='',tokenExpiry=0,toastTimer;
     const config=()=>({apiKey:localStorage.getItem('glm_api_key')||DEFAULT_KEY,apiSecret:localStorage.getItem('glm_api_secret')||DEFAULT_SECRET,assistantId:localStorage.getItem('glm_assistant_id')||DEFAULT_ASSISTANT});
+    const timeRecorderConfig=()=>{let stored=json(localStorage.getItem('timeRecorderConfig'),{}),sessionPat=sessionStorage.getItem('timeRecorderPat');if(stored.GITHUB_PAT){if(!sessionPat){sessionPat=stored.GITHUB_PAT;try{sessionStorage.setItem('timeRecorderPat',sessionPat)}catch{}}delete stored.GITHUB_PAT;try{localStorage.setItem('timeRecorderConfig',JSON.stringify(stored))}catch{}}return {...stored,GITHUB_PAT:sessionPat||''}};
     const current=()=>sessions.find(s=>s.id===currentId)||null;
 
     function persist(){try{localStorage.setItem(STORE.sessions,JSON.stringify(sessions));if(currentId)localStorage.setItem(STORE.current,currentId)}catch{showToast('本地存储空间不足')}}
@@ -150,8 +151,8 @@
       session.messages.push({role:'user',content:'请你以喵宝的身份，分析我最近的时间记录，并给出具体建议。'});persist();renderMessages();renderSidebar();
       controller=new AbortController();setGenerating(true);
       try{
-        const cfg=json(localStorage.getItem('timeRecorderConfig'),{});
-        if(!cfg.GIST_ID||!cfg.GITHUB_PAT)throw new Error('尚未完成云端同步配置，请先在进阶配置中填写信息');
+        const cfg=timeRecorderConfig();
+        if(!cfg.GIST_ID||!cfg.GITHUB_PAT)throw new Error('云端配置不完整，请返回时间笔记的云端同步页补充 Gist ID 和当前会话令牌');
         const pairs=matchRecords(json(localStorage.getItem('timeRecords'),[]),await fetchGist(cfg,controller.signal));
         if(!pairs.length)throw new Error('没有找到 1 分钟至 12 小时范围内的有效闭环记录');
         setGenerating(false);controller=null;await generateReply(analysisPrompt(pairs),session);
