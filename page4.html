@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>使用记录分析 - 私人时间记录器</title>
     <!-- Tailwind CSS v3 -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -47,12 +47,15 @@
             box-shadow: 0 2px 6px rgba(59, 130, 246, 0.3);
         }
     </style>
+    <link rel="stylesheet" href="notebook.css">
+    <link rel="stylesheet" href="page-data.css">
+    <script src="notebook-theme.js"></script>
 </head>
-<body class="bg-slate-100 min-h-screen flex flex-col font-sans antialiased text-slate-800">
+<body class="nb-page nb-page-analytics bg-slate-100 min-h-screen flex flex-col font-sans antialiased text-slate-800">
 
     <!-- 顶部导航栏 -->
-    <header class="bg-white shadow-sm sticky top-0 z-30 border-b border-slate-200/80">
-        <div class="container mx-auto px-3.5 sm:px-4 py-3 sm:py-3.5 flex justify-between items-center max-w-4xl">
+    <header class="nb-header bg-white shadow-sm sticky top-0 z-30 border-b border-slate-200/80">
+        <div class="nb-header-inner container mx-auto px-3.5 sm:px-4 py-3 sm:py-3.5 flex justify-between items-center max-w-4xl">
             <div class="flex items-center gap-2">
                 <div class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-500 flex items-center justify-center">
                     <i class="fa fa-heartbeat text-lg"></i>
@@ -66,7 +69,7 @@
                     <i class="fa fa-refresh mr-1"></i>
                     <span>刷新</span>
                 </button>
-                <a href="pagemain.html" class="bg-slate-200 text-slate-700 hover:bg-slate-300 transition-colors flex items-center text-xs sm:text-sm font-semibold py-1.5 px-2.5 sm:px-3 rounded-lg">
+                <a href="pagemain.html" class="nb-back bg-slate-200 text-slate-700 hover:bg-slate-300 transition-colors flex items-center text-xs sm:text-sm font-semibold py-1.5 px-2.5 sm:px-3 rounded-lg">
                     <i class="fa fa-arrow-left mr-1"></i>
                     返回
                 </a>
@@ -74,7 +77,21 @@
         </div>
     </header>
 
-    <main class="flex-grow container mx-auto px-3.5 sm:px-4 py-4 sm:py-6 max-w-4xl space-y-4 sm:space-y-6">
+    <main class="nb-main flex-grow container mx-auto px-3.5 sm:px-4 py-4 sm:py-6 max-w-4xl space-y-4 sm:space-y-6">
+        <section class="nb-intro" aria-labelledby="page-heading">
+            <div>
+                <p class="nb-kicker">时间笔记 / INSIGHTS</p>
+                <h2 id="page-heading">读懂自己的时间节奏。</h2>
+                <p>连接本地与云端记录，从时长、趋势与明细中回看日常。</p>
+            </div>
+        </section>
+        <nav class="nb-nav" aria-label="功能导航">
+            <a href="pagemain.html">时间记录</a>
+            <a href="page1.html">备注词条</a>
+            <a href="page2.html">成就徽章</a>
+            <a href="page4.html" aria-current="page">时长分析</a>
+            <a href="page3.html">数据修复</a>
+        </nav>
 
         <!-- 主要内容挂载点 -->
         <div id="health-app-container" class="space-y-4 sm:space-y-6">

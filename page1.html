@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>词条统计 - 私人时间记录器</title>
     <!-- 使用 Tailwind CSS v3 -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -42,27 +42,44 @@
             }
         }
     </script>
+    <link rel="stylesheet" href="notebook.css">
+    <link rel="stylesheet" href="page-data.css">
+    <script src="notebook-theme.js"></script>
 </head>
-<body class="bg-slate-100 min-h-screen flex flex-col font-sans antialiased text-slate-800">
+<body class="nb-page nb-page-terms bg-slate-100 min-h-screen flex flex-col font-sans antialiased text-slate-800">
 
     <!-- 顶部导航栏 -->
-    <header class="bg-white shadow-sm sticky top-0 z-20">
-        <div class="max-w-3xl mx-auto px-3 sm:px-4 py-3 sm:py-4 flex justify-between items-center">
+    <header class="nb-header bg-white shadow-sm sticky top-0 z-20">
+        <div class="nb-header-inner max-w-3xl mx-auto px-3 sm:px-4 py-3 sm:py-4 flex justify-between items-center">
             <h1 class="text-base sm:text-xl font-bold text-slate-800 flex items-center">
                 <i class="fa fa-bar-chart text-primary-500 mr-2 sm:mr-3 text-lg sm:text-xl"></i>
                 <span>备注词条统计</span>
             </h1>
-            <a href="pagemain.html" class="bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-700 text-xs sm:text-sm font-medium py-1.5 px-2.5 sm:px-3.5 rounded-lg transition-colors flex items-center">
+            <a href="pagemain.html" class="nb-back bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-700 text-xs sm:text-sm font-medium py-1.5 px-2.5 sm:px-3.5 rounded-lg transition-colors flex items-center">
                 <i class="fa fa-arrow-left mr-1.5"></i>
                 返回主页
             </a>
         </div>
     </header>
 
-    <main class="flex-grow max-w-3xl w-full mx-auto px-3 sm:px-4 py-4 sm:py-6">
-        <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+    <main class="nb-main flex-grow max-w-3xl w-full mx-auto px-3 sm:px-4 py-4 sm:py-6">
+        <section class="nb-intro" aria-labelledby="page-heading">
+            <div>
+                <p class="nb-kicker">时间笔记 / WORDS</p>
+                <h2 id="page-heading">常写下的，就是日常。</h2>
+                <p>从备注里发现反复出现的片段，让每一次记录都有迹可循。</p>
+            </div>
+        </section>
+        <nav class="nb-nav" aria-label="功能导航">
+            <a href="pagemain.html">时间记录</a>
+            <a href="page1.html" aria-current="page">备注词条</a>
+            <a href="page2.html">成就徽章</a>
+            <a href="page4.html">时长分析</a>
+            <a href="page3.html">数据修复</a>
+        </nav>
+        <div class="nb-card nb-terms-card bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
             <!-- 头部说明与控制区 -->
-            <div class="p-3.5 sm:p-5 border-b border-slate-100 bg-white">
+            <div class="nb-terms-toolbar p-3.5 sm:p-5 border-b border-slate-100 bg-white">
                 <div class="flex items-center justify-between mb-3">
                     <div>
                         <h2 class="text-base sm:text-lg font-semibold text-slate-800">词条统计排行</h2>

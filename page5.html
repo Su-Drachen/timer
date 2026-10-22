@@ -38,8 +38,11 @@
     @media(max-width:767px){.sidebar{position:fixed;inset:0 auto 0 0;width:min(86vw,290px);transform:translateX(-102%);transition:transform .22s ease;box-shadow:8px 0 24px rgba(0,0,0,.12)}.sidebar.open{transform:none}.overlay.show{display:block}.menu{display:inline-grid}.topbar{height:52px;flex-basis:52px;padding:0 8px;border-bottom:1px solid #eee}.model{display:none}.chat-content{padding:15px 14px 28px}.welcome{min-height:calc(100dvh - 210px);padding:20px 0}.welcome h1{margin:14px 0 22px;font-size:21px}.starters{grid-template-columns:1fr;gap:8px}.starter{min-height:56px}.messages{gap:22px}.message-body{font-size:14px}.user .message-col{max-width:88%}.msg-actions{opacity:1}.composer-area{padding:0 9px max(7px,env(safe-area-inset-bottom))}.composer{min-height:50px;padding:6px;border-radius:23px}#userInput{font-size:16px}.disclaimer{margin-top:5px}}
     @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;animation-duration:.01ms!important;transition-duration:.01ms!important}}
   </style>
+  <link rel="stylesheet" href="notebook.css">
+  <script src="notebook-theme.js"></script>
+  <link rel="stylesheet" href="page-special.css">
 </head>
-<body>
+<body class="nb-page nb-page-chat">
   <div class="app">
     <div id="overlay" class="overlay"></div>
     <aside id="sidebar" class="sidebar" aria-label="会话侧栏">
@@ -60,7 +63,9 @@
       <main id="chatScroll" class="chat-scroll">
         <div class="chat-content">
           <section id="welcome" class="welcome">
-            <div class="welcome-logo"><i class="fa fa-plus"></i></div><h1>今天想了解什么？</h1>
+            <div class="welcome-logo" aria-hidden="true"><i class="fa fa-plus"></i></div>
+            <p class="welcome-kicker">时间笔记 · AI 顾问</p><h1>今天想了解什么？</h1>
+            <p class="welcome-description">从最近的记录开始，也可以聊聊作息与专注。</p>
             <div class="starters">
               <button class="starter" onclick="startHealthAnalysis()"><strong>分析最新记录</strong><span>同步并评估最近的时间数据</span></button>
               <button class="starter" onclick="usePrompt('请你以喵宝的身份，根据我的情况，制定一份循序渐进的作息调整计划。')"><strong>制定作息计划</strong><span>获得可以执行的节律建议</span></button>

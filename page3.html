@@ -2,7 +2,7 @@
 <html lang="zh-CN" data-theme="blue">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>数据修复 - 时间笔记</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
@@ -101,8 +101,11 @@
             border-color: var(--primary);
         }
     </style>
+    <link rel="stylesheet" href="notebook.css">
+    <link rel="stylesheet" href="page-data.css">
+    <script src="notebook-theme.js"></script>
 </head>
-<body class="min-h-screen flex flex-col font-sans antialiased">
+<body class="nb-page nb-page-repair min-h-screen flex flex-col font-sans antialiased">
 
     <!-- Toast 提示 -->
     <div id="toast" class="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-gray-900/90 text-white backdrop-blur px-5 py-3 rounded-2xl shadow-2xl opacity-0 translate-y-10 z-50 text-sm font-medium flex items-center gap-2 pointer-events-none transition-all duration-300">
@@ -111,22 +114,36 @@
     </div>
 
     <!-- 顶部导航 -->
-    <header class="header-bg shadow-sm sticky top-0 z-40 border-b" style="border-color: var(--border-color);">
-        <div class="max-w-4xl mx-auto px-4 py-3.5 flex justify-between items-center">
+    <header class="nb-header header-bg shadow-sm sticky top-0 z-40 border-b" style="border-color: var(--border-color);">
+        <div class="nb-header-inner max-w-4xl mx-auto px-4 py-3.5 flex justify-between items-center">
             <div class="flex items-center gap-2.5">
-                <a href="pagemain.html" class="w-8 h-8 rounded-xl flex items-center justify-center bg-white/20 backdrop-blur hover:bg-white/30">
+                <a href="pagemain.html" aria-label="返回主页" class="nb-back w-8 h-8 rounded-xl flex items-center justify-center bg-white/20 backdrop-blur hover:bg-white/30">
                     <i class="fa fa-chevron-left text-sm"></i>
                 </a>
-                <h1 class="text-base sm:text-lg font-bold tracking-tight">数据修复 (本地)</h1>
+                <h1 class="text-base sm:text-lg font-bold tracking-tight">数据修复</h1>
             </div>
-            <span class="text-xs px-2.5 py-1 rounded-lg bg-white/20 font-medium">免费工具</span>
+            <span class="nb-local-tag text-xs px-2.5 py-1 rounded-lg bg-white/20 font-medium"><i class="fa fa-desktop mr-1.5" aria-hidden="true"></i>本地数据</span>
         </div>
     </header>
 
-    <main class="flex-grow container mx-auto px-3.5 sm:px-4 py-4 sm:py-6 max-w-4xl space-y-4">
+    <main class="nb-main flex-grow container mx-auto px-3.5 sm:px-4 py-4 sm:py-6 max-w-4xl space-y-4">
+        <section class="nb-intro" aria-labelledby="page-heading">
+            <div>
+                <p class="nb-kicker">时间笔记 / ORGANIZE</p>
+                <h2 id="page-heading">整理记录，轻装继续。</h2>
+                <p>筛选、编辑与清理本地记录，让时间笔记保持清晰有序。</p>
+            </div>
+        </section>
+        <nav class="nb-nav" aria-label="功能导航">
+            <a href="pagemain.html">时间记录</a>
+            <a href="page1.html">备注词条</a>
+            <a href="page2.html">成就徽章</a>
+            <a href="page4.html">时长分析</a>
+            <a href="page3.html" aria-current="page">数据修复</a>
+        </nav>
 
         <!-- 操作控制面板 -->
-        <div class="card-box rounded-2xl p-4 sm:p-5 space-y-4 shadow-sm">
+        <div class="nb-card nb-repair-controls card-box rounded-2xl p-4 sm:p-5 space-y-4 shadow-sm">
 
             <!-- 快捷条件与年月筛选栏 -->
             <div class="space-y-3">
@@ -196,7 +213,7 @@
         </div>
 
         <!-- 数据表格列表 -->
-        <div class="card-box rounded-2xl overflow-hidden shadow-sm">
+        <div class="nb-card nb-repair-table card-box rounded-2xl overflow-hidden shadow-sm">
             <div class="overflow-x-auto">
                 <table class="w-full text-left text-xs sm:text-sm">
                     <thead style="background-color: var(--table-header); color: var(--text-sub);">

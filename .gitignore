@@ -1,0 +1,19 @@
+# Local subproject and publishing workspace: never include in this repository.
+/see/
+/.publish-timer/
+/.idea/
+
+# Local verification output and dependencies.
+/tests/artifacts/
+/node_modules/
+
+# Credentials must stay in browser configuration or local files.
+.env
+.env.*
+*.pem
+*.key
+*.p12
+*.pfx
+*author-key*.json
+*credentials*.json
+*secrets*.json

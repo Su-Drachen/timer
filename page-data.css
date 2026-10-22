@@ -1,0 +1,650 @@
+/* Data pages share the notebook palette; their original controls and renderers stay intact. */
+.nb-page-terms .nb-header h1 > .fa,
+.nb-page-achievements .nb-header h1 > .fa {
+    width: 36px;
+    height: 36px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
+    background: var(--nb-accent-soft);
+    color: var(--nb-accent);
+    font-size: 17px;
+}
+
+.nb-page-achievements .nb-header h1 > .fa {
+    color: #af7b2f;
+    background: #fbf2df;
+}
+
+.nb-page-analytics .nb-header-inner > div:first-child > div:first-child {
+    width: 36px;
+    height: 36px;
+    border-radius: 12px;
+    color: var(--nb-accent);
+    background: var(--nb-accent-soft);
+}
+
+.nb-page-terms .nb-main > .nb-nav,
+.nb-page-achievements .nb-main > .nb-nav,
+.nb-page-repair .nb-main > .nb-nav,
+.nb-page-analytics .nb-main > .nb-nav {
+    margin-bottom: 24px;
+}
+
+.nb-page-terms .nb-main,
+.nb-page-achievements .nb-main,
+.nb-page-repair .nb-main,
+.nb-page-analytics .nb-main {
+    min-width: 0;
+}
+
+.nb-page-terms #filter-controls,
+.nb-page-terms .nb-terms-toolbar {
+    border-color: var(--nb-line);
+}
+
+.nb-page-terms .nb-terms-toolbar {
+    padding: 24px;
+}
+
+.nb-page-terms .nb-terms-toolbar h2 {
+    font-size: 18px;
+    letter-spacing: -.025em;
+}
+
+.nb-page-terms .nb-terms-toolbar p {
+    margin-top: 6px;
+    font-size: 12px;
+}
+
+.nb-page-terms #stats-badge {
+    padding: 6px 11px;
+    color: var(--nb-accent);
+    background: var(--nb-accent-soft);
+}
+
+.nb-page-terms #filter-controls {
+    margin-top: 18px;
+    padding-top: 18px;
+    gap: 12px;
+}
+
+.nb-page-terms #search-input,
+.nb-page-terms #sort-select,
+.nb-page-repair #search-input,
+.nb-page-repair #month-select {
+    min-height: 44px;
+    background: var(--nb-soft);
+    color: var(--nb-ink);
+    border-color: var(--nb-line);
+    border-radius: 12px;
+    font-size: 13px;
+}
+
+.nb-page-terms #search-input {
+    padding-left: 34px;
+}
+
+.nb-page-terms #stats-container {
+    padding: 0;
+}
+
+.nb-page-terms #stats-container thead {
+    background: var(--nb-soft);
+}
+
+.nb-page-terms #stats-container th {
+    padding-top: 15px;
+    padding-bottom: 15px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .06em;
+}
+
+.nb-page-terms #stats-container td {
+    padding-top: 19px;
+    padding-bottom: 19px;
+}
+
+.nb-page-terms #stats-container td:nth-child(2) {
+    padding-left: 12px;
+    padding-right: 16px;
+}
+
+.nb-page-terms #stats-container tbody > tr,
+.nb-page-repair tbody > tr,
+.nb-page-analytics tbody > tr {
+    border-color: var(--nb-line);
+}
+
+.nb-page-terms #stats-container tbody > tr:hover,
+.nb-page-repair tbody > tr:hover,
+.nb-page-analytics tbody > tr:hover {
+    background: var(--nb-soft);
+}
+
+.nb-page-terms #stats-container tbody > tr > td:last-child > span {
+    min-width: 48px;
+    padding: 5px 9px;
+    border: 0;
+    border-radius: 9px;
+    font-variant-numeric: tabular-nums;
+}
+
+.nb-page-terms #stats-container > .text-center,
+.nb-page-achievements #achievements-grid > .col-span-full,
+.nb-page-analytics #health-app-container > .text-center {
+    padding: 58px 24px;
+}
+
+.nb-page-terms #stats-container > .text-center > i,
+.nb-page-achievements #achievements-grid > .col-span-full > i,
+.nb-page-analytics #health-app-container > .text-center > i {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 64px;
+    height: 64px;
+    margin-bottom: 18px;
+    border-radius: 20px;
+    background: var(--nb-soft);
+    color: var(--nb-accent);
+    font-size: 26px;
+}
+
+.nb-page-terms #stats-container > .text-center a,
+.nb-page-achievements #achievements-grid > .col-span-full a,
+.nb-page-analytics #health-app-container > .text-center a {
+    padding: 12px 22px;
+    border-radius: 12px;
+}
+
+.nb-page-achievements #overall-progress-container {
+    padding: 26px;
+    margin-bottom: 22px;
+    background: linear-gradient(120deg, var(--nb-surface), var(--nb-accent-soft));
+}
+
+.nb-page-achievements #overall-progress-container > .flex:first-child {
+    gap: 12px;
+    margin-bottom: 18px;
+}
+
+.nb-page-achievements #overall-progress-container > .flex:first-child > div > span:first-child {
+    font-size: 16px;
+}
+
+.nb-page-achievements #overall-progress-text {
+    font-size: 17px;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+}
+
+.nb-page-achievements #overall-progress-container > div:nth-child(2) {
+    height: 8px;
+    box-shadow: none;
+    background: var(--nb-line);
+}
+
+.nb-page-achievements #overall-progress-bar {
+    background: linear-gradient(90deg, var(--nb-accent), color-mix(in srgb, var(--nb-accent) 55%, #fff));
+}
+
+.nb-page-achievements #overall-progress-container > div:last-child {
+    border-top: 0;
+    margin-top: 20px;
+    padding-top: 0;
+    max-width: 420px;
+    gap: 8px;
+}
+
+.nb-page-achievements #overall-progress-container button {
+    min-height: 38px;
+    border-radius: 10px;
+    font-size: 12px;
+}
+
+.nb-page-achievements #achievements-grid {
+    gap: 16px;
+}
+
+.nb-page-achievements .achievement-card {
+    min-width: 0;
+    padding: 25px 18px 18px;
+    border: 1px solid var(--nb-line);
+    border-radius: 20px;
+    background: var(--nb-surface);
+    box-shadow: 0 3px 12px rgb(26 42 69 / 3%);
+    transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease;
+}
+
+.nb-page-achievements .achievement-card:hover {
+    transform: translateY(-3px);
+    border-color: #b5c8f0;
+    box-shadow: var(--nb-shadow);
+}
+
+.nb-page-achievements .achievement-card.locked,
+.nb-page-achievements .achievement-card.locked:hover {
+    opacity: 1;
+    filter: none;
+    background: var(--nb-soft);
+}
+
+.nb-page-achievements .achievement-card > .rounded-full {
+    width: 54px;
+    height: 54px;
+    margin-bottom: 17px;
+    border-radius: 17px;
+    font-size: 22px;
+    box-shadow: inset 0 0 0 1px rgb(255 255 255 / 16%);
+}
+
+.nb-page-achievements .achievement-card.locked > .rounded-full {
+    background: var(--nb-line);
+    color: var(--nb-muted);
+}
+
+.nb-page-achievements .achievement-card > h3 {
+    margin-bottom: 8px;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.nb-page-achievements .achievement-card > p {
+    height: 35px;
+    margin-bottom: 20px;
+    line-height: 1.6;
+    font-size: 11px;
+}
+
+.nb-page-achievements .achievement-card > .absolute {
+    top: 12px;
+    right: 12px;
+    color: #b78a48;
+}
+
+.nb-page-achievements .achievement-card > div:last-child > div:last-child {
+    margin-top: 8px;
+    font-variant-numeric: tabular-nums;
+}
+
+.nb-page-achievements #achievement-modal {
+    background: rgb(16 24 39 / 46%);
+    backdrop-filter: blur(8px);
+}
+
+.nb-page-achievements #achievement-modal > div {
+    border: 1px solid var(--nb-line);
+    border-radius: 26px;
+    padding: 30px;
+    background: var(--nb-surface);
+}
+
+.nb-page-achievements #modal-title {
+    margin-top: 16px;
+    font-size: 20px;
+}
+
+.nb-page-achievements #modal-desc {
+    font-size: 13px;
+    line-height: 1.8;
+}
+
+.nb-page-achievements #achievement-modal button {
+    min-height: 42px;
+    background: var(--nb-soft);
+    color: var(--nb-ink);
+    border: 1px solid var(--nb-line);
+}
+
+.nb-page-repair .nb-local-tag {
+    padding: 7px 11px;
+    color: var(--nb-accent);
+    background: var(--nb-accent-soft);
+    border-radius: 9px;
+    white-space: nowrap;
+}
+
+.nb-page-repair .nb-repair-controls {
+    padding: 26px;
+}
+
+.nb-page-repair .nb-repair-controls > div + div {
+    padding-top: 20px;
+    margin-top: 20px;
+}
+
+.nb-page-repair .filter-btn,
+.nb-page-analytics .filter-btn {
+    min-height: 38px;
+    padding: 8px 14px;
+    border-radius: 10px;
+    border-color: var(--nb-line);
+    background: var(--nb-surface);
+    color: var(--nb-muted);
+    box-shadow: none;
+}
+
+.nb-page-repair .filter-btn.active,
+.nb-page-analytics .filter-btn.active {
+    color: #fff;
+    background: var(--nb-accent);
+    border-color: var(--nb-accent);
+    box-shadow: 0 3px 10px rgb(56 103 214 / 16%);
+}
+
+.nb-page-repair #batch-clear-remark-btn,
+.nb-page-repair #batch-delete-btn,
+.nb-page-repair #quick-dedup-btn {
+    min-height: 40px;
+    padding: 10px 13px;
+    font-weight: 500;
+    border-radius: 10px;
+}
+
+.nb-page-repair input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--nb-accent);
+}
+
+.nb-page-repair .nb-repair-table {
+    margin-top: 22px;
+}
+
+.nb-page-repair .nb-repair-table table {
+    min-width: 620px;
+}
+
+.nb-page-repair .nb-repair-table th {
+    padding-top: 16px;
+    padding-bottom: 16px;
+    font-size: 11px;
+    letter-spacing: .04em;
+}
+
+.nb-page-repair .nb-repair-table td {
+    padding-top: 16px;
+    padding-bottom: 16px;
+    line-height: 1.7;
+}
+
+.nb-page-repair #empty-state {
+    padding: 64px 20px;
+    opacity: 1;
+    color: var(--nb-muted);
+    font-size: 13px;
+}
+
+.nb-page-analytics #health-app-container {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 20px;
+}
+
+.nb-page-analytics #health-app-container > div {
+    min-width: 0;
+    margin-top: 0;
+}
+
+.nb-page-analytics #health-app-container > .bg-white,
+.nb-page-analytics #health-app-container > .grid > div {
+    background: var(--nb-surface);
+    border: 1px solid var(--nb-line);
+    border-radius: 20px;
+    box-shadow: 0 3px 12px rgb(26 42 69 / 3%);
+}
+
+.nb-page-analytics #health-app-container > div:first-child:not(.text-center),
+.nb-page-analytics #health-app-container > div:nth-child(3),
+.nb-page-analytics #health-app-container > div:nth-child(4) {
+    padding: 24px;
+}
+
+.nb-page-analytics #health-app-container > div:first-child h2 {
+    font-size: 17px;
+}
+
+.nb-page-analytics #health-app-container > div:first-child p {
+    margin-top: 5px;
+}
+
+.nb-page-analytics #health-app-container > div:first-child > .grid {
+    padding-top: 17px;
+    margin-top: 18px;
+    gap: 8px;
+}
+
+.nb-page-analytics #health-app-container > .grid {
+    gap: 14px;
+}
+
+.nb-page-analytics #health-app-container > .grid > div {
+    padding: 23px 20px;
+}
+
+.nb-page-analytics #health-app-container > .grid > div > span:nth-child(2) {
+    margin-top: 10px;
+    margin-bottom: 5px;
+    font-size: clamp(20px, 2vw, 27px);
+    line-height: 1.4;
+    letter-spacing: -.04em;
+    font-variant-numeric: tabular-nums;
+}
+
+.nb-page-analytics #health-app-container > div:nth-child(3) h3,
+.nb-page-analytics #health-app-container > div:nth-child(4) h3 {
+    font-size: 14px;
+}
+
+.nb-page-analytics #health-app-container pre {
+    background: #18243a;
+    color: #d8e1ee;
+    border: 1px solid #263852;
+    border-radius: 13px;
+    padding: 18px;
+    line-height: 1.85;
+    scrollbar-width: thin;
+}
+
+.nb-page-analytics #copy-prompt-btn {
+    min-height: 36px;
+    flex-shrink: 0;
+    border-radius: 10px;
+    white-space: nowrap;
+}
+
+.nb-page-analytics #health-app-container > div:last-child > .border-b {
+    padding: 20px 24px;
+}
+
+.nb-page-analytics #health-app-container table th {
+    padding-top: 16px;
+    padding-bottom: 16px;
+    font-weight: 500;
+}
+
+.nb-page-analytics #health-app-container table td {
+    padding-top: 18px;
+    padding-bottom: 18px;
+}
+
+[data-theme="dark"] .nb-page-achievements .nb-header h1 > .fa {
+    color: #e9bb6b;
+    background: #3b3025;
+}
+
+[data-theme="dark"] .nb-page-repair .filter-btn.active,
+[data-theme="dark"] .nb-page-analytics .filter-btn.active {
+    color: #102340;
+}
+
+[data-theme="dark"] .nb-page-analytics #health-app-container .bg-gradient-to-br {
+    background: var(--nb-surface);
+}
+
+[data-theme="dark"] .nb-page-analytics .bg-indigo-100,
+[data-theme="dark"] .nb-page-analytics .bg-indigo-50,
+[data-theme="dark"] .nb-page-analytics .bg-purple-50,
+[data-theme="dark"] .nb-page-analytics .bg-emerald-50 {
+    background: var(--nb-accent-soft);
+}
+
+[data-theme="dark"] .nb-page-analytics .text-indigo-600,
+[data-theme="dark"] .nb-page-analytics .text-purple-600 {
+    color: #a9baff;
+}
+
+[data-theme="dark"] .nb-page-analytics .text-emerald-600 {
+    color: #70d0ad;
+}
+
+@media (min-width: 1024px) {
+    .nb-page-analytics #health-app-container {
+        grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+    }
+
+    .nb-page-analytics #health-app-container > div:first-child,
+    .nb-page-analytics #health-app-container > .grid,
+    .nb-page-analytics #health-app-container > div:last-child {
+        grid-column: 1 / -1;
+    }
+
+    .nb-page-analytics #health-app-container > div:nth-child(3) > div:last-child {
+        height: 285px;
+        margin-top: 24px;
+    }
+}
+
+@media (max-width: 639px) {
+    .nb-page-terms .nb-terms-toolbar,
+    .nb-page-achievements #overall-progress-container,
+    .nb-page-repair .nb-repair-controls {
+        padding: 19px 16px;
+    }
+
+    .nb-page-terms #filter-controls {
+        gap: 10px;
+    }
+
+    .nb-page-terms #stats-container td {
+        padding-top: 16px;
+        padding-bottom: 16px;
+    }
+
+    .nb-page-terms #stats-container th:first-child {
+        width: 43px;
+    }
+
+    .nb-page-terms #stats-container td:nth-child(2) {
+        padding-left: 4px;
+        padding-right: 10px;
+    }
+
+    .nb-page-achievements #overall-progress-container > .flex:first-child {
+        align-items: flex-start;
+    }
+
+    .nb-page-achievements #overall-progress-container > .flex:first-child > div {
+        flex-wrap: wrap;
+    }
+
+    .nb-page-achievements #overall-progress-text {
+        font-size: 14px;
+    }
+
+    .nb-page-achievements #achievements-grid {
+        gap: 12px;
+    }
+
+    .nb-page-achievements .achievement-card {
+        padding: 21px 12px 15px;
+        border-radius: 17px;
+    }
+
+    .nb-page-achievements .achievement-card > .rounded-full {
+        width: 46px;
+        height: 46px;
+        border-radius: 15px;
+        margin-bottom: 14px;
+        font-size: 20px;
+    }
+
+    .nb-page-achievements .achievement-card > h3 {
+        font-size: 12px;
+    }
+
+    .nb-page-achievements .achievement-card > p {
+        margin-bottom: 15px;
+    }
+
+    .nb-page-repair .nb-repair-controls > div:last-child > div {
+        width: 100%;
+    }
+
+    .nb-page-repair .nb-repair-controls > div:last-child button {
+        flex: 1;
+        justify-content: center;
+    }
+
+    .nb-page-repair #quick-dedup-btn {
+        width: 100%;
+    }
+
+    .nb-page-analytics .nb-header h1 {
+        font-size: 13px;
+    }
+
+    .nb-page-analytics .nb-header-inner > div:first-child > div:first-child {
+        width: 29px;
+        height: 29px;
+        border-radius: 10px;
+    }
+
+    .nb-page-analytics #refresh-btn,
+    .nb-page-analytics .nb-back {
+        padding-left: 9px;
+        padding-right: 9px;
+        min-height: 34px;
+    }
+
+    .nb-page-analytics #health-app-container {
+        gap: 16px;
+    }
+
+    .nb-page-analytics #health-app-container > div:first-child:not(.text-center),
+    .nb-page-analytics #health-app-container > div:nth-child(3),
+    .nb-page-analytics #health-app-container > div:nth-child(4) {
+        padding: 19px 16px;
+    }
+
+    .nb-page-analytics #health-app-container > div:first-child > .flex,
+    .nb-page-analytics #health-app-container > div:nth-child(4) > .flex:first-child {
+        align-items: flex-start;
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+
+    .nb-page-analytics #health-app-container > .grid {
+        gap: 12px;
+    }
+
+    .nb-page-analytics #health-app-container > .grid > div {
+        padding: 19px 15px;
+        border-radius: 17px;
+    }
+
+    .nb-page-analytics #health-app-container > div:last-child > .border-b {
+        padding: 18px 16px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .nb-page-achievements .achievement-card,
+    .nb-page-achievements .achievement-card:hover {
+        transition: none;
+        transform: none;
+    }
+}

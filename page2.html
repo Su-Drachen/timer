@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>成就与徽章 - 私人时间记录器</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
@@ -44,27 +44,44 @@
             overflow: hidden;
         }
     </style>
+    <link rel="stylesheet" href="notebook.css">
+    <link rel="stylesheet" href="page-data.css">
+    <script src="notebook-theme.js"></script>
 </head>
-<body class="bg-slate-100 min-h-screen flex flex-col font-sans antialiased text-slate-800">
+<body class="nb-page nb-page-achievements bg-slate-100 min-h-screen flex flex-col font-sans antialiased text-slate-800">
 
     <!-- 顶部导航栏 -->
-    <header class="bg-white shadow-sm sticky top-0 z-20">
-        <div class="max-w-4xl mx-auto px-3 sm:px-4 py-3 sm:py-4 flex justify-between items-center">
+    <header class="nb-header bg-white shadow-sm sticky top-0 z-20">
+        <div class="nb-header-inner max-w-4xl mx-auto px-3 sm:px-4 py-3 sm:py-4 flex justify-between items-center">
             <h1 class="text-base sm:text-lg font-bold text-slate-800 flex items-center">
                 <i class="fa fa-trophy text-gold mr-2 text-lg sm:text-xl"></i>
                 <span>成就与徽章</span>
             </h1>
-            <a href="pagemain.html" class="bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-700 text-xs sm:text-sm font-medium py-1.5 px-3 rounded-lg transition-colors flex items-center">
+            <a href="pagemain.html" class="nb-back bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-700 text-xs sm:text-sm font-medium py-1.5 px-3 rounded-lg transition-colors flex items-center">
                 <i class="fa fa-arrow-left mr-1.5"></i>
                 返回主页
             </a>
         </div>
     </header>
 
-    <main class="flex-grow max-w-4xl w-full mx-auto px-2.5 sm:px-4 py-3 sm:py-6 space-y-3 sm:space-y-4">
+    <main class="nb-main flex-grow max-w-4xl w-full mx-auto px-2.5 sm:px-4 py-3 sm:py-6 space-y-3 sm:space-y-4">
+        <section class="nb-intro" aria-labelledby="page-heading">
+            <div>
+                <p class="nb-kicker">时间笔记 / MILESTONES</p>
+                <h2 id="page-heading">让坚持，被看见。</h2>
+                <p>小小的记录，慢慢成为积累。这里收藏你走过的每一段里程。</p>
+            </div>
+        </section>
+        <nav class="nb-nav" aria-label="功能导航">
+            <a href="pagemain.html">时间记录</a>
+            <a href="page1.html">备注词条</a>
+            <a href="page2.html" aria-current="page">成就徽章</a>
+            <a href="page4.html">时长分析</a>
+            <a href="page3.html">数据修复</a>
+        </nav>
 
         <!-- 总成就进度卡片 -->
-        <div id="overall-progress-container" class="bg-white p-3.5 sm:p-5 rounded-xl shadow-sm border border-slate-200 hidden">
+        <div id="overall-progress-container" class="nb-card bg-white p-3.5 sm:p-5 rounded-xl shadow-sm border border-slate-200 hidden">
             <div class="flex justify-between items-center mb-2">
                 <div class="flex items-center gap-2">
                     <span class="text-xs sm:text-sm font-bold text-slate-800">成就总览</span>
