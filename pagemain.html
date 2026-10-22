@@ -251,6 +251,7 @@
     </style>
     <link rel="stylesheet" href="assets/css/notebook.css">
     <script src="assets/js/notebook-theme.js"></script>
+    <script src="assets/js/app-config.js"></script>
 </head>
 <body class="nb-page nb-home min-h-screen flex flex-col font-sans antialiased">
 
@@ -414,6 +415,7 @@
             <a href="page4.html">时长分析</a>
             <a href="page3.html">数据修复</a>
             <a href="page5.html">AI 顾问</a>
+            <a href="page6.html">观察书桌</a>
             <a href="page0.html">使用指南</a>
         </nav>
 
@@ -603,6 +605,15 @@
             <p>你的时间工具箱</p>
         </div>
         <div class="nb-tools-grid max-w-3xl mx-auto grid grid-cols-2 sm:grid-cols-3 gap-3">
+<a href="page6.html" aria-label="打开观察书桌" class="quick-link group card-box rounded-2xl p-4 flex items-center justify-between hover:shadow-md hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-200">
+    <div class="min-w-0 pr-2">
+        <h3 class="font-bold text-sm transition-colors">观察书桌</h3>
+        <p class="text-xs opacity-60 mt-0.5 truncate">日历记录与桌边留言</p>
+    </div>
+    <div class="w-8 h-8 rounded-xl bg-blue-500/10 text-blue-500 flex items-center justify-center shrink-0 transition-all duration-200">
+        <i class="fa fa-book text-sm" aria-hidden="true"></i>
+    </div>
+</a>
            <!-- 数据修复 -->
 <a href="page3.html" aria-label="打开数据修复" class="quick-link group card-box rounded-2xl p-4 flex items-center justify-between hover:shadow-md hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-200">
     <div class="min-w-0 pr-2">
@@ -1181,20 +1192,7 @@ const gistApp = {
     },
 
     loadConfig() {
-        const savedConfig = parseStoredJson('timeRecorderConfig', null);
-        let storedPat = localStorage.getItem('timeRecorderPat');
-        const sessionPat = sessionStorage.getItem('timeRecorderPat');
-        if (!storedPat && sessionPat) {
-            storedPat = sessionPat;
-            safeSetStorage(localStorage, 'timeRecorderPat', storedPat);
-        }
-        if (savedConfig && typeof savedConfig === 'object') {
-            if (!storedPat && savedConfig.GITHUB_PAT) {
-                storedPat = savedConfig.GITHUB_PAT;
-                safeSetStorage(localStorage, 'timeRecorderPat', storedPat);
-            }
-            this.config = { ...savedConfig, GITHUB_PAT: storedPat || sessionPat || '' };
-        }
+        this.config = window.TimerConfig.read();
         if (this.config.GIST_ID && this.config.GITHUB_PAT) {
             document.getElementById('gist-config-overlay').classList.add('hidden');
             syncModalLock();

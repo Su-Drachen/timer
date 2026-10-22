@@ -249,9 +249,9 @@
     function configure() {
         if (!ui) return false;
         ++epoch;
-        var config = parse(read('timeRecorderConfig'), {});
+        var config = window.TimerConfig ? window.TimerConfig.read() : {};
         var gistId = typeof config.COMMENT_GIST_ID === 'string' ? config.COMMENT_GIST_ID.trim() : '';
-        var token = read('timeRecorderPat') || read('timeRecorderPat', true) || config.GITHUB_PAT || '';
+        var token = config.GITHUB_PAT || '';
         var prefix = 'timer.feedback.' + gistId + '.';
         var savedSeen = read(prefix + 'seen');
         state = { gistId: gistId, prefix: prefix, username: typeof config.GITHUB_USERNAME === 'string' ? config.GITHUB_USERNAME.trim().slice(0, 39) : '',
