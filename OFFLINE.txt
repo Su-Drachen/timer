@@ -1,0 +1,29 @@
+本地记录的离线使用
+
+1. 手机或电脑先通过 HTTPS 网站打开 pagemain.html，等待“离线已就绪”。
+2. 在同一个浏览器中，断网后可以重新打开入口或主页，查看、新增、编辑、删除、导入及导出本地记录。
+3. 云端同步、留言读取、AI、其他分析页面及外部链接仍需要联网；恢复联网不会自动同步或轮询。
+4. 清除网站数据会移除浏览器中的记录和离线资源。离线缓存不是记录备份，请保留 CSV 导出。
+5. 直接双击 HTML 文件（file://）不支持 Service Worker 离线启动。开发时使用 localhost，手机访问使用 HTTPS 网站。
+
+资源与更新
+
+仅入口、主页及固定清单中的 CSS/JS/图标资源进入静态缓存。配置、密钥、Gist 数据和 see 不进入缓存。
+新版先校验所有文件是否完整，不会强制重载正在编辑的页面；保存内容并关闭本应用的所有页面后，再打开即可启用已准备好的新版。
+缓存缺失时，可联网点击“重试准备”。尚未完成首次准备的设备，不能从未加载过的网站直接离线启动。
+
+维护步骤
+
+依赖：Node.js、pnpm。pnpm install --frozen-lockfile 安装构建依赖；运行 pnpm run build 重新生成主页 CSS 和离线清单。
+所有被缓存文件或 sw.js 更新后，都必须重新运行构建，再将页面、资源、sw.js 和 assets/js/offline-manifest.js 一起部署。
+已生成的资源随项目保存，用户运行网站不需要安装 Node.js。
+node scripts/vendor-offline.mjs 仅用于重新下载固定版本的公开第三方依赖。
+
+验证命令
+
+node --test tests/app-config.test.cjs tests/feedback-core.test.cjs tests/local-records.test.cjs
+node tests/offline.test.cjs
+node tests/feedback-ui.test.cjs
+
+浏览器测试需要 Playwright 与 Chromium/Edge。可设置 PLAYWRIGHT_PATH 和 BROWSER_EXECUTABLE 指向本机安装位置。
+测试仅使用合成数据并拦截远程 API，不读取或修改真实 Gist。

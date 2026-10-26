@@ -1,0 +1,32 @@
+.offline-status {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin: 0 0 16px;
+    padding: 10px 14px;
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    color: var(--text-sub);
+    background: var(--bg-card);
+    font-size: 12px;
+    line-height: 1.65;
+}
+.offline-status[data-state="offline"], .offline-status[data-state="error"] {
+    color: var(--text-main);
+    border-color: var(--primary);
+}
+.offline-status button {
+    flex-shrink: 0;
+    min-height: 40px;
+    padding: 6px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    color: var(--primary);
+    background: var(--bg-card);
+    cursor: pointer;
+}
+.offline-status button[hidden] { display: none; }
+@media (max-width: 480px) {
+    .offline-status { align-items: flex-start; flex-wrap: wrap; }
+}

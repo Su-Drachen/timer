@@ -4,30 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>时间笔记</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="preconnect" href="https://cdn.jsdelivr.net">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="assets/css/tailwind.css">
+    <link rel="stylesheet" href="assets/vendor/font-awesome.min.css">
+    <script src="assets/vendor/chart.umd.min.js"></script>
+    <link rel="stylesheet" href="assets/css/offline.css">
+    <script src="assets/js/offline.js" defer></script>
     <link rel="stylesheet" href="assets/css/feedback.css">
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        theme: {
-                            blue: '#165DFF',
-                            green: '#00B42A',
-                            red: '#F53F3F',
-                        }
-                    }
-                }
-            }
-        }
-    </script>
     <style>
         /* CSS 变量管理三大主题 */
         :root[data-theme="blue"] {
@@ -399,6 +381,10 @@
     </header>
 
     <main class="nb-main flex-grow container mx-auto max-w-5xl px-3.5 sm:px-6 py-5 sm:py-8">
+        <div id="offline-status" class="offline-status" role="status" aria-live="polite">
+            <span id="offline-message">正在准备离线使用…</span>
+            <button id="offline-retry" type="button" hidden>重试准备</button>
+        </div>
 
         <section class="nb-intro" aria-labelledby="notebook-heading">
             <div>
@@ -1007,34 +993,41 @@ const localApp = {
         this.renderRecords();
     },
 
-    saveRecordsToLocal() {
-        safeSetStorage(localStorage, 'timeRecords', JSON.stringify(this.records));
+    saveRecordsToLocal(nextRecords) {
+        if (!safeSetStorage(localStorage, 'timeRecords', JSON.stringify(nextRecords))) return false;
+        this.records = nextRecords;
+        return true;
     },
 
     handleAddRecord(remark = '') {
-        this.records.unshift({ time: formatRecordTime(), remark: remark.trim() });
-        this.saveRecordsToLocal();
+        const nextRecords = [{ time: formatRecordTime(), remark: remark.trim() }, ...this.records];
+        if (!this.saveRecordsToLocal(nextRecords)) return false;
         this.renderRecords();
         showToast("已记录当前时间 (本地)", "success");
+        return true;
     },
 
     handleDeleteRecord(index) {
         if (!this.records[index]) return;
         openConfirmModal(() => {
-            this.records.splice(index, 1);
-            this.saveRecordsToLocal();
+            const nextRecords = this.records.filter((_, recordIndex) => recordIndex !== index);
+            if (!this.saveRecordsToLocal(nextRecords)) return false;
             this.renderRecords();
             showToast('已删除记录', 'success');
+            return true;
         });
     },
 
     handleEditSave(index, newTime, newRemark) {
         if (!newTime) return showToast('时间不能为空', 'error');
-        this.records[index] = { time: newTime, remark: newRemark };
-        this.saveRecordsToLocal();
+        if (!this.records[index]) return showToast('记录不存在，请重新选择', 'error');
+        const nextRecords = [...this.records];
+        nextRecords[index] = { time: newTime, remark: newRemark };
+        if (!this.saveRecordsToLocal(nextRecords)) return false;
         this.renderRecords();
         closeEditModal();
         showToast('本地记录已更新', 'success');
+        return true;
     },
 
     importFromCsv(csvContent) {
@@ -1048,10 +1041,10 @@ const localApp = {
             const added = newRecords.length - originSize;
 
             if (added > 0) {
-                this.records = newRecords;
-                this.saveRecordsToLocal();
+                if (!this.saveRecordsToLocal(newRecords)) return false;
                 this.renderRecords();
                 showToast(`导入成功！新增 ${added} 条记录`, 'success');
+                return true;
             } else {
                 showToast('数据已是最新，无需导入', 'info');
             }
@@ -1554,9 +1547,12 @@ document.addEventListener('DOMContentLoaded', () => {
         e.preventDefault();
         const version = document.getElementById('record-version').value;
         const remark = document.getElementById('record-remark').value.trim();
-        closeRecordModal();
-        if (version === 'local') localApp.handleAddRecord(remark);
-        else gistApp.handleAddRecord(remark);
+        if (version === 'local') {
+            if (localApp.handleAddRecord(remark)) closeRecordModal();
+        } else {
+            closeRecordModal();
+            gistApp.handleAddRecord(remark);
+        }
     });
 
     ['cancel-record-btn', 'cancel-record-btn-secondary'].forEach(id => {

@@ -1,0 +1,13 @@
+{
+  "name": "personal-time-notebook",
+  "private": true,
+  "scripts": {
+    "build": "pnpm run build:css && node scripts/build-offline.mjs",
+    "build:css": "tailwindcss -c tailwind.config.cjs -i assets/css/tailwind-input.css -o assets/css/tailwind.css --minify",
+    "vendor:offline": "node scripts/vendor-offline.mjs",
+    "test:unit": "node --test tests/app-config.test.cjs tests/feedback-core.test.cjs tests/local-records.test.cjs"
+  },
+  "devDependencies": {
+    "tailwindcss": "3.4.17"
+  }
+}
