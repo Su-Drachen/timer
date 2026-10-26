@@ -14,6 +14,7 @@
 - **个人观察书桌**：用日历回看云端记录，筛选日期，查看和回复纸条。
 - **辅助页面**：词条统计、成就徽章、数据修复、时长分析及 AI 顾问。
 - **离线主页**：预缓存主页所需的样式、图标和图表资源，断网后仍能操作本地记录。
+- **手机操作**：主要按钮扩大触控区域，弹窗适配键盘后的可见空间并保留背景滚动位置；“极简白”使用黑白灰配色。
 
 ## 页面说明
 
@@ -158,9 +159,12 @@ $env:BROWSER_EXECUTABLE = 'C:\path\to\msedge.exe'
 node tests/feedback-ui.test.cjs
 node tests/page6.test.cjs
 node tests/offline.test.cjs
+node tests/mobile-ui.test.cjs
 ```
 
 测试使用合成数据并模拟远程 API，不读取真实凭据或修改真实 Gist。离线测试使用真实 Service Worker，覆盖断网重开、本地增删改、存储失败、缓存修复和版本更新。截图输出到 `tests/artifacts/`，不提交到仓库。
+
+手机界面测试覆盖 320px、390px 窄屏、按钮尺寸、主题和弹窗焦点，并模拟键盘改变可见视口；模拟测试不能替代 iOS、Android 真机键盘验证。
 
 ## 目录结构
 

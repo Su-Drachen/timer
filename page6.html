@@ -8,6 +8,9 @@
   <title>个人观察书桌 · 时迹</title>
 
   <link rel="stylesheet" href="assets/css/page6.css">
+  <script src="assets/js/notebook-theme.js"></script>
+  <link rel="stylesheet" href="assets/css/mobile-ui.css">
+  <script src="assets/js/mobile-ui.js" defer></script>
 </head>
 <body>
   <div class="wrap">
@@ -54,21 +57,21 @@
     <details class="owner-settings"><summary>作者入口</summary><div class="owner-settings-inner"><p id="deskOwnerState">导入作者钥匙后，可以署名回复和夹住纸条。</p><label class="owner-import" tabindex="0" role="button">导入作者钥匙<input id="deskOwnerImport" type="file" accept=".json,application/json"></label><button id="deskOwnerForget" type="button" hidden>退出作者身份</button><p id="deskOwnerStatus" role="status"></p></div></details>
   </div>
   <div class="mobile-note-bar"><span>在自己的书桌<br><b>收好记录与回应。</b></span><button type="button" id="mobileNoteOpen">递张纸条 <span aria-hidden="true">↗</span></button></div>
-  <div id="deskComposer" class="composer-overlay" role="dialog" aria-modal="true" aria-labelledby="deskComposerTitle" hidden>
-    <div id="deskComposerPanel" class="composer-panel" tabindex="-1">
+  <div id="deskComposer" class="composer-overlay" role="dialog" aria-modal="true" aria-labelledby="deskComposerTitle" data-mobile-dialog hidden>
+    <div id="deskComposerPanel" class="composer-panel" data-mobile-panel tabindex="-1">
       <div class="sheet-handle" aria-hidden="true"></div><div class="composer-heading"><div><div class="section-kicker">A LITTLE NOTE FOR YOU</div><h2 id="deskComposerTitle">递张纸条</h2></div><button id="deskComposerClose" type="button" aria-label="收起纸条，保留草稿">×</button></div>
       <form id="deskComposerForm">
         <div id="deskComposerTarget" class="composer-target" hidden><span id="deskComposerTargetLabel"></span><button id="deskComposerClearTarget" type="button" aria-label="取消回复或记录引用">×</button></div>
         <label class="input-label" for="deskNickname">怎么称呼你</label><input id="deskNickname" type="text" maxlength="24" autocomplete="nickname" placeholder="写个熟悉的昵称" required>
         <label class="input-label" for="deskText">想留的话</label><textarea id="deskText" rows="4" maxlength="2000" placeholder="想说什么都可以，慢慢写。"></textarea>
         <div class="gesture-caption">也可以，捎上一个小动作 <span>可选</span></div><div id="deskGestures" class="gesture-picker"><button type="button" data-gesture="coffee" aria-pressed="false"><span aria-hidden="true">☕</span> 递杯咖啡</button><button type="button" data-gesture="light" aria-pressed="false"><span aria-hidden="true">☼</span> 留一盏灯</button><button type="button" data-gesture="sit" aria-pressed="false"><span aria-hidden="true">⌑</span> 坐一会儿</button></div>
-        <div class="composer-bottom"><span>写到一半也没关系，<br>收起后草稿会留在这里。</span><button id="deskSubmit" type="submit">把纸条递过去 <span aria-hidden="true">↗</span></button></div>
+        <div class="composer-bottom" data-mobile-actions><span>写到一半也没关系，<br>收起后草稿会留在这里。</span><button id="deskSubmit" type="submit">把纸条递过去 <span aria-hidden="true">↗</span></button></div>
         <p id="deskComposerStatus" role="status" aria-live="polite"></p>
       </form>
     </div>
   </div>
-  <div id="deskDeleteDialog" class="composer-overlay delete-overlay" role="dialog" aria-modal="true" aria-labelledby="deskDeleteTitle" hidden>
-    <div id="deskDeletePanel" class="composer-panel delete-panel" tabindex="-1">
+  <div id="deskDeleteDialog" class="composer-overlay delete-overlay" role="dialog" aria-modal="true" aria-labelledby="deskDeleteTitle" data-mobile-dialog hidden>
+    <div id="deskDeletePanel" class="composer-panel delete-panel" data-mobile-panel tabindex="-1">
       <div class="sheet-handle" aria-hidden="true"></div>
       <div class="composer-heading"><div><div class="section-kicker">MAKE A LITTLE ROOM</div><h2 id="deskDeleteTitle">删除纸条</h2></div><button id="deskDeleteClose" type="button" aria-label="取消删除">×</button></div>
       <p id="deskDeleteSummary" class="delete-summary"></p>
@@ -76,7 +79,7 @@
       <p id="deskDeleteDetail" class="delete-detail"></p>
       <p id="deskDeleteDisclosure" class="delete-disclosure">页面会隐藏所选内容，Gist 原始数据仍保留。</p>
       <p id="deskDeleteStatus" role="status" aria-live="polite"></p>
-      <div class="delete-dialog-actions"><button id="deskDeleteCancel" type="button">先保留</button><button id="deskDeleteConfirm" type="button">确认删除</button></div>
+      <div class="delete-dialog-actions" data-mobile-actions><button id="deskDeleteCancel" type="button">先保留</button><button id="deskDeleteConfirm" type="button">确认删除</button></div>
     </div>
   </div>
   <div id="deskToast" class="desk-toast" role="status" hidden></div>

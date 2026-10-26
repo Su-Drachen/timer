@@ -1,0 +1,66 @@
+/* Loaded last on the main project pages; index and see stay unchanged. */
+:root {
+    --app-viewport-height: 100vh;
+    --app-viewport-width: 100vw;
+    --app-viewport-top: 0px;
+    --app-viewport-left: 0px;
+}
+@supports (height: 100dvh) { :root { --app-viewport-height: 100dvh; } }
+html.app-dialog-open { overscroll-behavior: none; }
+[data-mobile-dialog] {
+    position: fixed;
+    inset: auto;
+    top: var(--app-viewport-top);
+    left: var(--app-viewport-left);
+    width: var(--app-viewport-width);
+    height: var(--app-viewport-height);
+    box-sizing: border-box;
+    padding: max(20px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-right)) max(20px, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left));
+    overflow: hidden;
+    overscroll-behavior: contain;
+    align-items: center;
+}
+[data-mobile-dialog][hidden] { display: none !important; }
+[data-mobile-dialog] [data-mobile-panel] {
+    box-sizing: border-box;
+    max-height: 100%;
+    min-height: 0;
+    min-width: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    scroll-padding-block: 16px 84px;
+}
+[data-mobile-dialog] [data-mobile-panel]:focus { outline: none; }
+[data-mobile-dialog] [data-mobile-actions] {
+    position: sticky;
+    bottom: -1px;
+    z-index: 2;
+    background: var(--bg-card, var(--surface, #fff));
+    border-top: 1px solid var(--border-color, var(--line, #ddd));
+    padding-block: 12px 4px;
+    margin-top: 16px;
+}
+[data-mobile-dialog] :is(input, textarea, select) { scroll-margin-block: 18px 90px; }
+@media (max-width: 767px) {
+    [data-mobile-dialog] {
+        padding: max(12px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+    }
+    [data-mobile-dialog] [data-mobile-panel] {
+        max-height: 100% !important;
+        width: 100%;
+        border-radius: 18px;
+        padding: 20px;
+    }
+    [data-mobile-dialog] :is(input:not([type="checkbox"]):not([type="radio"]), textarea, select) {
+        font-size: 16px !important;
+    }
+    [data-mobile-dialog] :is(button, a[role="button"]) { min-height: 44px; min-width: 44px; }
+    [data-mobile-dialog] [data-mobile-actions] { gap: 10px; flex-wrap: wrap; }
+    [data-mobile-dialog] [data-mobile-actions] > button { flex: 1 1 auto; }
+    .app-keyboard-open [data-mobile-dialog] { align-items: flex-start; }
+    .nb-page .nb-header { padding-top: env(safe-area-inset-top); }
+    .nb-page .nb-main { padding-bottom: max(36px, env(safe-area-inset-bottom)); }
+    .nb-page #toast { bottom: max(20px, env(safe-area-inset-bottom)); }
+}

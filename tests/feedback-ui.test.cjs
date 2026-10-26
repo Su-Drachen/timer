@@ -424,7 +424,7 @@ const tests = [
   const allowed = new Set([
     '/pagemain.html', '/assets/js/app-config.js', '/assets/js/feedback-core.js', '/assets/js/feedback-ui.js',
     '/assets/css/feedback.css', '/assets/css/notebook.css', '/assets/js/notebook-theme.js',
-    '/assets/css/tailwind.css', '/assets/css/offline.css', '/assets/js/offline.js',
+    '/assets/css/tailwind.css', '/assets/css/offline.css', '/assets/js/offline.js', '/assets/css/mobile-ui.css', '/assets/js/mobile-ui.js',
     '/assets/vendor/chart.umd.min.js', '/assets/vendor/font-awesome.min.css',
     '/assets/vendor/fonts/fontawesome-webfont.woff2'
   ]);

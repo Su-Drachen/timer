@@ -22,3 +22,101 @@
 .page6-config-locked #deskSubmit,.page6-config-locked #deskDeleteConfirm{opacity:.5}
 @media(max-width:780px){.top{min-height:96px;height:auto;padding:16px 0;flex-wrap:wrap;gap:12px}.brand{flex:1;min-width:140px}.top-actions{flex-wrap:wrap;gap:12px;justify-content:end}.home-link{font-size:10px}#page6AuthorName{max-width:190px}.page6-config-status{align-items:start;flex-direction:column;gap:5px;font-size:10px;padding:11px 13px;margin-top:16px}.intro .eyebrow{letter-spacing:0;font-size:8px}.intro h1{font-size:clamp(26px,8vw,34px)}}
 @media(max-width:470px){.top-actions{flex-basis:100%;justify-content:space-between}.brand-small{font-size:7px}#page6AuthorName{max-width:260px}.intro{gap:12px}.intro p{font-size:11px}}
+
+/* Share the homepage's monochrome preference without changing the default desk palette. */
+:root[data-theme="white"] {
+  color-scheme: light;
+  --bg: #f7f7f7;
+  --panel: #fff;
+  --line: #dedede;
+  --text: #171717;
+  --muted: #666;
+  --soft: #737373;
+  --accent: #222;
+  --paper: #fff;
+  --ink: #222;
+}
+:root[data-theme="white"] body { background: var(--bg); }
+:root[data-theme="white"] body * { border-color: var(--line); }
+:root[data-theme="white"] :is(button, a, input, textarea, select, summary):focus-visible { outline-color: #222; }
+:root[data-theme="white"] :is(.brand, .intro h1, .intro h1>span, .metric-value, .section-top h2, .records-head h2, .notes-heading h2, .entry-date, .desk-note-author, .desk-note-text, .composer-heading h2, .delete-summary, .home-link, .page6-config-status a, .notes-unconfigured a) { color: var(--text); }
+:root[data-theme="white"] :is(.mark, .refresh, .eyebrow, .intro-link, .bookmark, .month-picker, .month-arrow, .export, .field, .sort, .entry-time, .record-note-button, .record-note-count, .more, .write-note, .note-tools select, .note-tools button, .owner-import, #deskOwnerForget, .composer-target, .composer-target button, .input-label, .gesture-picker button, .delete-include, .delete-detail, #deskDeleteCancel) { color: #333; }
+:root[data-theme="white"] :is(.brand-small, .intro p, .metric-label, .metric-note, .section-kicker, .section-top p, .calendar-foot, .weekday-head, .month-labels, .entry-weekday, .empty, .records-head p, .notes-heading p, .note-tools, .desk-note-time, .desk-note-label, .desk-note-gesture, .desk-note-reply-target, .desk-endnote, .foot, .owner-settings, #deskOwnerStatus, .gesture-caption, .gesture-caption>span, .composer-bottom>span, .delete-disclosure, .desk-reply-selection-count, .desk-reply-manager-status, .desk-reply-select-label, .page6-config-status, .notes-unconfigured) { color: var(--muted); }
+:root[data-theme="white"] :is(.activity, .record-panel, .desk-note, .composer-panel, .page6-config-status, .notes-unconfigured, .desk-empty, .owner-settings-inner) { background: #fff; border-color: var(--line); box-shadow: none; }
+:root[data-theme="white"] :is(.mark, .refresh, .bookmark, .field, .sort, .month-arrow, .record-note-button, .write-note, .desk-note-gesture, .desk-reply-manager, .desk-reply-manager-actions button, .composer-target, .gesture-picker button, .delete-include) { background: #f1f1f1; border-color: #d5d5d5; }
+:root[data-theme="white"] :is(.bookmark-top, .bookmark-time, .bookmark-number, .bookmark button) { color: #555; }
+:root[data-theme="white"] .bookmark-tape { background: #d0d0d0; }
+:root[data-theme="white"] .bookmark { box-shadow: 7px 10px 0 #00000008; }
+:root[data-theme="white"] :is(.month-picker option, .field option, .note-tools select option) { color: #222; background: #fff; }
+:root[data-theme="white"] .eyebrow>span { background: #555; }
+:root[data-theme="white"] :is(.status i, .status.ok i, .status.error i) { background: #555; }
+:root[data-theme="white"] .calendar-cell, :root[data-theme="white"] .legend i { background: #e5e5e5; border-color: #ccc; }
+:root[data-theme="white"] .calendar-cell.level-1, :root[data-theme="white"] .legend i:nth-of-type(2) { background: #aaa; border-color: #999; }
+:root[data-theme="white"] .calendar-cell.level-2, :root[data-theme="white"] .legend i:nth-of-type(3) { background: #666; border-color: #555; }
+:root[data-theme="white"] .calendar-cell.level-3, :root[data-theme="white"] .legend i:nth-of-type(4) { background: #222; border-color: #111; }
+:root[data-theme="white"] .calendar-cell.selected { outline-color: #111; }
+:root[data-theme="white"] .month-day { background: #fafafa; color: #555; border-color: #e2e2e2; }
+:root[data-theme="white"] .month-day.has-records { background: #eee; color: #222; border-color: #ccc; }
+:root[data-theme="white"] .month-day.level-2 { background: #d4d4d4; border-color: #aaa; }
+:root[data-theme="white"] .month-day.level-3 { background: #b8b8b8; border-color: #888; }
+:root[data-theme="white"] .month-day.selected { background: #ddd; outline-color: #222; }
+:root[data-theme="white"] .month-day.today { border-color: #222; }
+:root[data-theme="white"] .month-day-count { color: #444; }
+:root[data-theme="white"] .entry:hover, :root[data-theme="white"] .entry.is-highlighted { background: #eee; outline-color: #777; }
+:root[data-theme="white"] .desk-note:before { background: #ddd; }
+:root[data-theme="white"] .desk-note-pinned-label { background: #ddd; color: #222; }
+:root[data-theme="white"] :is(.desk-note-actions button, .desk-replies-toggle, .desk-reply-manage, .desk-reply-manager-actions button, .desk-note-pin) { color: #444 !important; }
+:root[data-theme="white"] :is(.desk-empty, .desk-empty:before, .notes-more, .composer-heading .section-kicker, .sheet-handle) { color: #555; }
+:root[data-theme="white"] .sheet-handle { background: #ccc; }
+:root[data-theme="white"] .composer-overlay { background: #0006; }
+:root[data-theme="white"] .composer-panel { color: #222; box-shadow: 0 24px 80px #0003; }
+:root[data-theme="white"] .composer-heading>button { background: #f3f3f3; color: #444; }
+:root[data-theme="white"] :is(#deskNickname, #deskText) { background: #fafafa; color: #222; border-color: #ccc; }
+:root[data-theme="white"] :is(#deskNickname, #deskText, .search)::placeholder { color: #777; }
+:root[data-theme="white"] .gesture-picker button:is(.is-active, [aria-pressed="true"]) { background: #ddd; border-color: #555; box-shadow: inset 0 0 0 1px #555; }
+:root[data-theme="white"] :is(#deskSubmit, #deskDeleteConfirm, .mobile-note-bar button) { background: #222; border-color: #222; color: #fff; }
+:root[data-theme="white"] :is(.desk-reply-select, .delete-include input) { accent-color: #222; }
+:root[data-theme="white"] .desk-reply:has(.desk-reply-select:checked) { background: #eee; }
+:root[data-theme="white"] :is(.desk-toast, .error-message, .page6-config-status.is-warning, .noscript) { background: #eee; border-color: #999; color: #222; }
+:root[data-theme="white"] :is(.is-error, #deskComposerStatus, #deskComposerStatus.is-error, #deskDeleteStatus) { color: #333 !important; }
+:root[data-theme="white"] .mobile-note-bar { background: #fffffff2; border-color: #ddd; }
+:root[data-theme="white"] .mobile-note-bar>span, :root[data-theme="white"] .mobile-note-bar b { color: #555; }
+:root[data-theme="white"] ::selection { background: #333; color: #fff; }
+:root[data-theme="white"] :is(.clear-day, .view-toggle, .empty strong, .note-heading-mark, .note-filter, .note-filter button, .desk-note-owner, .desk-note-record, .desk-record-missing) { color: #555; }
+:root[data-theme="white"] :is(.view-toggle, .notes-more, .note-filter, .desk-note-record, .desk-reply-manager-actions button[data-action="delete-selected"], .desk-reply-manager-actions .desk-reply-delete-selected) { background: #f1f1f1; border-color: #d5d5d5; }
+:root[data-theme="white"] .notes-warning { background: #eee; border-color: #999; color: #333; }
+:root[data-theme="white"] .desk-note--pinned { background: #f6f6f6 !important; }
+.composer-panel { --surface: var(--paper); --bg-card: var(--paper); }
+
+/* Comfortable targets and readable forms, while retaining the dense year overview. */
+@media (max-width: 780px) {
+  .wrap { padding-left: max(16px, env(safe-area-inset-left)); padding-right: max(16px, env(safe-area-inset-right)); }
+  .top { padding-top: max(16px, env(safe-area-inset-top)); }
+  button:not(.calendar-cell):not(.month-day), .home-link, .owner-import, .owner-settings summary { min-height: 44px; }
+  .home-link, .owner-import, .owner-settings summary { display: inline-flex; align-items: center; }
+  :is(.refresh, .month-arrow, .note-tools button, .composer-heading>button, .composer-target button) { min-width: 44px; height: auto; }
+  :is(.field, .sort, .month-picker, .note-tools select, #deskNickname, #deskText) { font-size: 16px; min-height: 44px; }
+  .toolbar .search { flex-basis: 100%; min-width: 0; }
+  .toolbar :is(select, .sort) { flex: 1; min-width: 0; }
+  .note-tools { flex-wrap: wrap; gap: 10px; }
+  .note-tools>div { flex-wrap: wrap; gap: 8px; }
+  .note-tools select { min-width: 0; max-width: 100%; }
+  .section-top { flex-wrap: wrap; }
+  .calendar-actions { flex-wrap: wrap; justify-content: flex-start; gap: 8px; }
+  .month-controls { gap: 8px; }
+  .month-picker { min-width: 0; max-width: calc(100% - 104px); }
+  .desk-note-actions { gap: 10px; }
+  .desk-note-actions button { min-width: 44px; }
+  .composer-panel[data-mobile-panel] { max-height: 100%; padding: 14px 18px max(18px, env(safe-area-inset-bottom)); }
+  .composer-bottom, .delete-dialog-actions { flex-wrap: wrap; gap: 12px; }
+  #deskSubmit { flex: 1; min-width: 160px; min-height: 48px; }
+  .composer-heading { gap: 10px; margin-bottom: 16px; }
+  .composer-heading h2 { font-size: 24px; }
+  .composer-target { flex-wrap: wrap; }
+  .composer-target span { min-width: 0; overflow-wrap: anywhere; }
+  .gesture-picker { gap: 8px; }
+  .gesture-picker button { flex: 1; min-width: 88px; font-size: 12px; }
+  .delete-dialog-actions button { min-height: 48px; }
+  .mobile-note-bar { padding-left: max(16px, env(safe-area-inset-left)); padding-right: max(16px, env(safe-area-inset-right)); }
+  .desk-reply-select-label, .delete-include { min-height: 44px; }
+}

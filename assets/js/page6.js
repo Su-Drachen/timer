@@ -725,6 +725,7 @@
     function reducedMotion() { return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches); }
 
     function lockPage() {
+      if (window.TimerMobile) return;
       state.scrollY = window.scrollY;
       state.bodyStyle = {
         overflow: document.body.style.overflow, position: document.body.style.position,
@@ -736,6 +737,7 @@
       document.body.style.width = '100%';
     }
     function unlockPage() {
+      if (window.TimerMobile) return;
       var prior = state.bodyStyle || {};
       document.body.style.overflow = prior.overflow || '';
       document.body.style.position = prior.position || '';
@@ -809,7 +811,10 @@
       renderDeleteDialog();
       syncOwnerControls();
       render();
-      requestAnimationFrame(function () { if (state.deleteOpen) el.deskDeleteCancel.focus({ preventScroll: true }); });
+      if (window.TimerMobile) window.TimerMobile.openDialog(el.deskDeleteDialog, {
+        initialFocus: el.deskDeleteCancel, onClose: function () { closeDeleteDialog(false); }
+      });
+      else requestAnimationFrame(function () { if (state.deleteOpen) el.deskDeleteCancel.focus({ preventScroll: true }); });
     }
     function closeDeleteDialog(force) {
       if (!state.deleteOpen || (state.deleting && !force)) return;
@@ -817,6 +822,7 @@
       state.deleteOpen = false;
       state.deleteContext = null;
       el.deskDeleteDialog.hidden = true;
+      if (window.TimerMobile) window.TimerMobile.closeDialog(el.deskDeleteDialog);
       unlockPage();
       syncOwnerControls();
       pruneManagerSelection();
@@ -978,7 +984,11 @@
         el.deskComposer.hidden = false;
         el.deskComposerPanel.setAttribute('tabindex', '-1');
       }
-      requestAnimationFrame(function () {
+      if (window.TimerMobile) window.TimerMobile.openDialog(el.deskComposer, {
+        initialFocus: window.matchMedia('(max-width: 780px)').matches ? el.deskComposerPanel : (el.deskNickname.value.trim() ? el.deskText : el.deskNickname),
+        onClose: closeComposer
+      });
+      else requestAnimationFrame(function () {
         if (!state.open) return;
         (el.deskNickname.value.trim() ? el.deskText : el.deskNickname).focus({ preventScroll: true });
       });
@@ -988,6 +998,7 @@
       if (!state.sending) { syncDraftFromInputs(); persistDraft(); }
       state.open = false;
       el.deskComposer.hidden = true;
+      if (window.TimerMobile) window.TimerMobile.closeDialog(el.deskComposer);
       unlockPage();
       if (state.restoreFocus && state.restoreFocus.isConnected) state.restoreFocus.focus({ preventScroll: true });
       else el.deskNotesOpen.focus({ preventScroll: true });
@@ -1153,6 +1164,7 @@
       renderDeleteDialog();
     });
     document.addEventListener('keydown', function (event) {
+      if (window.TimerMobile || event.defaultPrevented) return;
       if (!state.open && !state.deleteOpen) return;
       if (event.isComposing) return;
       if (event.key === 'Escape') { event.preventDefault(); if (state.deleteOpen) closeDeleteDialog(false); else closeComposer(); return; }
@@ -1165,6 +1177,7 @@
       else if (!event.shiftKey && (document.activeElement === last || !panel.contains(document.activeElement))) { event.preventDefault(); first.focus(); }
     });
     document.addEventListener('focusin', function (event) {
+      if (window.TimerMobile) return;
       var panel = state.deleteOpen ? el.deskDeletePanel : (state.open ? el.deskComposerPanel : null);
       if (panel && !panel.contains(event.target)) {
         var items = focusableItems(panel);
@@ -1190,7 +1203,5 @@
   'use strict';
   document.getElementById('mobileNoteOpen').addEventListener('click',function(){if(window.DeskNotes)window.DeskNotes.open()});
   document.querySelector('.owner-import').addEventListener('keydown',function(event){if(event.key==='Enter'||event.key===' '){event.preventDefault();document.getElementById('deskOwnerImport').click()}});
-  function fitKeyboard(){if(window.visualViewport)document.documentElement.style.setProperty('--desk-viewport-height',window.visualViewport.height+'px')}
-  if(window.visualViewport){window.visualViewport.addEventListener('resize',fitKeyboard);fitKeyboard()}
 })();
 })(window);

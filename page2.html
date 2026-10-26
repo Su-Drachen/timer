@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>成就与徽章 - 私人时间记录器</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
@@ -47,6 +47,8 @@
     <link rel="stylesheet" href="assets/css/notebook.css">
     <link rel="stylesheet" href="assets/css/page-data.css">
     <script src="assets/js/notebook-theme.js"></script>
+    <link rel="stylesheet" href="assets/css/mobile-ui.css">
+    <script src="assets/js/mobile-ui.js" defer></script>
 </head>
 <body class="nb-page nb-page-achievements bg-slate-100 min-h-screen flex flex-col font-sans antialiased text-slate-800">
 
@@ -111,8 +113,8 @@
     </main>
 
     <!-- 弹窗详情 Modal (点击卡片展示完整说明) -->
-    <div id="achievement-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 z-50 opacity-0 pointer-events-none transition-all duration-200" onclick="AchievementSystem.closeModal()">
-        <div class="bg-white rounded-2xl max-w-xs sm:max-w-sm w-full p-5 shadow-2xl text-center transform scale-95 transition-all duration-200" onclick="event.stopPropagation()">
+    <div id="achievement-modal" data-mobile-dialog hidden role="dialog" aria-modal="true" aria-labelledby="modal-title" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 z-50 opacity-0 pointer-events-none transition-all duration-200" onclick="AchievementSystem.closeModal()">
+        <div data-mobile-panel class="bg-white rounded-2xl max-w-xs sm:max-w-sm w-full p-5 shadow-2xl text-center transform scale-95 transition-all duration-200" onclick="event.stopPropagation()">
             <div id="modal-badge-wrapper" class="w-16 h-16 rounded-full mx-auto flex items-center justify-center text-3xl text-white mb-3 shadow-md">
                 <i id="modal-icon" class="fa fa-trophy"></i>
             </div>
@@ -444,10 +446,19 @@
                 const safeColor = isUnlocked ? (color === 'bg-gold' ? 'bg-amber-400' : color) : 'bg-slate-400';
 
                 const card = document.createElement('div');
+                card.tabIndex = 0;
+                card.setAttribute('role', 'button');
+                card.setAttribute('aria-label', title + '，查看详情');
                 card.className = `achievement-card cursor-pointer bg-white rounded-xl p-3 sm:p-4 border border-slate-200/80 shadow-xs flex flex-col items-center text-center relative overflow-hidden ${isUnlocked ? 'border-primary-100' : 'locked'}`;
 
                 // 绑定点击打开详情弹窗
                 card.onclick = () => this.openModal(data);
+                card.onkeydown = event => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        this.openModal(data);
+                    }
+                };
 
                 card.innerHTML = `
                     ${isUnlocked ? `
@@ -502,9 +513,11 @@
                     statusEl.innerHTML = `<span class="text-slate-500">还需完成 ${Math.max(0, goal - currentValue)} 即可解锁</span>`;
                 }
 
+                modal.hidden = false;
                 modal.classList.remove('opacity-0', 'pointer-events-none');
                 modal.querySelector('div').classList.remove('scale-95');
                 modal.querySelector('div').classList.add('scale-100');
+                window.TimerMobile?.openDialog(modal, { onClose: () => this.closeModal(), initialFocus: 'button' });
             },
 
             closeModal() {
@@ -512,6 +525,8 @@
                 modal.classList.add('opacity-0', 'pointer-events-none');
                 modal.querySelector('div').classList.remove('scale-100');
                 modal.querySelector('div').classList.add('scale-95');
+                modal.hidden = true;
+                window.TimerMobile?.closeDialog(modal);
             }
         };
 

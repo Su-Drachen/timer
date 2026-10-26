@@ -41,6 +41,8 @@
   <link rel="stylesheet" href="assets/css/notebook.css">
   <script src="assets/js/notebook-theme.js"></script>
   <link rel="stylesheet" href="assets/css/page-special.css">
+  <link rel="stylesheet" href="assets/css/mobile-ui.css">
+  <script src="assets/js/mobile-ui.js" defer></script>
 </head>
 <body class="nb-page nb-page-chat">
   <div class="app">
@@ -83,13 +85,13 @@
       </div></footer>
     </section>
   </div>
-  <div id="settings" class="modal-bg" role="dialog" aria-modal="true" aria-labelledby="settingsTitle"><div class="modal">
+  <div id="settings" class="modal-bg" role="dialog" aria-modal="true" aria-labelledby="settingsTitle" data-mobile-dialog><div class="modal" data-mobile-panel tabindex="-1">
     <div class="modal-head"><h2 id="settingsTitle">清言 API 设置</h2><button class="icon-btn" title="关闭" aria-label="关闭" onclick="closeSettings()"><i class="fa fa-times"></i></button></div>
     <div class="field"><label for="cfgKey">API Key</label><input id="cfgKey" type="password" autocomplete="off" placeholder="开发者 API Key"></div>
     <div class="field"><label for="cfgSecret">API Secret</label><input id="cfgSecret" type="password" autocomplete="off" placeholder="开发者 API Secret"></div>
     <div class="field"><label for="cfgAssistant">Assistant ID</label><input id="cfgAssistant" type="text" autocomplete="off" placeholder="智能体 ID"></div>
     <div class="note">凭证只保存在当前浏览器中。</div>
-    <div class="modal-actions"><button class="btn" onclick="closeSettings()">取消</button><button class="btn primary" onclick="saveSettings()">保存</button></div>
+    <div class="modal-actions" data-mobile-actions><button class="btn" onclick="closeSettings()">取消</button><button class="btn primary" onclick="saveSettings()">保存</button></div>
   </div></div>
   <div id="toast" class="toast" role="status"></div>
   <script>
@@ -126,7 +128,7 @@
     function scrollBottom(){dom.scroll.scrollTop=dom.scroll.scrollHeight}
     function showToast(text){clearTimeout(toastTimer);dom.toast.textContent=text;dom.toast.classList.add('show');toastTimer=setTimeout(()=>dom.toast.classList.remove('show'),1800)}
     async function copyText(text){try{await navigator.clipboard.writeText(text)}catch{const area=document.createElement('textarea');area.value=text;document.body.append(area);area.select();document.execCommand('copy');area.remove()}showToast('已复制')}
-    function autoResize(){dom.input.style.height='38px';dom.input.style.height=`${Math.min(dom.input.scrollHeight,160)}px`}
+    function autoResize(){const visibleHeight=window.visualViewport?.height||innerHeight;dom.input.style.height='38px';dom.input.style.height=`${Math.min(dom.input.scrollHeight,Math.max(72,Math.min(160,visibleHeight*.3)))}px`}
     function refreshSend(){dom.send.disabled=generating?false:!dom.input.value.trim()&&!selectedFile}
     function setGenerating(active){generating=active;dom.input.disabled=active;dom.file.disabled=active;dom.send.title=active?'停止生成':'发送';dom.send.innerHTML=active?'<i class="fa fa-stop"></i>':'<i class="fa fa-arrow-up"></i>';refreshSend()}
     function clearAttachment(){selectedFile=null;dom.file.value='';dom.preview.classList.remove('show');dom.fileName.textContent='';refreshSend()}
@@ -167,11 +169,12 @@
       }finally{if(controller){controller=null;setGenerating(false)}}
     }
 
-    function openSettings(){const cfg=config();$('cfgKey').value=cfg.apiKey;$('cfgSecret').value=cfg.apiSecret;$('cfgAssistant').value=cfg.assistantId;dom.settings.classList.add('show')}
-    function closeSettings(){dom.settings.classList.remove('show')}
+    function openSettings(){const cfg=config();$('cfgKey').value=cfg.apiKey;$('cfgSecret').value=cfg.apiSecret;$('cfgAssistant').value=cfg.assistantId;dom.settings.classList.add('show');window.TimerMobile?.openDialog(dom.settings,{initialFocus:dom.settings.querySelector('[data-mobile-panel]'),onClose:closeSettings})}
+    function closeSettings(){if(!dom.settings.classList.contains('show'))return;dom.settings.classList.remove('show');window.TimerMobile?.closeDialog(dom.settings)}
     function saveSettings(){const key=$('cfgKey').value.trim(),secret=$('cfgSecret').value.trim(),assistant=$('cfgAssistant').value.trim();if(!key||!secret||!assistant){showToast('请完整填写三项 API 配置');return}localStorage.setItem('glm_api_key',key);localStorage.setItem('glm_api_secret',secret);localStorage.setItem('glm_assistant_id',assistant);cachedToken='';tokenExpiry=0;updateApiStatus();closeSettings();showToast('API 配置已保存')}
     function updateApiStatus(){const cfg=config();dom.apiStatus.classList.toggle('ready',Boolean(cfg.apiKey&&cfg.apiSecret&&cfg.assistantId))}
-    dom.overlay.onclick=()=>toggleSidebar(false);dom.settings.onclick=e=>{if(e.target===dom.settings)closeSettings()};dom.input.oninput=()=>{autoResize();refreshSend()};dom.input.onkeydown=e=>{if(e.key==='Enter'&&!e.shiftKey&&!e.isComposing){e.preventDefault();sendMessage()}};dom.send.onclick=sendMessage;dom.file.onchange=()=>{const file=dom.file.files?.[0];if(!file)return;if(file.size>100*1024*1024){showToast('附件不能超过 100MB');dom.file.value='';return}selectedFile=file;dom.fileName.textContent=file.name;dom.preview.classList.add('show');refreshSend()};document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeSettings();toggleSidebar(false)}if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){e.preventDefault();createNewChat()}});
+    dom.overlay.onclick=()=>toggleSidebar(false);dom.settings.onclick=e=>{if(e.target===dom.settings)closeSettings()};dom.input.oninput=()=>{autoResize();refreshSend()};dom.input.onkeydown=e=>{if(e.key==='Enter'&&!e.shiftKey&&!e.isComposing&&!matchMedia('(pointer: coarse)').matches){e.preventDefault();sendMessage()}};dom.send.onclick=sendMessage;dom.file.onchange=()=>{const file=dom.file.files?.[0];if(!file)return;if(file.size>100*1024*1024){showToast('附件不能超过 100MB');dom.file.value='';return}selectedFile=file;dom.fileName.textContent=file.name;dom.preview.classList.add('show');refreshSend()};document.addEventListener('keydown',e=>{if(e.defaultPrevented||e.isComposing)return;if(e.key==='Escape'){if(!window.TimerMobile)closeSettings();toggleSidebar(false)}if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){e.preventDefault();createNewChat()}});
+    window.visualViewport?.addEventListener('resize',autoResize);
     if(!sessions.length)newSession();if(!sessions.some(s=>s.id===currentId))currentId=sessions[0].id;persist();renderSidebar();renderMessages();updateApiStatus();refreshSend();
   </script>
 </body>

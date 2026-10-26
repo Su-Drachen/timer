@@ -17,18 +17,18 @@
 }
 :root[data-theme="white"] {
     color-scheme: light;
-    --nb-bg: #f7f7f5;
+    --nb-bg: #f7f7f7;
     --nb-surface: #ffffff;
-    --nb-soft: #f0f1ee;
-    --nb-ink: #282d2b;
-    --nb-muted: #767e78;
-    --nb-line: #e2e5df;
-    --nb-accent: #3a5147;
-    --nb-accent-hover: #293f35;
-    --nb-accent-soft: #edf2ed;
-    --nb-shadow: 0 5px 24px rgba(32, 43, 34, .035), 0 1px 2px rgba(32, 43, 34, .025);
+    --nb-soft: #f0f0f0;
+    --nb-ink: #202020;
+    --nb-muted: #666666;
+    --nb-line: #dedede;
+    --nb-accent: #222222;
+    --nb-accent-hover: #000000;
+    --nb-accent-soft: #ebebeb;
+    --nb-shadow: 0 5px 24px rgba(0, 0, 0, .035), 0 1px 2px rgba(0, 0, 0, .025);
     --nb-header: rgba(255, 255, 255, .94);
-    --nb-hero: #eff3ee;
+    --nb-hero: #f1f1f1;
 }
 :root[data-theme="dark"] {
     color-scheme: dark;
@@ -217,6 +217,68 @@ body.nb-page {
 .nb-home .tf-button { border-radius: 8px; font-size: 12px; }
 .nb-home .tf-primary { color: #fff; }
 :root[data-theme="dark"] .nb-home .tf-primary { color: #102340; }
+
+/* White is deliberately monochrome, including secondary decorations and status UI. */
+:root[data-theme="white"] .nb-page :is(
+    [class*="text-blue-"], [class*="text-green-"], [class*="text-emerald-"],
+    [class*="text-red-"], [class*="text-rose-"], [class*="text-amber-"],
+    [class*="text-yellow-"], [class*="text-orange-"], [class*="text-purple-"],
+    [class*="text-indigo-"], [class*="text-teal-"], .text-success, .text-danger,
+    .text-warning, .text-gold, .text-silver, .text-bronze
+) { color: var(--nb-ink); }
+:root[data-theme="white"] .nb-page :is(
+    [class*="bg-blue-"], [class*="bg-green-"], [class*="bg-emerald-"],
+    [class*="bg-red-"], [class*="bg-rose-"], [class*="bg-amber-"],
+    [class*="bg-yellow-"], [class*="bg-orange-"], [class*="bg-purple-"],
+    [class*="bg-indigo-"], [class*="bg-teal-"]
+) { background-color: var(--nb-soft); }
+:root[data-theme="white"] .nb-page :is(
+    [class*="border-blue-"], [class*="border-green-"], [class*="border-emerald-"],
+    [class*="border-red-"], [class*="border-rose-"], [class*="border-amber-"],
+    [class*="border-purple-"], [class*="border-indigo-"], [class*="border-teal-"]
+) { border-color: var(--nb-line); }
+:root[data-theme="white"] .nb-page :is(.bg-success, .bg-danger, .bg-warning, .bg-gold, .bg-silver, .bg-bronze) {
+    background-color: #333;
+    color: #fff;
+}
+/* Filled actions keep white text on a dark surface, unlike pale decorative chips. */
+:root[data-theme="white"] .nb-page :is(button, a).text-white[class*="bg-"],
+:root[data-theme="white"] .nb-home #confirm-action-btn {
+    background: #222;
+    color: #fff;
+    border-color: #222;
+}
+:root[data-theme="white"] .nb-page :is(button, a).text-white[class*="bg-"]:hover,
+:root[data-theme="white"] .nb-home #confirm-action-btn:hover {
+    background: #000;
+    color: #fff;
+    border-color: #000;
+}
+:root[data-theme="white"] .nb-page :is(#toast, .toast) { background: #222; color: #fff; }
+:root[data-theme="white"] .nb-page :is(#toast, .toast) .fa { color: inherit; }
+:root[data-theme="white"] .nb-page :is(input, select, textarea):focus {
+    --tw-ring-color: #777;
+    --tw-ring-offset-color: #fff;
+}
+:root[data-theme="white"] .nb-home .status-dot {
+    background: #555;
+    box-shadow: 0 0 0 3px rgba(0, 0, 0, .08);
+}
+:root[data-theme="white"] .nb-home .quick-link > div:last-child {
+    background: var(--nb-soft);
+    color: var(--nb-ink);
+}
+:root[data-theme="white"] .nb-home .quick-link:hover :is(h3, .fa) { color: var(--nb-ink); }
+:root[data-theme="white"] .nb-home :is(.nb-theme-picker button[aria-pressed="true"], .tab-btn.active) {
+    box-shadow: 0 2px 5px rgba(0, 0, 0, .06);
+}
+:root[data-theme="white"] .nb-home #timer-feedback-root .tf-error {
+    color: #292929;
+    font-weight: 600;
+}
+:root[data-theme="white"] .nb-page [role="dialog"] > .card-box {
+    box-shadow: 0 24px 80px rgba(0, 0, 0, .18);
+}
 @media (min-width: 900px) {
     .nb-home .app-stack { grid-template-columns: minmax(0, 1.12fr) minmax(0, 1fr); }
 }
@@ -255,6 +317,26 @@ body.nb-page {
     .nb-home .quick-link { padding: 15px 12px; min-height: 83px; }
     .nb-home .quick-link h3 { font-size: 12px; }
     .nb-home .quick-link p { font-size: 10px; }
+    .nb-page :is(button, .nb-back, .nb-nav a, summary) { min-height: 44px; }
+    .nb-page :is(button, .nb-back, .nb-nav a) { min-width: 44px; }
+    .nb-page :is(.nb-back, .nb-nav a) { display: inline-flex; align-items: center; justify-content: center; }
+    .nb-page summary { padding-block: 10px; }
+    .nb-page :is(input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="hidden"]), select, textarea) {
+        font-size: 16px;
+        min-height: 44px;
+        max-width: 100%;
+    }
+    .nb-home .nb-theme-picker button { min-width: 44px; min-height: 44px; justify-content: center; }
+    .nb-home :is(#local-record-btn, #gist-record-btn) { min-height: 48px; font-size: 15px; }
+    .nb-home .record-item { gap: 10px; }
+    .nb-home .record-item > div:first-child { min-width: 0; overflow-wrap: anywhere; }
+    .nb-home .record-item .icon-btn { width: 44px; height: 44px; flex-shrink: 0; }
+    .nb-home .record-panel > div:first-child > div:last-child { flex-wrap: wrap; gap: 8px; }
+    .nb-home .stats-panel > div:first-child { gap: 10px; flex-wrap: wrap; }
+    .nb-home #timer-feedback-root :is(.tf-button, .tf-barrage) { min-height: 44px; }
+    .nb-home #timer-feedback-root :is(.tf-textarea, input:not([type="file"])) { font-size: 16px; }
+    .nb-home #timer-feedback-root .tf-send-row { flex-wrap: wrap; align-items: flex-start; }
+    .nb-home #timer-feedback-root .tf-hint { overflow-wrap: anywhere; }
 }
 @media (max-width: 359px) {
     .nb-page .nb-main { padding-inline: 12px; }

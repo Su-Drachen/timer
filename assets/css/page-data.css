@@ -501,6 +501,40 @@
     color: #70d0ad;
 }
 
+[data-theme="white"] .nb-page-achievements .nb-header h1 > .fa {
+    color: var(--nb-ink);
+    background: var(--nb-soft);
+}
+[data-theme="white"] .nb-page-achievements .achievement-card,
+[data-theme="white"] .nb-page-analytics #health-app-container > .bg-white,
+[data-theme="white"] .nb-page-analytics #health-app-container > .grid > div {
+    box-shadow: 0 3px 12px rgba(0, 0, 0, .03);
+}
+[data-theme="white"] .nb-page-achievements .achievement-card:hover { border-color: #bcbcbc; }
+[data-theme="white"] .nb-page-achievements .achievement-card > .absolute { color: var(--nb-ink); }
+[data-theme="white"] .nb-page-achievements .achievement-card > .rounded-full,
+[data-theme="white"] .nb-page-achievements #modal-badge-wrapper,
+[data-theme="white"] .nb-page-achievements #modal-progress-bar {
+    background: #292929 !important;
+    color: #fff !important;
+}
+[data-theme="white"] .nb-page-achievements .achievement-card.locked > .rounded-full {
+    background: var(--nb-line) !important;
+    color: var(--nb-muted) !important;
+}
+[data-theme="white"] .nb-page-achievements #achievement-modal { background: rgba(0, 0, 0, .46); }
+[data-theme="white"] :is(.nb-page-repair, .nb-page-analytics) .filter-btn.active {
+    box-shadow: 0 3px 10px rgba(0, 0, 0, .12);
+}
+[data-theme="white"] .nb-page-analytics #health-app-container .bg-gradient-to-br { background: var(--nb-surface); }
+[data-theme="white"] .nb-page-analytics #health-app-container pre {
+    background: #222;
+    color: #ededed;
+    border-color: #3d3d3d;
+}
+/* The legacy chart renderer uses fixed colors; keep its drawing monochrome in this theme. */
+[data-theme="white"] .nb-page-analytics canvas { filter: grayscale(1); }
+
 @media (min-width: 1024px) {
     .nb-page-analytics #health-app-container {
         grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
@@ -607,7 +641,7 @@
     .nb-page-analytics .nb-back {
         padding-left: 9px;
         padding-right: 9px;
-        min-height: 34px;
+        min-height: 44px;
     }
 
     .nb-page-analytics #health-app-container {
@@ -639,6 +673,40 @@
     .nb-page-analytics #health-app-container > div:last-child > .border-b {
         padding: 18px 16px;
     }
+
+    .nb-page-terms #search-input,
+    .nb-page-terms #sort-select,
+    .nb-page-repair #search-input,
+    .nb-page-repair #month-select {
+        font-size: 16px;
+        min-height: 48px;
+    }
+    .nb-page-terms #search-input { padding-right: 52px; }
+    .nb-page-terms #clear-search-btn { width: 44px; height: 44px; right: 2px; }
+    .nb-page-terms #stats-container td:nth-child(2) { overflow-wrap: anywhere; }
+    .nb-page-achievements #overall-progress-container button,
+    .nb-page-achievements #achievement-modal button,
+    .nb-page-repair .filter-btn,
+    .nb-page-analytics .filter-btn,
+    .nb-page-analytics #copy-prompt-btn,
+    .nb-page-repair #batch-clear-remark-btn,
+    .nb-page-repair #batch-delete-btn,
+    .nb-page-repair #quick-dedup-btn {
+        min-height: 44px;
+        min-width: 44px;
+    }
+    .nb-page-repair .nb-repair-controls > div:last-child button { flex-basis: 100%; }
+    .nb-page-repair .nb-repair-controls label:has(input[type="checkbox"]) { min-height: 44px; }
+    .nb-page-repair .nb-repair-table input[type="checkbox"] {
+        width: 24px;
+        height: 24px;
+        margin: 10px;
+        vertical-align: middle;
+    }
+    .nb-page-repair .nb-repair-table :is(button, [role="button"]) { min-width: 44px; min-height: 44px; }
+    .nb-page-analytics .nb-header-inner { flex-wrap: wrap; }
+    .nb-page-analytics .nb-header-inner > div:last-child { margin-inline-start: auto; }
+    .nb-page-analytics #health-app-container table { min-width: 520px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

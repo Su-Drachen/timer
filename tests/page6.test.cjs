@@ -253,7 +253,7 @@ const tests = [
 (async () => {
   for (const file of ['assets/js/app-config.js', 'assets/js/page6.js']) new vm.Script(fs.readFileSync(path.join(ROOT, file), 'utf8'), { filename: file });
   console.log('PASS JavaScript syntax');
-  const allowed = new Set(['/page6.html', '/assets/js/app-config.js', '/assets/js/feedback-core.js', '/assets/js/page6.js', '/assets/js/notebook-theme.js', '/assets/css/notebook.css', '/assets/css/page6.css']);
+  const allowed = new Set(['/page6.html', '/assets/js/app-config.js', '/assets/js/feedback-core.js', '/assets/js/page6.js', '/assets/js/notebook-theme.js', '/assets/css/notebook.css', '/assets/css/page6.css', '/assets/js/mobile-ui.js', '/assets/css/mobile-ui.css']);
   server = http.createServer((req, res) => {
     const pathname = new URL(req.url, 'http://localhost').pathname;
     if (!allowed.has(pathname)) { res.writeHead(404).end(); return; }

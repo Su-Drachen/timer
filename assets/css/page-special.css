@@ -225,3 +225,51 @@
 @media (prefers-reduced-motion: reduce) {
   .nb-page-guide *, .nb-page-chat * { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; }
 }
+
+/* Keep the chat composer inside the visual viewport when a phone keyboard opens. */
+.nb-page-chat .app {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: var(--app-viewport-top, 0px);
+  height: var(--app-viewport-height, 100dvh);
+  min-height: 0;
+}
+.nb-page-chat .main, .nb-page-chat .chat-scroll { min-height: 0; }
+.nb-page-chat .welcome { min-height: max(220px, calc(var(--app-viewport-height, 100dvh) - 260px)); }
+.nb-page-chat #userInput { min-width: 0; overflow-y: auto; }
+.nb-page-chat .modal-bg[data-mobile-dialog] .modal[data-mobile-panel] {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+.nb-page-chat .modal-actions { flex-wrap: wrap; }
+:root[data-theme="white"] :is(.nb-page-chat, .nb-page-guide) { --green: #555; }
+:root[data-theme="white"] .nb-page-chat :is(.status-dot, .status-dot.ready) { background: #555; }
+:root[data-theme="white"] .nb-page-chat :is(.error, .session-delete:hover) { color: #171717; }
+:root[data-theme="white"] .nb-page-chat :is(.welcome-logo, .composer) { box-shadow: 0 5px 20px #00000008; }
+:root[data-theme="white"] .nb-page-chat .modal-bg { background: #0006; }
+:root[data-theme="white"] .nb-page-chat .modal { box-shadow: 0 24px 72px #0003; }
+:root[data-theme="white"] .nb-page-guide .hero-panel { box-shadow: 0 24px 56px #0000000d; }
+@media (max-width: 767px) {
+  .nb-page-guide :is(.btn, .guide-return, .guide-nav-links a) { min-height: 44px; display: inline-flex; align-items: center; justify-content: center; }
+  .nb-page-chat :is(.icon-btn, .send, .mini, .session-delete, .remove-file) { min-width: 44px; min-height: 44px; }
+  .nb-page-chat :is(.new-chat, .side-link, .session, .btn) { min-height: 44px; height: auto; }
+  .nb-page-chat .session { min-height: 48px; padding-right: 52px; }
+  .nb-page-chat .session-delete { opacity: 1; top: 2px; right: 2px; }
+  .nb-page-chat .topbar {
+    height: auto;
+    min-height: calc(60px + env(safe-area-inset-top));
+    flex-basis: auto;
+    padding: env(safe-area-inset-top) max(12px, env(safe-area-inset-right)) 0 max(12px, env(safe-area-inset-left));
+  }
+  .nb-page-chat .top-left { min-width: 0; gap: 6px; }
+  .nb-page-chat .title { min-width: 0; }
+  .nb-page-chat .sidebar { top: var(--app-viewport-top, 0px); bottom: auto; height: var(--app-viewport-height, 100dvh); padding-bottom: max(14px, env(safe-area-inset-bottom)); }
+  .nb-page-chat .composer-area { padding-left: max(10px, env(safe-area-inset-left)); padding-right: max(10px, env(safe-area-inset-right)); }
+  .nb-page-chat .composer { padding: 6px; gap: 3px; }
+  .nb-page-chat :is(input:not([type="file"]), textarea, select) { font-size: 16px; }
+  .nb-page-chat .modal-actions .btn { flex: 1; min-height: 46px; }
+  .nb-page-chat .msg-actions { gap: 6px; flex-wrap: wrap; }
+  .nb-page-chat .attach-preview { max-width: 100%; }
+}
