@@ -43,15 +43,29 @@ html.app-dialog-open { overscroll-behavior: none; }
     margin-top: 16px;
 }
 [data-mobile-dialog] :is(input, textarea, select) { scroll-margin-block: 18px 90px; }
-@media (max-width: 767px) {
-    .nb-home[data-home-page="records"] #timer-feedback-root,
-    .nb-home[data-home-page="feedback"] :is(.nb-intro, .nb-nav, #home-records-view) {
+@media (max-width: 767px), (pointer: coarse) and (max-width: 960px) and (max-height: 520px) {
+    .nb-home[data-home-page] #timer-feedback-root,
+    .nb-home[data-home-page="feedback"] > :is(header, main, footer) {
         display: none;
     }
     .nb-home[data-home-page] {
         --home-nav-space: calc(57px + env(safe-area-inset-bottom, 0px));
         padding-bottom: var(--home-nav-space);
     }
+    .nb-home[data-home-page="feedback"] { overflow: hidden; }
+    #home-desk-view:not([hidden]) {
+        position: fixed;
+        top: var(--app-viewport-top);
+        left: 0;
+        width: 100%;
+        height: calc(var(--app-viewport-height) - var(--home-nav-space));
+        background: var(--nb-bg);
+    }
+    #home-desk-frame:not([hidden]) { display: block; width: 100%; height: 100%; border: 0; }
+    #home-desk-status { padding: 24px 18px; }
+    #home-desk-status a { display: inline-block; padding-block: 12px; color: var(--nb-accent); }
+    #home-desk-retry { min-height: 44px; padding-inline: 12px; margin-right: 8px; color: var(--nb-accent); }
+    .home-desk-dialog #home-desk-view, .app-keyboard-open #home-desk-view { height: var(--app-viewport-height); }
     .nb-home #mobile-home-nav:not([hidden]) {
         position: fixed;
         z-index: 40;
@@ -85,8 +99,11 @@ html.app-dialog-open { overscroll-behavior: none; }
         font-size: 12px;
         font-variant-numeric: tabular-nums;
     }
-    .app-keyboard-open .nb-home #mobile-home-nav:not([hidden]) { display: none; }
+    .app-keyboard-open .nb-home #mobile-home-nav:not([hidden]),
+    .nb-home.home-desk-dialog #mobile-home-nav:not([hidden]) { display: none; }
     .nb-home[data-home-page] #toast { bottom: calc(var(--home-nav-space) + 12px); }
+}
+@media (max-width: 767px) {
     [data-mobile-dialog] {
         padding: max(12px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
     }

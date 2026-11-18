@@ -26,7 +26,7 @@ let browser, server, origin;
 async function setup(options = {}) {
   const context = await browser.newContext({ viewport: options.mobile ? { width: 390, height: 844 } : { width: 1280, height: 900 }, reducedMotion: options.reducedMotion || 'no-preference', serviceWorkers: 'block' });
   const requests = [], errors = [];
-  const fixture = { comments: options.comments || [nativeNote('note-1')], records: [], failure: 0, postFailure: 0, deferred: null };
+  const fixture = { comments: options.comments || [nativeNote('note-1')], records: options.records || [], failure: 0, postFailure: 0, deferred: null };
   await context.route('**/*', async route => {
     const req = route.request(), url = new URL(req.url());
     if (url.origin === origin) return route.continue();
@@ -72,6 +72,12 @@ async function setup(options = {}) {
 }
 async function ready(t, count = 1) {
   await t.page.waitForFunction(n => document.querySelector('.tf-status')?.textContent.includes('已读取 ' + n + ' 条留言'), count);
+}
+async function openDesk(t) {
+  await t.page.locator('#home-show-feedback').click();
+  const desk = t.page.frameLocator('#home-desk-frame');
+  await desk.locator('#desk-show-notes').waitFor({ state: 'visible' });
+  return desk;
 }
 async function openPanel(t) {
   if (!(await t.page.locator('#timer-feedback-panel').isVisible())) await t.page.locator('.tf-inbox').click();
@@ -124,11 +130,15 @@ const tests = [
   ['unconfigured entry stays silent; local add/edit/delete work', async () => {
     const t = await setup({ config: null, mobile: true });
     try {
-      assert.equal(await t.page.locator('#mobile-home-nav').isVisible(), false);
+      assert.equal(await t.page.locator('#mobile-home-nav').isVisible(), true);
       assert.equal(await t.page.locator('#timer-feedback-root').isVisible(), false);
       assert.equal(await t.page.locator('#gist-config-overlay').isVisible(), false);
       assert.equal(t.childRequests().length, 0);
       await recordCycle(t, 'local');
+      const desk = await openDesk(t);
+      const configLink = desk.locator('a[href*="config=1"]').filter({ visible: true }).first();
+      await configLink.click();
+      await t.page.locator('#gist-config-overlay').waitFor({ state: 'visible' });
       assert.equal(t.requests.length, 0);
       assert.deepEqual(t.errors, []);
     } finally { await t.close(); }
@@ -343,14 +353,17 @@ const tests = [
     const t = await setup({ mobile: true, reducedMotion: 'reduce' });
     try {
       await ready(t);
-      await t.page.locator('#home-show-feedback').click();
-      assert.equal(await t.page.locator('.tf-barrage').isVisible(), true);
-      assert.equal(await t.page.locator('.tf-barrage').evaluate(el => getComputedStyle(el).animationName), 'none');
+      const desk = await openDesk(t);
+      const message = desk.locator('#desk-barrage-slot .tf-barrage');
+      await message.waitFor({ state: 'visible' });
+      assert.equal(await message.evaluate(el => getComputedStyle(el).animationName), 'none');
       await t.page.clock.fastForward(125000);
-      assert.equal(await t.page.locator('.tf-barrage').count(), 1, 'reduced motion keeps a readable static message');
+      assert.equal(await message.count(), 1, 'reduced motion keeps a readable static message');
       assert.equal(t.childRequests().length, 2);
-      await t.page.locator('.tf-barrage').click();
-      assert.equal(await t.page.locator('#timer-feedback-panel').isVisible(), true);
+      await message.click();
+      assert.equal(await desk.locator('#deskComposer').isVisible(), true);
+      assert.match(await desk.locator('#deskComposerTarget').innerText(), /测试访客/);
+      assert.deepEqual((await playbackStorage(t)).read, ['note-1']);
       assert.deepEqual(t.errors, []);
     } finally { await t.close(); }
   }],
@@ -388,92 +401,182 @@ const tests = [
       assert.deepEqual(t.errors, []);
     } finally { await t.close(); }
   }],
-  ['mobile record and feedback pages keep their place and only play visible feedback', async () => {
-    const comments = Array.from({ length: 12 }, (_, index) => nativeNote('mobile-' + index, '合成留言 ' + index));
+  ['phone loads one shared feed, retains both views, and pauses its barrage off screen', async () => {
+    const comments = Array.from({ length: 12 }, (_, i) => nativeNote('mobile-' + i, '合成留言 ' + i));
     const t = await setup({ mobile: true, comments });
     try {
       const { page } = t;
       const records = page.locator('#home-show-records');
       const feedback = page.locator('#home-show-feedback');
-      const feedbackRoot = page.locator('#timer-feedback-root');
       await ready(t, comments.length);
+      assert.equal(await page.locator('#home-desk-frame[src*="page6.html"]').count(), 0);
       assert.equal(await records.getAttribute('aria-current'), 'page');
-      assert.equal(await feedbackRoot.isVisible(), false);
+      assert.equal(t.requests.filter(r => r.path === '/gists/' + MAIN).length, 0);
+      assert.equal(t.childRequests().length, 2);
       assert.match(await feedback.innerText(), /12/);
       assert.deepEqual((await playbackStorage(t)).played, []);
       const recordButton = await page.locator('#local-record-btn').boundingBox();
       const nav = await page.locator('#mobile-home-nav').boundingBox();
-      assert.ok(recordButton.y >= 0 && recordButton.y + recordButton.height <= nav.y, 'record button fits above bottom navigation on entry');
+      assert.ok(recordButton.y >= 0 && recordButton.y + recordButton.height <= nav.y);
 
-      await page.locator('#tab-gist').click();
-      await page.waitForFunction(() => gistApp.isInitialized && !gistApp.isLoading);
       await page.evaluate(() => window.scrollTo({ top: 310, behavior: 'instant' }));
       const recordScroll = await page.evaluate(() => scrollY);
       assert.ok(recordScroll > 0);
-      await feedback.click();
+      const desk = await openDesk(t);
+      const deskDoc = desk.locator('body');
+      const barrage = desk.locator('#desk-barrage-slot .tf-barrage');
+      await barrage.waitFor({ state: 'visible' });
       assert.equal(await feedback.getAttribute('aria-current'), 'page');
       assert.equal(await page.locator('#home-records-view').isVisible(), false);
-      assert.equal(await feedbackRoot.isVisible(), true);
-      assert.equal(await page.evaluate(() => scrollY), 0);
-      await openPanel(t);
-      await page.getByRole('button', { name: '标为已读', exact: true }).first().click();
-      assert.match(await feedback.innerText(), /11/);
-      const list = page.locator('.tf-list');
-      await list.evaluate(el => { el.scrollTop = 90; });
-      const listScroll = await list.evaluate(el => el.scrollTop);
-      assert.ok(listScroll > 0);
-      await page.evaluate(() => window.scrollTo({ top: 95, behavior: 'instant' }));
-      const feedbackScroll = await page.evaluate(() => scrollY);
-      assert.ok(feedbackScroll > 0);
-      const activeMessage = await page.locator('.tf-barrage').innerText();
-      await page.locator('.tf-barrage').evaluate(el => { el.getAnimations()[0].currentTime = 3500; });
+      assert.equal(await page.locator('#timer-feedback-root').isVisible(), false);
+      await desk.locator('#deskNotesList .desk-note').first().waitFor({ state: 'visible' });
+      assert.match(await desk.locator('#deskNotesList').innerText(), /合成留言/);
+      assert.equal(t.requests.filter(r => r.path === '/gists/' + MAIN).length, 1);
+      assert.equal(t.childRequests().length, 2, 'opening the desk reuses the already loaded notes');
+
+      await desk.locator('#desk-mark-all-read').click();
+      await page.waitForFunction(() => document.getElementById('home-unread').hidden);
+      await deskDoc.evaluate(() => window.scrollTo({ top: 75, behavior: 'instant' }));
+      const deskScroll = await deskDoc.evaluate(() => scrollY);
+      assert.ok(deskScroll > 0);
+      const message = await barrage.innerText();
+      await barrage.evaluate(el => {
+        el.getAnimations().find(animation => animation.animationName === 'tf-drift').currentTime = 3500;
+      });
       const playing = await playbackStorage(t);
       assert.equal(playing.played.length, 1);
-
       await records.click();
       await page.waitForFunction(y => Math.abs(scrollY - y) <= 1, recordScroll);
-      assert.equal(await page.locator('#tab-gist').getAttribute('aria-selected'), 'true');
       await page.clock.fastForward(15000);
       assert.deepEqual(await playbackStorage(t), playing);
       await feedback.click();
-      await page.waitForFunction(y => Math.abs(scrollY - y) <= 1, feedbackScroll);
-      assert.equal(await list.evaluate(el => el.scrollTop), listScroll);
-      assert.equal(await page.locator('.tf-barrage').innerText(), activeMessage);
-      assert.ok(await page.locator('.tf-barrage').evaluate(el => el.getAnimations()[0].currentTime >= 3400), 'resume the current message at its previous position');
-      assert.equal(t.childRequests().length, 2, 'switching pages uses the loaded messages');
+      assert.ok(Math.abs(await deskDoc.evaluate(() => scrollY) - deskScroll) <= 1);
+      assert.equal(await barrage.innerText(), message);
+      const resumed = await barrage.evaluate(el => el.getAnimations().find(animation => animation.animationName === 'tf-drift').currentTime);
+      assert.ok(resumed >= 3400, 'expected the restored playhead near 3500 ms, got ' + resumed);
+      assert.equal(t.requests.length, 3);
 
       await page.setViewportSize({ width: 1024, height: 768 });
       await page.locator('#mobile-home-nav').waitFor({ state: 'hidden' });
       assert.equal(await page.locator('#home-records-view').isVisible(), true);
-      assert.equal(await feedbackRoot.isVisible(), true);
+      assert.equal(await page.locator('#timer-feedback-root').isVisible(), true);
       assert.deepEqual(t.errors, []);
     } finally { await t.close(); }
   }],
-  ['desktop dark and mobile feedback fit viewport with readable reply controls', async () => {
+  ['mobile desk links calendar dates, records and notes; replies write once and preserve context', async () => {
+    const time = '2026/10/22 08:00:00';
+    const notes = [nativeNote('on-record', '关联这条记录', { recordTime: time, author: '访客甲' }), nativeNote('general', '无关联的纸条')];
+    const records = [{ time, remark: '私人备注' }, { time: '2026/10/21 08:00:00', remark: '' }];
+    const t = await setup({ mobile: true, comments: notes, records, reducedMotion: 'reduce' });
+    try {
+      await ready(t, 2);
+      const desk = await openDesk(t);
+      const previewDir = path.join(__dirname, 'artifacts');
+      fs.mkdirSync(previewDir, { recursive: true });
+      await desk.locator('#desk-barrage-slot .tf-barrage').waitFor({ state: 'visible' });
+      await desk.locator('#deskNotesList .desk-note').first().waitFor({ state: 'visible' });
+      await t.page.screenshot({ path: path.join(previewDir, 'mobile-home-desk-notes.png') });
+      await desk.getByRole('button', { name: '日历', exact: true }).click();
+      await desk.locator('#monthPicker').selectOption('2026-10');
+      await t.page.screenshot({ path: path.join(previewDir, 'mobile-home-desk-calendar.png') });
+      await desk.locator('#monthGrid [data-date="2026/10/22"]').click();
+      const entry = desk.locator('#list .entry');
+      assert.equal(await entry.count(), 1);
+      assert.equal(await entry.getAttribute('data-record-time'), time);
+      assert.doesNotMatch(await desk.locator('body').innerText(), /私人备注/);
+      await entry.locator('.record-note-count').click();
+      const list = desk.locator('#deskNotesList');
+      assert.equal(await desk.locator('body').getAttribute('data-desk-view'), 'notes');
+      assert.match(await list.innerText(), /关联这条记录/);
+      assert.doesNotMatch(await list.innerText(), /无关联的纸条/);
+      await list.getByRole('button', { name: '回复', exact: true }).click();
+      await desk.locator('#deskText').fill('稍后回复的草稿');
+      await desk.locator('#deskComposerClose').click();
+      await t.page.locator('#home-show-records').click();
+      await t.page.locator('#home-show-feedback').click();
+      await list.getByRole('button', { name: '回复', exact: true }).click();
+      assert.equal(await desk.locator('#deskText').inputValue(), '稍后回复的草稿');
+      await desk.locator('#deskSubmit').click();
+      await desk.locator('#deskComposer').waitFor({ state: 'hidden' }).catch(async error => {
+        throw new Error('Reply did not close: ' + await desk.locator('#deskComposerStatus').innerText(), { cause: error });
+      });
+      assert.match(await list.innerText(), /稍后回复的草稿/);
+      const writes = t.requests.filter(r => r.method !== 'GET');
+      assert.equal(writes.length, 1);
+      assert.equal(writes[0].path, '/gists/' + CHILD + '/comments');
+      const data = JSON.parse(JSON.parse(writes[0].body).body).data;
+      assert.equal(data.parentId, 'on-record');
+      assert.equal(data.replyToName, '访客甲');
+      assert.equal(data.recordTime, time);
+      await t.page.waitForFunction(() => document.querySelector('#timer-feedback-panel').textContent.includes('稍后回复的草稿'));
+      await desk.locator('#deskNotesClearFilter').click();
+      assert.match(await list.innerText(), /无关联的纸条/);
+      const beforeRefresh = t.requests.length;
+      t.fixture.comments.push(nativeNote('next-visit', '手动刷新后的新留言'));
+      await desk.locator('#deskNotesRefresh').click();
+      await list.getByText('手动刷新后的新留言', { exact: true }).waitFor();
+      assert.equal(t.requests.length, beforeRefresh + 2, 'manual refresh reads the shared notes exactly once');
+      const beforePin = t.requests.length;
+      await desk.locator('#deskOwnerImport').setInputFiles({ name: 'synthetic-author.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(authorFile)) });
+      const card = list.locator('[data-note-id="on-record"]');
+      await card.locator('.desk-note-pin').click();
+      await list.locator('[data-note-id="on-record"].desk-note--pinned').waitFor();
+      assert.equal(t.requests.length, beforePin + 1);
+      const pinRequest = t.requests.at(-1);
+      assert.equal(pinRequest.method, 'POST');
+      assert.equal(pinRequest.path, '/gists/' + CHILD + '/comments');
+      const pin = JSON.parse(JSON.parse(pinRequest.body).body).data;
+      assert.equal(pin.kind, 'pin');
+      assert.equal(pin.targetId, 'on-record');
+      assert.equal(await t.page.evaluate(value => TimerFeedbackCore.createAuth(TimerFeedbackCore.authorPublicKey).verify(value), pin), true);
+      await t.page.reload({ waitUntil: 'networkidle' });
+      const reopened = await openDesk(t);
+      await reopened.locator('#deskNotesList [data-note-id="on-record"].desk-note--pinned').waitFor();
+      assert.deepEqual(t.errors, []);
+    } finally { await t.close(); }
+  }],
+  ['mobile record-only configuration can use the calendar without accessing a comment Gist', async () => {
+    const time = '2026/10/22 08:00:00';
+    const t = await setup({ mobile: true, config: { ...CONFIG, COMMENT_GIST_ID: '' }, records: [{ time }] });
+    try {
+      assert.equal(t.requests.length, 0);
+      await t.page.getByRole('link', { name: '打开观察书桌' }).click();
+      const desk = t.page.frameLocator('#home-desk-frame');
+      await desk.locator('#desk-show-calendar').click();
+      await desk.locator('#list .entry').waitFor({ state: 'visible' });
+      assert.equal(await desk.locator('#list .entry').getAttribute('data-record-time'), time);
+      assert.equal(await desk.locator('.record-note-button').isDisabled(), true);
+      assert.equal(t.requests.length, 1);
+      assert.equal(t.childRequests().length, 0);
+      assert.deepEqual(t.errors, []);
+    } finally { await t.close(); }
+  }],
+  ['desktop and mobile feedback fit the viewport in dark mode with readable replies', async () => {
     fs.mkdirSync(path.join(__dirname, 'artifacts'), { recursive: true });
     for (const mobile of [false, true]) {
       const t = await setup({ mobile, theme: 'dark', comments: [nativeNote('layout-note', '长留言测试。'.repeat(35))] });
       try {
         await ready(t);
-        if (mobile) await t.page.locator('#home-show-feedback').click();
-        await openPanel(t);
-        assert.equal(await t.page.locator('.tf-barrage').evaluate(el => getComputedStyle(el).animationName), 'tf-drift', 'desktop and mobile both use scrolling barrage');
-        await t.page.locator('.tf-barrage').evaluate(el => {
+        const surface = mobile ? await openDesk(t) : t.page;
+        if (!mobile) await openPanel(t);
+        const barrage = surface.locator('.tf-barrage');
+        assert.equal(await barrage.evaluate(el => getComputedStyle(el).animationName), 'tf-drift');
+        await barrage.evaluate(el => {
           for (const animation of el.getAnimations()) {
-            const duration = Number(animation.effect.getComputedTiming().duration);
             animation.pause();
-            animation.currentTime = duration * 0.4;
+            animation.currentTime = Number(animation.effect.getComputedTiming().duration) * 0.4;
           }
         });
-        await t.page.locator('.tf-barrage-host').screenshot({ path: path.join(__dirname, 'artifacts', 'feedback-barrage-' + (mobile ? 'mobile' : 'desktop') + '-dark.png') });
-        await t.page.getByRole('button', { name: '回复', exact: true }).click();
-        await t.page.locator('#timer-feedback-text').fill('可以在这里回复。');
-        assert.equal(await t.page.locator('html').getAttribute('data-theme'), 'dark');
-        const box = await t.page.locator('#timer-feedback-root').boundingBox();
+        await surface.locator('.tf-barrage-host').screenshot({ path: path.join(__dirname, 'artifacts', 'feedback-barrage-' + (mobile ? 'mobile' : 'desktop') + '-dark.png') });
+        await surface.getByRole('button', { name: '回复', exact: true }).click();
+        await surface.locator(mobile ? '#deskText' : '#timer-feedback-text').fill('可以在这里回复。');
+        assert.equal(await surface.locator('html').getAttribute('data-theme'), 'dark');
+        const panel = surface.locator(mobile ? '#deskComposerPanel' : '#timer-feedback-root');
+        const box = await panel.boundingBox();
         assert.ok(box.x >= 0 && box.x + box.width <= (mobile ? 390 : 1280));
-        assert.equal(await t.page.locator('#timer-feedback-root').evaluate(el => el.scrollWidth <= el.clientWidth), true);
-        assert.equal(await t.page.getByRole('button', { name: '发送回复', exact: true }).isVisible(), true);
-        await t.page.locator('#timer-feedback-root').screenshot({ path: path.join(__dirname, 'artifacts', 'feedback-' + (mobile ? 'mobile' : 'desktop') + '-dark.png'), animations: 'disabled' });
+        assert.equal(await panel.evaluate(el => el.scrollWidth <= el.clientWidth), true);
+        assert.equal(await surface.locator(mobile ? '#deskSubmit' : '.tf-send-row button[type=submit]').isVisible(), true);
+        await panel.screenshot({ path: path.join(__dirname, 'artifacts', 'feedback-' + (mobile ? 'mobile' : 'desktop') + '-dark.png'), animations: 'disabled' });
         assert.deepEqual(t.errors, []);
       } finally { await t.close(); }
     }
@@ -487,7 +590,8 @@ const tests = [
   for (const file of ['assets/js/app-config.js', 'assets/js/feedback-core.js', 'assets/js/feedback-ui.js']) new vm.Script(fs.readFileSync(path.join(ROOT, file), 'utf8'), { filename: file });
   console.log('PASS JavaScript parse: main inline scripts and feedback modules');
   const allowed = new Set([
-    '/pagemain.html', '/assets/js/app-config.js', '/assets/js/feedback-core.js', '/assets/js/feedback-ui.js',
+    '/pagemain.html', '/page6.html', '/assets/js/home-desk.js', '/assets/js/page6.js', '/assets/css/page6.css',
+    '/assets/js/app-config.js', '/assets/js/feedback-core.js', '/assets/js/feedback-ui.js',
     '/assets/css/feedback.css', '/assets/css/notebook.css', '/assets/js/notebook-theme.js',
     '/assets/css/tailwind.css', '/assets/css/offline.css', '/assets/js/offline.js', '/assets/css/mobile-ui.css', '/assets/js/mobile-ui.js',
     '/assets/vendor/chart.umd.min.js', '/assets/vendor/font-awesome.min.css',

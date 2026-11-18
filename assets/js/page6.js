@@ -1,6 +1,23 @@
 /* Personal observation desk. Credentials are read only from this browser's main-page configuration. */
 (function(root){
   'use strict';
+  var home = null;
+  try {
+    if (root.frameElement && root.frameElement.id === 'home-desk-frame' && root.parent.TimerFeedback) home = root.parent;
+  } catch (_) { /* An unrelated host uses the standalone desk. */ }
+  var firstFeed = Promise.resolve();
+  var positions = { notes: 0, calendar: 0 };
+  function selectDeskView(view) {
+    if (!home || document.body.dataset.deskView === view) return;
+    var tab = document.body.dataset.deskView;
+    if (tab) positions[tab] = root.scrollY;
+    root.dispatchEvent(new CustomEvent('desk:viewwillchange', { detail: { view: view } }));
+    document.body.dataset.deskView = view;
+    document.getElementById('desk-show-notes').setAttribute('aria-current', view === 'notes' ? 'page' : 'false');
+    document.getElementById('desk-show-calendar').setAttribute('aria-current', view === 'calendar' ? 'page' : 'false');
+    root.scrollTo({ top: positions[view], behavior: 'instant' });
+    root.dispatchEvent(new CustomEvent('desk:viewchange', { detail: { view: view } }));
+  }
   var fields = ['GITHUB_USERNAME', 'GIST_ID', 'COMMENT_GIST_ID', 'GITHUB_PAT'];
   function readConfig() {
     var value = {};
@@ -17,6 +34,26 @@
   var tokenReady = Boolean(initial.GITHUB_PAT && !/\s/.test(initial.GITHUB_PAT));
   var recordsReady = Boolean(validId(initial.GIST_ID) && tokenReady);
   var notesReady = Boolean(validId(initial.COMMENT_GIST_ID) && tokenReady);
+  if (home) {
+    document.documentElement.classList.add('desk-embedded');
+    var style = document.createElement('link');
+    style.rel = 'stylesheet';
+    style.href = 'assets/css/feedback.css';
+    document.head.appendChild(style);
+    document.querySelector('.desk-embedded-head').hidden = false;
+    document.getElementById('desk-archive').prepend(document.querySelector('.top-actions'));
+    document.getElementById('desk-barrage-slot').hidden = !notesReady;
+    document.body.dataset.deskNotesReady = String(notesReady);
+    selectDeskView('notes');
+    document.getElementById('desk-show-notes').addEventListener('click', function () { selectDeskView('notes'); });
+    document.getElementById('desk-show-calendar').addEventListener('click', function () { selectDeskView('calendar'); });
+    document.addEventListener('click', function (event) {
+      if (event.target.closest('a[href="pagemain.html?tab=gist&config=1"]')) {
+        event.preventDefault();
+        home.TimerHomeDesk.openConfig();
+      }
+    });
+  }
   var changeMessage = '主页配置已更改。请重新打开此页后继续；当前页面不会再向旧配置发送请求。';
   function configStatus(message, warning) {
     document.getElementById('page6ConfigMessage').textContent = message;
@@ -59,7 +96,9 @@
     document.getElementById('deskNotesList').replaceChildren(message);
   }
   function createNotesStore() {
-    var store = root.TimerFeedbackCore.createStore({
+    // Signed Gist data is JSON. The verifier expects plain objects from this window.
+    function localResult(data) { return home ? JSON.parse(JSON.stringify(data)) : data; }
+    var store = home ? null : root.TimerFeedbackCore.createStore({
       gistId: initial.COMMENT_GIST_ID,
       token: initial.GITHUB_PAT,
       fetchImpl: function (url, options) {
@@ -68,17 +107,17 @@
       }
     });
     return {
-      load: async function () {
+      load: async function (force) {
         if (!guard('notes')) throw configurationError();
-        var result = await store.load();
+        var result = await (home ? home.TimerFeedback.getDeskFeed(force) : store.load());
         if (!guard('notes')) throw configurationError();
-        return result;
+        return localResult(result);
       },
       append: async function (payload) {
         if (!guard('notes')) throw configurationError();
-        var result = await store.append(payload);
+        var result = await (home ? home.TimerFeedback.appendDeskEvent(payload) : store.append(payload));
         if (!guard('notes')) throw configurationError();
-        return result;
+        return localResult(result);
       }
     };
   }
@@ -201,7 +240,7 @@
           note.disabled=!notesReady||invalidated;
           note.addEventListener('click',function(){if(window.DeskNotes)window.DeskNotes.open({recordTime:r.time})});actions.appendChild(note);
           var count=window.DeskNotes?window.DeskNotes.getCount(r.time):0;
-          if(count){var see=document.createElement('button');see.type='button';see.className='record-note-count';see.textContent=count+' 条留言与回复';see.addEventListener('click',function(){window.DeskNotes.filterRecord(r.time);$('deskNotes').scrollIntoView({behavior:'smooth',block:'start'})});actions.appendChild(see)}
+          if(count){var see=document.createElement('button');see.type='button';see.className='record-note-count';see.textContent=count+' 条留言与回复';see.addEventListener('click',function(){window.DeskNotes.filterRecord(r.time)});actions.appendChild(see)}
           row.append(content,actions);fragment.appendChild(row);
         });container.appendChild(fragment);
       }
@@ -214,6 +253,7 @@
       getRecords:function(){return state.records.slice()},
       focusRecord:function(time){
         var record=state.records.find(function(item){return item.time===time});if(!record)return false;
+        selectDeskView('calendar');
         state.day=record.date;state.monthKey=record.date.slice(0,7).replace('/','-');state.view='month';
         $('year').value='all';$('search').value='';state.shown=Math.max(6,filtered().findIndex(function(item){return item.time===time})+1);renderCalendar();renderList();
         var row=Array.from($('list').children).find(function(item){return item.dataset.recordTime===time});
@@ -476,7 +516,7 @@
       el.deskNotesWarning.textContent = messages.join(' ');
       el.deskNotesWarning.hidden = !messages.length;
     }
-    function refresh() {
+    function refresh(force) {
       if (!guard('notes')) {
         feedStatus(configurationError().message, true);
         return Promise.resolve({ ok: false });
@@ -486,7 +526,7 @@
       feedStatus('正在收取纸条…', false);
       state.loading = (async function () {
         try {
-          var data = await store.load();
+          var data = await store.load(force !== false);
           var comments = Array.isArray(data.comments) ? data.comments : [];
           var pins = Array.isArray(data.pins) ? data.pins : [];
           var deletions = Array.isArray(data.deletions) ? data.deletions : [];
@@ -508,6 +548,7 @@
           state.rawComments = comments;
           state.rawPins = pins;
           state.rawDeletions = deletions;
+          state.warnings = data.warnings || [];
           await prepareData();
           showWarnings(data.warnings);
           feedStatus('纸条已更新 · ' + state.notes.filter(function (item) { return !item.deleted; }).length + ' 条留言与回复', false);
@@ -589,6 +630,15 @@
       if (!item.deleted && !(root && root.deleted)) actions.appendChild(button('desk-note-reply', '回复', function () {
         openComposer({ parentId: item.id, replyToName: item.author });
       }));
+      if (home && !item.deleted) {
+        var readButton = button('desk-note-read', '标为已读', function () {
+          if (!guard('notes')) return;
+          home.TimerFeedback.markRead(item.id);
+          updateReadActions();
+        });
+        readButton.dataset.readNote = item.id;
+        actions.appendChild(readButton);
+      }
       if (!isReply && own() && !item.deleted) {
         var pin = button('desk-note-pin', state.pinnedId === item.id ? '取下这张纸条' : '夹在桌边', function () { togglePin(item.id); });
         pin.disabled = state.pinning || state.deleting || state.deleteOpen;
@@ -652,6 +702,13 @@
       bar.appendChild(status);
       return bar;
     }
+    function updateReadActions() {
+      if (!home) return;
+      document.getElementById('desk-mark-all-read').hidden = !home.TimerFeedback.getSummary().unread;
+      el.deskNotesList.querySelectorAll('[data-read-note]').forEach(function (control) {
+        control.hidden = !home.TimerFeedback.isUnread(control.dataset.readNote);
+      });
+    }
     function render() {
       var roots = state.roots.filter(function (item) {
         return (!item.deleted || item.replies.some(function (reply) { return !reply.deleted; })) &&
@@ -711,15 +768,18 @@
         fragment.appendChild(card);
       });
       el.deskNotesList.replaceChildren(fragment);
+      updateReadActions();
       el.deskNotesMore.hidden = roots.length <= state.shown;
       el.deskNotesMore.textContent = '再看 10 张纸条 · 还有 ' + Math.max(0, roots.length - state.shown) + ' 张';
       if (invalidated) lockActions();
     }
     function filterRecord(time) {
+      selectDeskView('notes');
       state.filter = typeof time === 'string' && time ? time : null;
       state.shown = 10;
       render();
-      el.deskNotes.scrollIntoView({ behavior: reducedMotion() ? 'auto' : 'smooth', block: 'start' });
+      var target = home && state.filter ? el.deskNotesFilter : el.deskNotes;
+      target.scrollIntoView({ behavior: reducedMotion() ? 'auto' : 'smooth', block: 'start' });
     }
     function clearFilter() { state.filter = null; state.shown = 10; render(); }
     function reducedMotion() { return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches); }
@@ -886,7 +946,7 @@
         state.rawDeletions = state.rawDeletions.filter(function (item) { return item.id !== payload.id; }).concat([savedPayload]);
         ids.forEach(function (id) { state.selectedReplies.delete(id); });
         state.pendingDelete = null; state.pendingDeleteFingerprint = null; persistPendingDelete();
-        await prepareData();
+        await publishChanges(savedPayload);
         closeDeleteDialog(true);
         feedStatus('所选的 ' + ids.length + ' 条内容已删除。', false);
         // Display the confirmed write locally; further reads require manual refresh.
@@ -965,6 +1025,10 @@
         if (!target || target.deleted) { feedStatus('这张纸条暂不可回复，请刷新后再试。', true); return; }
         var root = rootFor(target);
         if (root.deleted) { feedStatus('主纸条已删除，不能继续向这个讨论串回复。', true); return; }
+        if (home) {
+          home.TimerFeedback.markRead(target.id);
+          updateReadActions();
+        }
         draft.parentId = root.id;
         draft.replyToName = target.author;
         draft.recordTime = root.recordTime;
@@ -1053,7 +1117,7 @@
         invalidatePending();
         persistDraft();
         fillComposer();
-        await prepareData();
+        await publishChanges(savedPayload);
         composerStatus('纸条已递出。', false);
         feedStatus('纸条已递出。', false);
         closeComposer();
@@ -1082,7 +1146,7 @@
         var payload = result && result.id === event.id ? result : event;
         state.confirmedPins.set(payload.id, payload);
         state.rawPins.push(payload);
-        await prepareData();
+        await publishChanges(payload);
         feedStatus(payload.targetId ? '纸条已夹在桌边。' : '已取下这张纸条。', false);
         // Display the confirmed write locally; further reads require manual refresh.
       } catch (error) {
@@ -1098,6 +1162,15 @@
       fillComposer();
       pruneManagerSelection();
       render();
+    }
+    async function publishChanges(confirmed) {
+      await prepareData();
+      if (home && guard('notes')) {
+        await home.TimerFeedback.publishDeskFeed({
+          comments: state.rawComments, pins: state.rawPins, deletions: state.rawDeletions, warnings: state.warnings || []
+        }, confirmed);
+        updateReadActions();
+      }
     }
     async function importOwner(event) {
       if (!guard('notes')) return;
@@ -1131,7 +1204,7 @@
     el.deskNickname.maxLength = 24;
     el.deskText.maxLength = 2000;
     el.deskNotesOpen.addEventListener('click', function () { openComposer(); });
-    el.deskNotesRefresh.addEventListener('click', refresh);
+    el.deskNotesRefresh.addEventListener('click', function () { refresh(true); });
     el.deskNotesClearFilter.addEventListener('click', clearFilter);
     el.deskNotesSort.addEventListener('change', function () { state.shown = 10; render(); });
     el.deskNotesMore.addEventListener('click', function () { state.shown += 10; render(); });
@@ -1190,9 +1263,18 @@
     if (window.ObserverRecords && typeof window.ObserverRecords.getRecords === 'function') updateRecords(window.ObserverRecords.getRecords());
     fillComposer();
     render();
-    Promise.resolve(auth.initialized).catch(function () {
+    firstFeed = Promise.resolve(auth.initialized).catch(function () {
       el.deskOwnerStatus.textContent = '已保存的作者钥匙暂不可用，可以重新导入。';
-    }).then(function () { renderOwner(); return refresh(); });
+    }).then(function () { renderOwner(); return refresh(false); });
+    if (home) {
+      var readAll = document.getElementById('desk-mark-all-read');
+      readAll.addEventListener('click', function () {
+        if (!guard('notes')) return;
+        home.TimerFeedback.markAllRead();
+        updateReadActions();
+      });
+      root.addEventListener('desk:feedchange', function () { refresh(false); });
+    }
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init, { once: true });
@@ -1204,4 +1286,21 @@
   document.getElementById('mobileNoteOpen').addEventListener('click',function(){if(window.DeskNotes)window.DeskNotes.open()});
   document.querySelector('.owner-import').addEventListener('keydown',function(event){if(event.key==='Enter'||event.key===' '){event.preventDefault();document.getElementById('deskOwnerImport').click()}});
 })();
+  if (home) {
+    function connectHome() {
+      root.EmbeddedDesk = {
+        barrageSlot: document.getElementById('desk-barrage-slot'),
+        reply: function (id) {
+          return firstFeed.then(function () {
+            if (!root.DeskNotes || !guard('notes')) return;
+            selectDeskView('notes');
+            root.DeskNotes.open({ parentId: id });
+          });
+        }
+      };
+      home.TimerHomeDesk.ready(root);
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', connectHome, { once: true });
+    else connectHome();
+  }
 })(window);

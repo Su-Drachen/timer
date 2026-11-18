@@ -24,7 +24,7 @@
 @media(max-width:470px){.top-actions{flex-basis:100%;justify-content:space-between}.brand-small{font-size:7px}#page6AuthorName{max-width:260px}.intro{gap:12px}.intro p{font-size:11px}}
 
 /* Share the homepage's monochrome preference without changing the default desk palette. */
-:root[data-theme="white"] {
+:root:is([data-theme="white"], .desk-embedded[data-theme="blue"]) {
   color-scheme: light;
   --bg: #f7f7f7;
   --panel: #fff;
@@ -36,58 +36,141 @@
   --paper: #fff;
   --ink: #222;
 }
-:root[data-theme="white"] body { background: var(--bg); }
-:root[data-theme="white"] body * { border-color: var(--line); }
-:root[data-theme="white"] :is(button, a, input, textarea, select, summary):focus-visible { outline-color: #222; }
-:root[data-theme="white"] :is(.brand, .intro h1, .intro h1>span, .metric-value, .section-top h2, .records-head h2, .notes-heading h2, .entry-date, .desk-note-author, .desk-note-text, .composer-heading h2, .delete-summary, .home-link, .page6-config-status a, .notes-unconfigured a) { color: var(--text); }
-:root[data-theme="white"] :is(.mark, .refresh, .eyebrow, .intro-link, .bookmark, .month-picker, .month-arrow, .export, .field, .sort, .entry-time, .record-note-button, .record-note-count, .more, .write-note, .note-tools select, .note-tools button, .owner-import, #deskOwnerForget, .composer-target, .composer-target button, .input-label, .gesture-picker button, .delete-include, .delete-detail, #deskDeleteCancel) { color: #333; }
-:root[data-theme="white"] :is(.brand-small, .intro p, .metric-label, .metric-note, .section-kicker, .section-top p, .calendar-foot, .weekday-head, .month-labels, .entry-weekday, .empty, .records-head p, .notes-heading p, .note-tools, .desk-note-time, .desk-note-label, .desk-note-gesture, .desk-note-reply-target, .desk-endnote, .foot, .owner-settings, #deskOwnerStatus, .gesture-caption, .gesture-caption>span, .composer-bottom>span, .delete-disclosure, .desk-reply-selection-count, .desk-reply-manager-status, .desk-reply-select-label, .page6-config-status, .notes-unconfigured) { color: var(--muted); }
-:root[data-theme="white"] :is(.activity, .record-panel, .desk-note, .composer-panel, .page6-config-status, .notes-unconfigured, .desk-empty, .owner-settings-inner) { background: #fff; border-color: var(--line); box-shadow: none; }
-:root[data-theme="white"] :is(.mark, .refresh, .bookmark, .field, .sort, .month-arrow, .record-note-button, .write-note, .desk-note-gesture, .desk-reply-manager, .desk-reply-manager-actions button, .composer-target, .gesture-picker button, .delete-include) { background: #f1f1f1; border-color: #d5d5d5; }
-:root[data-theme="white"] :is(.bookmark-top, .bookmark-time, .bookmark-number, .bookmark button) { color: #555; }
-:root[data-theme="white"] .bookmark-tape { background: #d0d0d0; }
-:root[data-theme="white"] .bookmark { box-shadow: 7px 10px 0 #00000008; }
-:root[data-theme="white"] :is(.month-picker option, .field option, .note-tools select option) { color: #222; background: #fff; }
-:root[data-theme="white"] .eyebrow>span { background: #555; }
-:root[data-theme="white"] :is(.status i, .status.ok i, .status.error i) { background: #555; }
-:root[data-theme="white"] .calendar-cell, :root[data-theme="white"] .legend i { background: #e5e5e5; border-color: #ccc; }
-:root[data-theme="white"] .calendar-cell.level-1, :root[data-theme="white"] .legend i:nth-of-type(2) { background: #aaa; border-color: #999; }
-:root[data-theme="white"] .calendar-cell.level-2, :root[data-theme="white"] .legend i:nth-of-type(3) { background: #666; border-color: #555; }
-:root[data-theme="white"] .calendar-cell.level-3, :root[data-theme="white"] .legend i:nth-of-type(4) { background: #222; border-color: #111; }
-:root[data-theme="white"] .calendar-cell.selected { outline-color: #111; }
-:root[data-theme="white"] .month-day { background: #fafafa; color: #555; border-color: #e2e2e2; }
-:root[data-theme="white"] .month-day.has-records { background: #eee; color: #222; border-color: #ccc; }
-:root[data-theme="white"] .month-day.level-2 { background: #d4d4d4; border-color: #aaa; }
-:root[data-theme="white"] .month-day.level-3 { background: #b8b8b8; border-color: #888; }
-:root[data-theme="white"] .month-day.selected { background: #ddd; outline-color: #222; }
-:root[data-theme="white"] .month-day.today { border-color: #222; }
-:root[data-theme="white"] .month-day-count { color: #444; }
-:root[data-theme="white"] .entry:hover, :root[data-theme="white"] .entry.is-highlighted { background: #eee; outline-color: #777; }
-:root[data-theme="white"] .desk-note:before { background: #ddd; }
-:root[data-theme="white"] .desk-note-pinned-label { background: #ddd; color: #222; }
-:root[data-theme="white"] :is(.desk-note-actions button, .desk-replies-toggle, .desk-reply-manage, .desk-reply-manager-actions button, .desk-note-pin) { color: #444 !important; }
-:root[data-theme="white"] :is(.desk-empty, .desk-empty:before, .notes-more, .composer-heading .section-kicker, .sheet-handle) { color: #555; }
-:root[data-theme="white"] .sheet-handle { background: #ccc; }
-:root[data-theme="white"] .composer-overlay { background: #0006; }
-:root[data-theme="white"] .composer-panel { color: #222; box-shadow: 0 24px 80px #0003; }
-:root[data-theme="white"] .composer-heading>button { background: #f3f3f3; color: #444; }
-:root[data-theme="white"] :is(#deskNickname, #deskText) { background: #fafafa; color: #222; border-color: #ccc; }
-:root[data-theme="white"] :is(#deskNickname, #deskText, .search)::placeholder { color: #777; }
-:root[data-theme="white"] .gesture-picker button:is(.is-active, [aria-pressed="true"]) { background: #ddd; border-color: #555; box-shadow: inset 0 0 0 1px #555; }
-:root[data-theme="white"] :is(#deskSubmit, #deskDeleteConfirm, .mobile-note-bar button) { background: #222; border-color: #222; color: #fff; }
-:root[data-theme="white"] :is(.desk-reply-select, .delete-include input) { accent-color: #222; }
-:root[data-theme="white"] .desk-reply:has(.desk-reply-select:checked) { background: #eee; }
-:root[data-theme="white"] :is(.desk-toast, .error-message, .page6-config-status.is-warning, .noscript) { background: #eee; border-color: #999; color: #222; }
-:root[data-theme="white"] :is(.is-error, #deskComposerStatus, #deskComposerStatus.is-error, #deskDeleteStatus) { color: #333 !important; }
-:root[data-theme="white"] .mobile-note-bar { background: #fffffff2; border-color: #ddd; }
-:root[data-theme="white"] .mobile-note-bar>span, :root[data-theme="white"] .mobile-note-bar b { color: #555; }
-:root[data-theme="white"] ::selection { background: #333; color: #fff; }
-:root[data-theme="white"] :is(.clear-day, .view-toggle, .empty strong, .note-heading-mark, .note-filter, .note-filter button, .desk-note-owner, .desk-note-record, .desk-record-missing) { color: #555; }
-:root[data-theme="white"] :is(.view-toggle, .notes-more, .note-filter, .desk-note-record, .desk-reply-manager-actions button[data-action="delete-selected"], .desk-reply-manager-actions .desk-reply-delete-selected) { background: #f1f1f1; border-color: #d5d5d5; }
-:root[data-theme="white"] .notes-warning { background: #eee; border-color: #999; color: #333; }
-:root[data-theme="white"] .desk-note--pinned { background: #f6f6f6 !important; }
+:root:is([data-theme="white"], .desk-embedded[data-theme="blue"]) body { background: var(--bg); }
+:root:is([data-theme="white"], .desk-embedded[data-theme="blue"]) body * { border-color: var(--line); }
+:root:is([data-theme="white"], .desk-embedded[data-theme="blue"]) :is(button, a, input, textarea, select, summary):focus-visible { outline-color: #222; }
+:root:is([data-theme="white"], .desk-embedded[data-theme="blue"]) :is(.brand, .intro h1, .intro h1>span, .metric-value, .section-top h2, .records-head h2, .notes-heading h2, .entry-date, .desk-note-author, .desk-note-text, .composer-heading h2, .delete-summary, .home-link, .page6-config-status a, .notes-unconfigured a) { color: var(--text); }
+:root:is([data-theme="white"], .desk-embedded[data-theme="blue"]) :is(.mark, .refresh, .eyebrow, .intro-link, .bookmark, .month-picker, .month-arrow, .export, .field, .sort, .entry-time, .record-note-button, .record-note-count, .more, .write-note, .note-tools select, .note-tools button, .owner-import, #deskOwnerForget, .composer-target, .composer-target button, .input-label, .gesture-picker button, .delete-include, .delete-detail, #deskDeleteCancel) { color: #333; }
+:root:is([data-theme="white"], .desk-embedded[data-theme="blue"]) :is(.brand-small, .intro p, .metric-label, .metric-note, .section-kicker, .section-top p, .calendar-foot, .weekday-head, .month-labels, .entry-weekday, .empty, .records-head p, .notes-heading p, .note-tools, .desk-note-time, .desk-note-label, .desk-note-gesture, .desk-note-reply-target, .desk-endnote, .foot, .owner-settings, #deskOwnerStatus, .gesture-caption, .gesture-caption>span, .composer-bottom>span, .delete-disclosure, .desk-reply-selection-count, .desk-reply-manager-status, .desk-reply-select-label, .page6-config-status, .notes-unconfigured) { color: var(--muted); }
+:root:is([data-theme="white"], .desk-embedded[data-theme="blue"]) :is(.activity, .record-panel, .desk-note, .composer-panel, .page6-config-status, .notes-unconfigured, .desk-empty, .owner-settings-inner) { background: #fff; border-color: var(--line); box-shadow: none; }
+:root:is([data-theme="white"], .desk-embedded[data-theme="blue"]) :is(.mark, .refresh, .bookmark, .field, .sort, .month-arrow, .record-note-button, .write-note, .desk-note-gesture, .desk-reply-manager, .desk-reply-manager-actions button, .composer-target, .gesture-picker button, .delete-include) { background: #f1f1f1; border-color: #d5d5d5; }
+:root:is([data-theme="white"], .desk-embedded[data-theme="blue"]) :is(.bookmark-top, .bookmark-time, .bookmark-number, .bookmark button) { color: #555; }
+:root:is([data-theme="white"], .desk-embedded[data-theme="blue"]) .bookmark-tape { background: #d0d0d0; }
+:root:is([data-theme="white"], .desk-embedded[data-theme="blue"]) .bookmark { box-shadow: 7px 10px 0 #00000008; }
+:root:is([data-theme="white"], .desk-embedded[data-theme="blue"]) :is(.month-picker option, .field option, .note-tools select option) { color: #222; background: #fff; }
+:root:is([data-theme="white"], .desk-embedded[data-theme="blue"]) .eyebrow>span { background: #555; }
+:root:is([data-theme="white"], .desk-embedded[data-theme="blue"]) :is(.status i, .status.ok i, .status.error i) { background: #555; }
+:root:is([data-theme="white"], .desk-embedded[data-theme="blue"]) .calendar-cell, :root:is([data-theme="white"], .desk-embedded[data-theme="blue"]) .legend i { background: #e5e5e5; border-color: #ccc; }
+:root:is([data-theme="white"], .desk-embedded[data-theme="blue"]) .calendar-cell.level-1, :root:is([data-theme="white"], .desk-embedded[data-theme="blue"]) .legend i:nth-of-type(2) { background: #aaa; border-color: #999; }
+:root:is([data-theme="white"], .desk-embedded[data-theme="blue"]) .calendar-cell.level-2, :root:is([data-theme="white"], .desk-embedded[data-theme="blue"]) .legend i:nth-of-type(3) { background: #666; border-color: #555; }
+:root:is([data-theme="white"], .desk-embedded[data-theme="blue"]) .calendar-cell.level-3, :root:is([data-theme="white"], .desk-embedded[data-theme="blue"]) .legend i:nth-of-type(4) { background: #222; border-color: #111; }
+:root:is([data-theme="white"], .desk-embedded[data-theme="blue"]) .calendar-cell.selected { outline-color: #111; }
+:root:is([data-theme="white"], .desk-embedded[data-theme="blue"]) .month-day { background: #fafafa; color: #555; border-color: #e2e2e2; }
+:root:is([data-theme="white"], .desk-embedded[data-theme="blue"]) .month-day.has-records { background: #eee; color: #222; border-color: #ccc; }
+:root:is([data-theme="white"], .desk-embedded[data-theme="blue"]) .month-day.level-2 { background: #d4d4d4; border-color: #aaa; }
+:root:is([data-theme="white"], .desk-embedded[data-theme="blue"]) .month-day.level-3 { background: #b8b8b8; border-color: #888; }
+:root:is([data-theme="white"], .desk-embedded[data-theme="blue"]) .month-day.selected { background: #ddd; outline-color: #222; }
+:root:is([data-theme="white"], .desk-embedded[data-theme="blue"]) .month-day.today { border-color: #222; }
+:root:is([data-theme="white"], .desk-embedded[data-theme="blue"]) .month-day-count { color: #444; }
+:root:is([data-theme="white"], .desk-embedded[data-theme="blue"]) .entry:hover, :root:is([data-theme="white"], .desk-embedded[data-theme="blue"]) .entry.is-highlighted { background: #eee; outline-color: #777; }
+:root:is([data-theme="white"], .desk-embedded[data-theme="blue"]) .desk-note:before { background: #ddd; }
+:root:is([data-theme="white"], .desk-embedded[data-theme="blue"]) .desk-note-pinned-label { background: #ddd; color: #222; }
+:root:is([data-theme="white"], .desk-embedded[data-theme="blue"]) :is(.desk-note-actions button, .desk-replies-toggle, .desk-reply-manage, .desk-reply-manager-actions button, .desk-note-pin) { color: #444 !important; }
+:root:is([data-theme="white"], .desk-embedded[data-theme="blue"]) :is(.desk-empty, .desk-empty:before, .notes-more, .composer-heading .section-kicker, .sheet-handle) { color: #555; }
+:root:is([data-theme="white"], .desk-embedded[data-theme="blue"]) .sheet-handle { background: #ccc; }
+:root:is([data-theme="white"], .desk-embedded[data-theme="blue"]) .composer-overlay { background: #0006; }
+:root:is([data-theme="white"], .desk-embedded[data-theme="blue"]) .composer-panel { color: #222; box-shadow: 0 24px 80px #0003; }
+:root:is([data-theme="white"], .desk-embedded[data-theme="blue"]) .composer-heading>button { background: #f3f3f3; color: #444; }
+:root:is([data-theme="white"], .desk-embedded[data-theme="blue"]) :is(#deskNickname, #deskText) { background: #fafafa; color: #222; border-color: #ccc; }
+:root:is([data-theme="white"], .desk-embedded[data-theme="blue"]) :is(#deskNickname, #deskText, .search)::placeholder { color: #777; }
+:root:is([data-theme="white"], .desk-embedded[data-theme="blue"]) .gesture-picker button:is(.is-active, [aria-pressed="true"]) { background: #ddd; border-color: #555; box-shadow: inset 0 0 0 1px #555; }
+:root:is([data-theme="white"], .desk-embedded[data-theme="blue"]) :is(#deskSubmit, #deskDeleteConfirm, .mobile-note-bar button) { background: #222; border-color: #222; color: #fff; }
+:root:is([data-theme="white"], .desk-embedded[data-theme="blue"]) :is(.desk-reply-select, .delete-include input) { accent-color: #222; }
+:root:is([data-theme="white"], .desk-embedded[data-theme="blue"]) .desk-reply:has(.desk-reply-select:checked) { background: #eee; }
+:root:is([data-theme="white"], .desk-embedded[data-theme="blue"]) :is(.desk-toast, .error-message, .page6-config-status.is-warning, .noscript) { background: #eee; border-color: #999; color: #222; }
+:root:is([data-theme="white"], .desk-embedded[data-theme="blue"]) :is(.is-error, #deskComposerStatus, #deskComposerStatus.is-error, #deskDeleteStatus) { color: #333 !important; }
+:root:is([data-theme="white"], .desk-embedded[data-theme="blue"]) .mobile-note-bar { background: #fffffff2; border-color: #ddd; }
+:root:is([data-theme="white"], .desk-embedded[data-theme="blue"]) .mobile-note-bar>span, :root:is([data-theme="white"], .desk-embedded[data-theme="blue"]) .mobile-note-bar b { color: #555; }
+:root:is([data-theme="white"], .desk-embedded[data-theme="blue"]) ::selection { background: #333; color: #fff; }
+:root:is([data-theme="white"], .desk-embedded[data-theme="blue"]) :is(.clear-day, .view-toggle, .empty strong, .note-heading-mark, .note-filter, .note-filter button, .desk-note-owner, .desk-note-record, .desk-record-missing) { color: #555; }
+:root:is([data-theme="white"], .desk-embedded[data-theme="blue"]) :is(.view-toggle, .notes-more, .note-filter, .desk-note-record, .desk-reply-manager-actions button[data-action="delete-selected"], .desk-reply-manager-actions .desk-reply-delete-selected) { background: #f1f1f1; border-color: #d5d5d5; }
+:root:is([data-theme="white"], .desk-embedded[data-theme="blue"]) .notes-warning { background: #eee; border-color: #999; color: #333; }
+:root:is([data-theme="white"], .desk-embedded[data-theme="blue"]) .desk-note--pinned { background: #f6f6f6 !important; }
 .composer-panel { --surface: var(--paper); --bg-card: var(--paper); }
 
+/* The embedded desk follows the theme of its containing notebook. */
+:root.desk-embedded[data-theme="blue"] {
+  --bg: #f5f7fb; --panel: #fff; --line: #dbe4f1; --text: #19283f;
+  --muted: #526680; --soft: #60728b; --accent: #315cc6;
+}
+:root.desk-embedded[data-theme="blue"] :is(.write-note, #deskSubmit) {
+  background: #3867d6; border-color: #3867d6; color: #fff;
+}
+:root.desk-embedded[data-theme="blue"] :is(.bookmark, .desk-note-record, .note-filter, .desk-note-owner, .view-toggle, .record-note-button) {
+  color: #284b91; background: #edf3ff; border-color: #d0def6;
+}
+:root.desk-embedded[data-theme="blue"] :is(.bookmark-top,.bookmark-time,.bookmark button) { color: #3f567c; }
+:root.desk-embedded[data-theme="blue"] :is(.calendar-cell.level-1,.legend i:nth-of-type(2)) { background: #b2c9fa; border-color: #9db8f0; }
+:root.desk-embedded[data-theme="blue"] :is(.calendar-cell.level-2,.legend i:nth-of-type(3)) { background: #7398ee; border-color: #5f87df; }
+:root.desk-embedded[data-theme="blue"] :is(.calendar-cell.level-3,.legend i:nth-of-type(4)) { background: #416dca; border-color: #3860b6; }
+:root.desk-embedded[data-theme="blue"] .month-day.has-records { background: #e5eeff; color: #273c67; }
+:root.desk-embedded[data-theme="blue"] .month-day.level-2 { background: #c5d8ff; }
+:root.desk-embedded[data-theme="blue"] .month-day.level-3 { background: #a0bdf7; }
+:root.desk-embedded[data-theme="blue"] :is(.month-day.selected,.calendar-cell.selected) { outline-color: var(--accent); }
+:root.desk-embedded[data-theme="blue"] .status.ok i { background: #40845f; }
+:root.desk-embedded[data-theme="dark"] {
+  --bg: #0f1724; --panel: #182334; --line: #33435a; --text: #e7edf7;
+  --muted: #b5c1d3; --soft: #a7b6cc; --accent: #abc4ff;
+}
+:root.desk-embedded[data-theme="dark"] body { background: var(--bg); }
+:root.desk-embedded[data-theme="dark"] :is(.activity, .record-panel) { background: var(--panel); border-color: var(--line); }
+.desk-embedded-head {
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line);
+  background: var(--bg);
+}
+.desk-embedded-head h1 { margin: 0; color: var(--text); font: 500 22px "Songti SC", SimSun, serif; }
+.desk-embedded-head nav { display: flex; gap: 2px; padding: 3px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; }
+.desk-embedded-head button { min-width: 56px; min-height: 44px; padding: 5px 10px; background: transparent; color: var(--muted); border: 0; font-size: 14px; }
+.desk-embedded-head button[aria-current="page"] { color: var(--text); background: var(--bg); font-weight: 650; box-shadow: 0 1px 4px #0002; }
+.desk-embedded[data-theme="blue"] .desk-embedded-head button[aria-current="page"] { background: #edf3ff; color: var(--accent); }
+body[data-desk-view] .wrap { max-width: 720px; padding-bottom: 20px; }
+body[data-desk-view] :is(.top,.foot,.mobile-note-bar,.home-link,.intro-copy,.bookmark-number,.bookmark-tape,.desk-endnote),
+body[data-desk-view] .page6-config-status:not(.is-warning),
+body[data-desk-view="notes"] :is(.intro,.overview,.error-message,#desk-archive),
+body[data-desk-view="notes"]:not(.page6-config-locked) .page6-config-status,
+body[data-desk-view="calendar"] :is(#deskNotes,.owner-settings),
+body[data-desk-notes-ready="false"] :is(#deskNotesOpen,.note-tools,.owner-settings) { display: none; }
+body[data-desk-view] .desk-grid { display: block; margin-top: 16px; }
+body[data-desk-view] :is(.desk-grid section,.entry,.note-filter) { scroll-margin-top: 68px; }
+body[data-desk-view] .notes-column { padding-top: 0; border: 0; }
+body[data-desk-view] :is(.section-kicker,.note-heading-mark,.notes-heading p) { display: none; }
+body[data-desk-view] .notes-heading h2 { font-size: 22px; }
+body[data-desk-view] .note-tools { gap: 8px; flex-wrap: wrap; margin-block: 8px; }
+body[data-desk-view] :is(.write-note,.refresh,.clear-day,.view-toggle,.export,.record-note-button,.record-note-count,
+  .desk-note-record,.desk-note-actions button,.desk-replies-toggle,.more,.owner-settings summary,.bookmark button) { font-size: 13px; }
+body[data-desk-view] :is(.bookmark-top,.bookmark-time,.metric-label,.status,.note-tools,.note-filter,
+  .section-top p,.records-head p,.calendar-foot,.entry-weekday,.desk-note-time,.desk-note-label,.desk-note-reply-target) { font-size: 12px; }
+body[data-desk-view] :is(.metric-note,.month-day-count) { font-size: 11px; line-height: 1.5; }
+body[data-desk-view] .month-day-number { font-size: 14px; }
+body[data-desk-view] .desk-note-text { font-size: 15px; }
+body[data-desk-view] .top-actions { display: flex; justify-content: flex-end; gap: 12px; margin-bottom: 10px; }
+body[data-desk-view="calendar"] .intro { display: block; min-height: 0; padding: 14px 0; }
+body[data-desk-view="calendar"] .bookmark {
+  display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 4px 8px;
+  width: 100%; max-width: none; margin: 0; padding: 12px 15px; transform: none;
+  clip-path: none; border-radius: 10px; box-shadow: none;
+}
+body[data-desk-view] .bookmark-top { grid-column: 1; }
+body[data-desk-view] .bookmark-top span:last-child, body[data-desk-view] .bookmark-line { display: none; }
+body[data-desk-view] .bookmark-date { grid-column: 1; margin: 0; font-size: 22px; }
+body[data-desk-view] .bookmark-time { grid-column: 1; margin: 0; }
+body[data-desk-view] .bookmark button { grid-column: 2; grid-row: 1 / 4; gap: 6px; }
+.desk-read-action { display: block; margin: 0 0 5px auto; min-height: 44px; padding: 4px 8px; font-size: 12px; color: var(--accent); background: transparent; border: 0; }
+#desk-barrage-slot {
+  --primary: var(--accent); --bg-card: var(--bg); --text-main: var(--text);
+  --text-sub: var(--muted); --border-color: var(--line); --primary-light: var(--panel);
+  margin-bottom: 18px;
+}
+#desk-barrage-slot .tf-barrage-host { margin: 0; min-height: 8rem; }
+#desk-barrage-slot .tf-barrage { transition: none; }
 /* Comfortable targets and readable forms, while retaining the dense year overview. */
 @media (max-width: 780px) {
   .wrap { padding-left: max(16px, env(safe-area-inset-left)); padding-right: max(16px, env(safe-area-inset-right)); }

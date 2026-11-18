@@ -344,6 +344,44 @@ const tests = [
       assert.deepEqual(t.errors, []);
     } finally { await t.close(); }
   }],
+  ['embedded desk composer fits the phone keyboard and restores the home navigation', async () => {
+    const t = await setup('pagemain.html');
+    try {
+      const page = t.page;
+      await page.locator('#home-show-feedback').click();
+      const desk = page.frameLocator('#home-desk-frame');
+      await desk.locator('#deskNotesOpen').click();
+      await desk.locator('#deskText').fill('合成书桌回复草稿');
+      await page.waitForFunction(() => document.getElementById('mobile-home-nav').inert);
+      await keyboard(page, 400, 40);
+      const frame = await page.locator('#home-desk-frame').elementHandle();
+      const documentFrame = await frame.contentFrame();
+      // A nested document exposes its own viewport, whose height comes from the host iframe.
+      await documentFrame.waitForFunction(() => Math.abs(innerHeight - 400) <= 1);
+      await documentFrame.evaluate(() => window.__setMobileViewport({ height: innerHeight, width: innerWidth, offsetTop: 0 }));
+      await documentFrame.waitForFunction(() => {
+        const bounds = document.getElementById('deskComposerPanel').getBoundingClientRect();
+        return bounds.top >= -1 && bounds.bottom <= innerHeight + 1;
+      });
+      const panel = await desk.locator('#deskComposerPanel').boundingBox();
+      assert.ok(panel && panel.y >= 38 && panel.y + panel.height <= 442, 'desk composer must fit in the visible part of the parent: ' + JSON.stringify(panel));
+      await desk.locator('#deskSubmit').scrollIntoViewIfNeeded();
+      const send = await desk.locator('#deskSubmit').boundingBox();
+      assert.ok(send && send.y >= 38 && send.y + send.height <= 442, 'send button must be above the simulated keyboard');
+      await keyboardReset(page);
+      await desk.locator('#deskComposerClose').click();
+      const deskOpenedAt = await documentFrame.evaluate(() => performance.timeOrigin);
+      await page.setViewportSize({ width: 844, height: 390 });
+      await keyboardReset(page);
+      assert.equal(await page.locator('#mobile-home-nav').isVisible(), true);
+      assert.equal(await page.locator('#home-show-feedback').getAttribute('aria-current'), 'page');
+      assert.equal(await frame.evaluate(el => el.isConnected && el.contentWindow.performance.timeOrigin), deskOpenedAt);
+      await assertNoOverflow(page, 'landscape home with embedded desk');
+      await page.getByRole('button', { name: '记录', exact: true }).click();
+      assert.equal(await page.locator('#home-records-view').isVisible(), true);
+      assert.deepEqual(t.errors, []);
+    } finally { await t.close(); }
+  }],
   ['observation desk uses white palette and preserves note drafts through keyboard/modal close', async () => {
     const t = await setup('page6.html');
     try {

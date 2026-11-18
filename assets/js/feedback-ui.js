@@ -2,7 +2,7 @@
 (function () {
     'use strict';
     if (window.TimerFeedback) return;
-    var ui, state, epoch = 0, modalOpen = false, pageVisible = true, pausedTime = null;
+    var ui, state, deskMount, epoch = 0, modalOpen = false, pageVisible = true, pausedTime = null;
     var core = window.TimerFeedbackCore;
     var gestures = { coffee: '☕ 递一杯咖啡', light: '☼ 留一盏灯', sit: '⌑ 在旁边坐坐' };
     var motion = window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)') : null;
@@ -85,7 +85,15 @@
         state.target = note; ui.panel.hidden = false; ui.open.setAttribute('aria-expanded', 'true');
         updateControls(); ui.text.focus();
     }
-    function markRead(id) { state.read.add(id); persist(); render(); }
+    function isUnread(id) { return !!state && !state.read.has(id); }
+    function markRead(id) {
+        if (!isUnread(id) || !state.notes.some(function (item) { return item.id === id && !item.deleted; })) return;
+        state.read.add(id); persist(); render();
+    }
+    function markAllRead() {
+        if (!state) return;
+        liveNotes().forEach(function (item) { state.read.add(item.id); }); persist(); render();
+    }
     function renderNote(note, child) {
         var card = node('article', 'tf-note' + (child ? ' tf-child' : '') + (!note.deleted && !state.read.has(note.id) ? ' tf-unread' : ''));
         var meta = node('div', 'tf-note-meta');
@@ -120,17 +128,47 @@
     }
     function openPanel() { ui.panel.hidden = !ui.panel.hidden; ui.open.setAttribute('aria-expanded', String(!ui.panel.hidden)); }
     function close() { if (ui) { ui.panel.hidden = true; ui.open.setAttribute('aria-expanded', 'false'); } }
-    function inputFocused() {
-        var active = document.activeElement;
-        return active && (active.matches('input,textarea,select') || active.isContentEditable);
+    function paused() {
+        var view = deskMount ? deskMount.slot.ownerDocument : document;
+        var active = view.activeElement;
+        return !pageVisible || modalOpen || document.hidden || view.hidden || view.documentElement.classList.contains('app-dialog-open') ||
+            !!(active && (active.matches('input,textarea,select,.tf-barrage') || active.isContentEditable));
     }
-    function paused() { return !pageVisible || modalOpen || document.hidden || inputFocused() || !!(document.activeElement && document.activeElement.classList.contains('tf-barrage')); }
+    function afterFocusChange() { Promise.resolve().then(syncPresentation); }
+    function driftAnimation() {
+        var item = ui.lane.firstElementChild;
+        return item && item.getAnimations && item.getAnimations().find(function (animation) { return animation.animationName === 'tf-drift'; });
+    }
+    function moveBarrage(target, before) {
+        var oldAnimation = driftAnimation();
+        var time = pausedTime !== null ? pausedTime : oldAnimation && oldAnimation.currentTime;
+        target.insertBefore(ui.barrageHost, before);
+        var animation = driftAnimation();
+        if (time != null && animation) animation.currentTime = time;
+        syncPresentation();
+    }
+    function restoreBarrage() {
+        if (!deskMount) return;
+        var doc = deskMount.slot.ownerDocument;
+        doc.removeEventListener('focusin', syncPresentation);
+        doc.removeEventListener('focusout', afterFocusChange);
+        deskMount = null;
+        moveBarrage(ui.panel.parentNode, ui.panel);
+    }
+    function mountDeskBarrage(slot, handlers) {
+        if (!ui || !ui.panel || !slot || !handlers || typeof handlers.reply !== 'function') return;
+        if (deskMount && deskMount.slot === slot) return;
+        restoreBarrage();
+        deskMount = { slot: slot, reply: handlers.reply };
+        slot.ownerDocument.addEventListener('focusin', syncPresentation);
+        slot.ownerDocument.addEventListener('focusout', afterFocusChange);
+        moveBarrage(slot, null);
+    }
     function setPageVisible(isVisible) {
         if (pageVisible === isVisible) return;
         pageVisible = isVisible;
         if (!state) return;
-        var item = ui.lane.firstElementChild;
-        var animation = item && item.getAnimations && item.getAnimations()[0];
+        var animation = driftAnimation();
         // Hiding the page cancels its CSS animation. Resume the same note at the saved point.
         if (!isVisible) pausedTime = animation ? animation.currentTime : null;
         else {
@@ -165,10 +203,17 @@
         if (!state.barrage || paused() || state.presented || !state.queue.length) return;
         var note = state.queue.shift(), version = epoch; state.presented = note;
         state.played.add(note.id); persist();
-        var item = button(note.author + '：' + (note.text || gestures[note.gesture] || '留下一条消息'), function () {
-            ui.panel.hidden = false; ui.open.setAttribute('aria-expanded', 'true'); selectReply(note); finish();
-        }, 'tf-barrage');
-        item.classList.remove('tf-button'); item.title = '点击查看留言';
+        var item = ui.lane.ownerDocument.createElement('button');
+        item.type = 'button';
+        item.className = 'tf-barrage';
+        item.textContent = note.author + '：' + (note.text || gestures[note.gesture] || '留下一条消息');
+        item.title = '点击查看留言';
+        item.addEventListener('click', function () {
+            if (deskMount) {
+                markRead(note.id); deskMount.reply(note.id);
+            } else selectReply(note);
+            finish();
+        });
         function finish() {
             if (!alive(version) || !state.presented || state.presented.id !== note.id) return;
             state.presented = null; ui.lane.replaceChildren(); ui.lane.hidden = true; showNext(); presentationHint();
@@ -199,17 +244,30 @@
         render();
         if (playMessages) replay(); else syncPresentation();
     }
-    async function refresh() {
-        if (!state.store || state.loading || state.sending) return;
-        var version = epoch, current = state; current.loading = true; status('正在读取留言…'); updateControls();
+    var eventFields = { note: 'comments', pin: 'pins', delete: 'deletions' };
+    function copyRaw(raw) {
+        return { comments: raw.comments.slice(), pins: raw.pins.slice(), deletions: raw.deletions.slice(), warnings: (raw.warnings || []).slice() };
+    }
+    async function applyRaw(current, data, playMessages) {
+        var revision = ++current.revision;
+        current.raw = data;
+        var feed = await core.prepareFeed(data, current.auth);
+        if (state !== current) throw new Error('Feedback configuration changed');
+        if (revision === current.revision) {
+            current.loaded = true;
+            acceptFeed(feed, playMessages);
+        }
+        return feed;
+    }
+    async function loadFeed(current) {
         try {
             await current.auth.initialized;
-            if (!alive(version)) return;
+            if (state !== current) throw new Error('Feedback configuration changed');
             var data = await current.store.load();
-            var feed = await core.prepareFeed(data, current.auth);
-            if (!alive(version)) return;
-            current.raw = data; current.loaded = true;
-            acceptFeed(feed, true);
+            if (state !== current) throw new Error('Feedback configuration changed');
+            // This same store handles both writers and includes confirmed appends
+            // that GitHub has not returned in the list yet.
+            var feed = await applyRaw(current, data, true);
             if (current.uncertain) {
                 current.uncertain = false;
                 var found = current.pending && data.comments.some(function (item) { return item.id === current.pending.id; });
@@ -219,8 +277,60 @@
             var warnings = (feed.warnings || []).filter(function (item) { return typeof item === 'string'; });
             status('已读取 ' + liveNotes().length + ' 条留言' + (warnings.length ? '；' + warnings.join(' ') : '。仅进入主页或手动刷新时读取。'), false);
         } catch (error) {
-            if (alive(version)) status(safeError(error) + ' 打卡功能不受影响。', true);
-        } finally { if (alive(version)) { current.loading = false; render(); } }
+            if (state === current) status(safeError(error) + ' 打卡功能不受影响。', true);
+            throw error;
+        } finally {
+            current.loading = null;
+            if (state === current) render();
+        }
+    }
+    async function getDeskFeed(force) {
+        var current = state;
+        if (!current || !current.store) throw new Error('Feedback unavailable');
+        if (!current.loading && (force || !current.loaded)) {
+            if (current.sending) throw new Error('Reply in progress');
+            current.loading = loadFeed(current);
+            status('正在读取留言…'); updateControls();
+        }
+        if (current.loading) await current.loading;
+        if (state !== current) throw new Error('Feedback configuration changed');
+        return copyRaw(current.raw);
+    }
+    async function refresh() {
+        if (!state || !state.store || state.loading || state.sending) return;
+        try {
+            await getDeskFeed(true);
+            window.dispatchEvent(new Event('timer:feedback-data'));
+        } catch (_) { /* loadFeed reports the failure in the homepage UI. */ }
+    }
+    async function appendDeskEvent(payload) {
+        var current = state;
+        if (!current || !current.store || !current.loaded) throw new Error('Feedback unavailable');
+        var saved = await current.store.append(payload);
+        if (state !== current) throw new Error('Feedback configuration changed');
+        return saved;
+    }
+    async function publishDeskFeed(raw, confirmedEvent) {
+        var current = state;
+        if (!current || !current.store) throw new Error('Feedback unavailable');
+        var next = copyRaw(current.raw);
+        function remember(field, payload) {
+            if (!payload || !payload.id) return;
+            // The signature verifier accepts plain JSON objects in its own realm.
+            next[field].push(JSON.parse(JSON.stringify(payload)));
+            if (field === 'comments' && current.ownerId === payload.ownerId) current.read.add(payload.id);
+        }
+        if (confirmedEvent && Object.prototype.hasOwnProperty.call(eventFields, confirmedEvent.kind)) {
+            var field = eventFields[confirmedEvent.kind];
+            if (!next[field].some(function (event) { return event.id === confirmedEvent.id; })) remember(field, confirmedEvent);
+        } else {
+            Object.keys(eventFields).forEach(function (kind) {
+                var field = eventFields[kind];
+                var known = new Set(current.raw[field].map(function (event) { return event.id; }));
+                (raw[field] || []).forEach(function (event) { if (!known.has(event.id)) remember(field, event); });
+            });
+        }
+        await applyRaw(current, next, false);
     }
     async function send(event) {
         event.preventDefault();
@@ -235,19 +345,23 @@
                 payload = { id: uuid(), kind: 'note', parentId: current.target.id, replyToName: current.target.author,
                     author: current.username || '我', text: message, ownerId: current.ownerId, createdAt: new Date().toISOString(),
                     likes: 0, deleted: false, recordTime: current.target.recordTime || null, gesture: null };
-                if (owned()) payload = await current.auth.sign(payload);
+                var signingAuth = current.auth;
+                if (owned()) payload = await signingAuth.sign(payload);
                 if (!alive(version)) return;
+                if (signingAuth !== current.auth) {
+                    composeStatus('作者身份已改变，请确认当前身份后再发送。', true); return;
+                }
                 current.pending = payload;
             }
             var result = await current.store.append(payload); confirmed = true;
             if (!alive(version)) return;
             var saved = result && result.id === payload.id ? result : payload;
-            current.raw.comments = current.raw.comments.filter(function (item) { return item.id !== saved.id; }).concat([saved]);
             current.read.add(saved.id); current.seen.add(saved.id); current.played.add(saved.id); persist();
             current.pending = null; current.target = null; ui.text.value = '';
-            var feed = await core.prepareFeed(current.raw, current.auth);
+            await publishDeskFeed(current.raw, saved);
             if (!alive(version)) return;
-            acceptFeed(feed, false); composeStatus('回复已发送；see 手动刷新后即可看到。'); status('回复已发送。其他留言可点击“刷新留言”读取。');
+            window.dispatchEvent(new Event('timer:feedback-data'));
+            composeStatus('回复已发送；see 手动刷新后即可看到。'); status('回复已发送。其他留言可点击“刷新留言”读取。');
         } catch (error) {
             if (!alive(version)) return;
             current.uncertain = !confirmed && !!(error && (error.uncertain || error.code === 'MANUAL_REFRESH_REQUIRED'));
@@ -277,7 +391,8 @@
         var savedSeen = read(prefix + 'seen');
         state = { gistId: gistId, prefix: prefix, username: typeof config.GITHUB_USERNAME === 'string' ? config.GITHUB_USERNAME.trim().slice(0, 39) : '',
             store: null, auth: null, raw: { comments: [], pins: [], deletions: [], warnings: [] }, notes: [], roots: [], loaded: false,
-            loading: false, sending: false, uncertain: false, target: null, pending: null, shown: 20, queue: [], presented: null,
+            loading: null, revision: 0,
+            sending: false, uncertain: false, target: null, pending: null, shown: 20, queue: [], presented: null,
             seen: setOf(parse(savedSeen, [])), read: setOf(parse(read(prefix + 'read'), [])),
             played: setOf(parse(read(prefix + 'played'), [])), barrage: read('timer.feedback.barrage') !== 'off', ownerId: '' };
         ui.root.hidden = !gistId; close(); ui.text.value = ''; ui.file.value = ''; ui.identityStatus.textContent = ''; composeStatus(''); clearLane();
@@ -306,14 +421,14 @@
         });
         toolbar.append(ui.open, ui.refresh); shell.appendChild(toolbar);
         ui.status = node('div', 'tf-status'); ui.status.setAttribute('role', 'status'); shell.appendChild(ui.status);
-        var barrageHost = node('section', 'tf-barrage-host'); barrageHost.setAttribute('aria-label', '访客留言弹幕');
+        var barrageHost = ui.barrageHost = node('section', 'tf-barrage-host'); barrageHost.setAttribute('aria-label', '访客留言弹幕');
         var barrageHead = node('div', 'tf-barrage-head'); barrageHead.appendChild(node('span', 'tf-barrage-title', '留言弹幕'));
         ui.replay = button('重播弹幕', replay, 'tf-replay'); barrageHead.append(ui.toggle, ui.replay); barrageHost.appendChild(barrageHead);
         ui.lane = node('div', 'tf-lane'); ui.lane.hidden = true; barrageHost.appendChild(ui.lane);
         ui.laneHint = node('p', 'tf-lane-hint'); barrageHost.appendChild(ui.laneHint); shell.appendChild(barrageHost);
         ui.panel = node('section', 'tf-panel'); ui.panel.id = 'timer-feedback-panel'; ui.panel.hidden = true;
         var head = node('div', 'tf-panel-head'); head.appendChild(node('h2', 'tf-title', '留言与回复'));
-        ui.readAll = button('全部标为已读', function () { liveNotes().forEach(function (item) { state.read.add(item.id); }); persist(); render(); });
+        ui.readAll = button('全部标为已读', markAllRead);
         head.append(ui.readAll, button('收起', close)); ui.panel.appendChild(head);
         ui.list = node('div', 'tf-list'); ui.panel.appendChild(ui.list);
         ui.more = button('查看更多留言', function () { state.shown += 20; render(); }, 'tf-more'); ui.panel.appendChild(ui.more);
@@ -335,12 +450,26 @@
             var modal = document.getElementById(id); return modal && !modal.classList.contains('hidden') && !modal.hidden;
         });
         window.addEventListener('timer:feedback-config', configure);
+        window.addEventListener('storage', function (event) {
+            if (event.key !== 'observer-desk-author-key-v1' || !state || !state.auth) return;
+            var current = state;
+            var auth = current.auth = core.createAuth(core.authorPublicKey);
+            if (!current.sending && !current.uncertain) current.pending = null;
+            Promise.resolve(auth.initialized).then(function () {
+                if (state === current && auth === current.auth) updateControls();
+            }).catch(function () { /* The signature stays disabled if the key cannot be loaded. */ });
+        });
         window.addEventListener('timer:feedback-modal', function (event) { modalOpen = !!(event.detail && event.detail.open); syncPresentation(); });
         document.addEventListener('visibilitychange', syncPresentation);
         document.addEventListener('focusin', syncPresentation);
-        document.addEventListener('focusout', function () { Promise.resolve().then(syncPresentation); });
+        document.addEventListener('focusout', afterFocusChange);
         if (configure()) refresh();
     }
-    window.TimerFeedback = { configure: configure, close: close, getSummary: getSummary, setPageVisible: setPageVisible };
+    window.TimerFeedback = {
+        configure: configure, close: close, getSummary: getSummary, setPageVisible: setPageVisible,
+        getDeskFeed: getDeskFeed, appendDeskEvent: appendDeskEvent, publishDeskFeed: publishDeskFeed,
+        mountDeskBarrage: mountDeskBarrage, restoreBarrage: restoreBarrage,
+        isUnread: isUnread, markRead: markRead, markAllRead: markAllRead
+    };
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot, { once: true }); else boot();
 })();

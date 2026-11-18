@@ -677,9 +677,16 @@
         <p>© 时间笔记 · 简单记录每一瞬间</p>
     </footer>
 
+    <section id="home-desk-view" aria-label="弹幕与观察书桌" hidden>
+        <div id="home-desk-status" role="status">
+            <p id="home-desk-message">正在打开观察书桌…</p>
+            <button type="button" id="home-desk-retry" hidden>重试</button>
+            <a href="page6.html">单独打开观察书桌 ↗</a>
+        </div>
+    </section>
     <nav id="mobile-home-nav" aria-label="主页切换" hidden>
         <button type="button" id="home-show-records" aria-controls="home-records-view" aria-current="page"><i class="fa fa-clock-o" aria-hidden="true"></i>记录</button>
-        <button type="button" id="home-show-feedback" aria-controls="timer-feedback-root"><i class="fa fa-comments-o" aria-hidden="true"></i>弹幕<span id="home-unread" hidden></span></button>
+        <button type="button" id="home-show-feedback" aria-controls="home-desk-view"><i class="fa fa-comments-o" aria-hidden="true"></i>弹幕<span id="home-unread" hidden></span></button>
     </nav>
 
 <script>
@@ -1510,58 +1517,8 @@ const gistApp = {
     }
 };
 
-function initMobileHomePages() {
-    const mobile = window.matchMedia('(max-width: 767px)');
-    const nav = document.getElementById('mobile-home-nav');
-    const recordsButton = document.getElementById('home-show-records');
-    const feedbackButton = document.getElementById('home-show-feedback');
-    const badge = document.getElementById('home-unread');
-    const feedback = window.TimerFeedback;
-    if (!feedback) return;
-
-    const positions = { records: 0, feedback: 0 };
-    let page = 'records';
-    let summary = feedback.getSummary();
-
-    function update() {
-        const { available, unread } = summary;
-        const split = mobile.matches && available;
-        if (!available) page = 'records';
-        const showFeedback = !mobile.matches || (split && page === 'feedback');
-        if (!showFeedback) feedback.setPageVisible(false);
-
-        if (split) document.body.dataset.homePage = page;
-        else delete document.body.dataset.homePage;
-        nav.hidden = !split;
-        recordsButton.setAttribute('aria-current', page === 'records' ? 'page' : 'false');
-        feedbackButton.setAttribute('aria-current', page === 'feedback' ? 'page' : 'false');
-        feedbackButton.setAttribute('aria-label', unread ? '弹幕，' + unread + ' 条未读' : '弹幕');
-        badge.hidden = !unread;
-        badge.textContent = unread > 99 ? '99+' : String(unread);
-        if (showFeedback) feedback.setPageVisible(true);
-    }
-
-    function select(next) {
-        if (next === page) return;
-        positions[page] = window.scrollY;
-        page = next;
-        update();
-        window.scrollTo(0, positions[page]);
-    }
-
-    recordsButton.addEventListener('click', () => select('records'));
-    feedbackButton.addEventListener('click', () => select('feedback'));
-    mobile.addEventListener('change', update);
-    window.addEventListener('timer:feedback-summary', event => {
-        summary = event.detail;
-        update();
-    });
-    update();
-}
-
 // --- 启动初始化 ---
 document.addEventListener('DOMContentLoaded', () => {
-    initMobileHomePages();
     initTheme();
     localApp.init();
     updateAllCurrentTime();
@@ -1676,5 +1633,6 @@ document.addEventListener('DOMContentLoaded', () => {
 </script>
 <script src="assets/js/feedback-core.js"></script>
 <script src="assets/js/feedback-ui.js"></script>
+<script src="assets/js/home-desk.js"></script>
 </body>
 </html>

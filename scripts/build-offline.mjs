@@ -3,9 +3,10 @@ import { readFile, writeFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 
 const files = [
-  'index.html', 'pagemain.html', 'manifest.json',
+  'index.html', 'pagemain.html', 'page6.html', 'manifest.json',
   'assets/css/tailwind.css', 'assets/css/notebook.css', 'assets/css/feedback.css', 'assets/css/offline.css', 'assets/css/mobile-ui.css',
   'assets/js/notebook-theme.js', 'assets/js/app-config.js', 'assets/js/feedback-core.js',
+  'assets/css/page6.css', 'assets/js/page6.js', 'assets/js/home-desk.js',
   'assets/js/feedback-ui.js', 'assets/js/offline.js', 'assets/js/mobile-ui.js',
   'assets/vendor/chart.umd.min.js', 'assets/vendor/font-awesome.min.css',
   'assets/vendor/fonts/fontawesome-webfont.woff2'

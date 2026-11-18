@@ -18,6 +18,13 @@
       <a class="brand" href="pagemain.html" aria-label="返回时迹主页"><span class="mark" aria-hidden="true">时.</span><span><span id="page6AuthorName">我的书桌</span><span class="brand-small">MY OBSERVATION DESK</span></span></a>
       <div class="top-actions"><a class="home-link" href="pagemain.html">返回主页 ↗</a><span class="status" id="status" role="status"><i></i><span>读取中</span></span><button class="refresh" id="refresh" type="button" aria-label="刷新写作时间">刷新记录 <span aria-hidden="true">↻</span></button></div>
     </header>
+    <header class="desk-embedded-head" hidden>
+      <h1>观察书桌</h1>
+      <nav aria-label="书桌内容">
+        <button type="button" id="desk-show-notes" aria-controls="deskNotes" aria-current="page">纸条</button>
+        <button type="button" id="desk-show-calendar" aria-controls="desk-archive">日历</button>
+      </nav>
+    </header>
     <main>
       <div id="page6ConfigStatus" class="page6-config-status" role="status"><span id="page6ConfigMessage">正在读取本机主页配置…</span><a href="pagemain.html?tab=gist&amp;config=1">前往主页配置 ↗</a></div>
       <section class="intro">
@@ -31,7 +38,7 @@
         <div class="metric"><div class="metric-label">近 30 天开笔</div><div class="metric-value" id="recent">—</div><div class="metric-note" id="range">每一次开始，都记在这里</div></div>
       </section>
       <div class="desk-grid">
-        <div class="archive-column">
+        <div class="archive-column" id="desk-archive">
           <section class="activity" aria-labelledby="activityTitle">
             <div class="section-top"><div><div class="section-kicker">THE NOTEBOOK</div><h2 id="activityTitle">日历里的开笔时刻</h2><p id="calendarSummary">点击日期，翻看那天的记录</p></div><div class="calendar-actions"><button class="clear-day" id="clearDay" type="button" hidden>清除筛选</button><button class="view-toggle" id="viewToggle" type="button" aria-pressed="false">切换到月视图</button></div></div>
             <div class="calendar-wrap" id="yearView"><div class="month-labels" id="monthLabels"></div><div class="calendar-grid" id="calendarGrid" aria-label="过去一年的每日记录"></div></div>
@@ -44,9 +51,11 @@
           </section>
         </div>
         <section class="notes-column" id="deskNotes" aria-labelledby="notesTitle">
+          <div id="desk-barrage-slot" hidden></div>
           <div class="notes-heading"><div><div class="section-kicker">LITTLE NOTES, WARM COMPANY</div><h2 id="notesTitle">桌边纸条<span class="note-heading-mark" aria-hidden="true">↗</span></h2><p>有什么想说的，随时放在这里。</p></div><button id="deskNotesOpen" class="write-note" type="button"><span aria-hidden="true">＋</span> 递张纸条</button></div>
           <div class="note-tools"><span id="deskNotesStatus" role="status">正在收拾纸条…</span><div><select id="deskNotesSort" aria-label="纸条排序"><option value="newest">新纸条在前</option><option value="oldest">从第一张看起</option></select><button id="deskNotesRefresh" type="button" aria-label="刷新纸条">↻</button></div></div>
           <div id="deskNotesWarning" class="notes-warning" role="status" hidden></div>
+          <button id="desk-mark-all-read" class="desk-read-action" type="button" hidden>全部标为已读</button>
           <div id="deskNotesFilter" class="note-filter" hidden><span id="deskNotesFilterLabel"></span><button id="deskNotesClearFilter" type="button">看全部纸条 ×</button></div>
           <div id="deskNotesList" aria-live="polite"></div><button id="deskNotesMore" class="more notes-more" type="button" hidden>再翻几张纸条 ↓</button>
           <div class="desk-endnote"><span aria-hidden="true">☕</span> 可以聊两句，也可以只是来坐一会儿。</div>
