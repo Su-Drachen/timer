@@ -165,7 +165,7 @@ async function screenshot(page, name) {
 const tests = [
   ['all main-project pages fit 320/390 px; common touch controls are at least 44 px', async () => {
     const controls = {
-      'pagemain.html': '#theme-btn-blue,#theme-btn-white,#theme-btn-dark,#local-record-btn,#local-import-btn,#local-download-btn,#local-records-container .icon-btn',
+      'pagemain.html': '#theme-btn-blue,#theme-btn-white,#theme-btn-dark,#local-record-btn,#local-import-btn,#local-download-btn,#local-records-container .icon-btn,#mobile-home-nav button',
       'page0.html': '.nb-back,.btn',
       'page1.html': '.nb-back',
       'page2.html': '.nb-back',
@@ -227,6 +227,7 @@ const tests = [
       assert.ok(await t.page.locator('#record-remark').evaluate(el => parseFloat(getComputedStyle(el).fontSize) >= 16));
       await keyboard(t.page);
       await assertPanelWithinKeyboard(t.page, '#record-modal-overlay [data-mobile-panel]', '#save-record-btn');
+      assert.equal(await t.page.locator('#mobile-home-nav').isVisible(), false);
       await assertFocusContained(t.page, '#record-modal-overlay');
       const y = await t.page.evaluate(() => scrollY);
       await t.page.mouse.wheel(0, 400);
@@ -235,6 +236,7 @@ const tests = [
       await keyboardReset(t.page);
       await t.page.locator('#save-record-btn').click();
       assert.equal(await t.page.locator('#record-modal-overlay').isVisible(), false);
+      assert.equal(await t.page.locator('#mobile-home-nav').isVisible(), true);
       assert.equal(await t.page.evaluate(() => document.activeElement.id), 'local-record-btn');
       const item = t.page.locator('#local-records-container .record-item').filter({ hasText: '键盘测试备注' });
       await item.locator('[aria-label="编辑记录"]').click();

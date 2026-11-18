@@ -122,8 +122,9 @@ async function saveConfig(t, childId) {
 }
 const tests = [
   ['unconfigured entry stays silent; local add/edit/delete work', async () => {
-    const t = await setup({ config: null });
+    const t = await setup({ config: null, mobile: true });
     try {
+      assert.equal(await t.page.locator('#mobile-home-nav').isVisible(), false);
       assert.equal(await t.page.locator('#timer-feedback-root').isVisible(), false);
       assert.equal(await t.page.locator('#gist-config-overlay').isVisible(), false);
       assert.equal(t.childRequests().length, 0);
@@ -342,6 +343,7 @@ const tests = [
     const t = await setup({ mobile: true, reducedMotion: 'reduce' });
     try {
       await ready(t);
+      await t.page.locator('#home-show-feedback').click();
       assert.equal(await t.page.locator('.tf-barrage').isVisible(), true);
       assert.equal(await t.page.locator('.tf-barrage').evaluate(el => getComputedStyle(el).animationName), 'none');
       await t.page.clock.fastForward(125000);
@@ -386,12 +388,75 @@ const tests = [
       assert.deepEqual(t.errors, []);
     } finally { await t.close(); }
   }],
+  ['mobile record and feedback pages keep their place and only play visible feedback', async () => {
+    const comments = Array.from({ length: 12 }, (_, index) => nativeNote('mobile-' + index, '合成留言 ' + index));
+    const t = await setup({ mobile: true, comments });
+    try {
+      const { page } = t;
+      const records = page.locator('#home-show-records');
+      const feedback = page.locator('#home-show-feedback');
+      const feedbackRoot = page.locator('#timer-feedback-root');
+      await ready(t, comments.length);
+      assert.equal(await records.getAttribute('aria-current'), 'page');
+      assert.equal(await feedbackRoot.isVisible(), false);
+      assert.match(await feedback.innerText(), /12/);
+      assert.deepEqual((await playbackStorage(t)).played, []);
+      const recordButton = await page.locator('#local-record-btn').boundingBox();
+      const nav = await page.locator('#mobile-home-nav').boundingBox();
+      assert.ok(recordButton.y >= 0 && recordButton.y + recordButton.height <= nav.y, 'record button fits above bottom navigation on entry');
+
+      await page.locator('#tab-gist').click();
+      await page.waitForFunction(() => gistApp.isInitialized && !gistApp.isLoading);
+      await page.evaluate(() => window.scrollTo({ top: 310, behavior: 'instant' }));
+      const recordScroll = await page.evaluate(() => scrollY);
+      assert.ok(recordScroll > 0);
+      await feedback.click();
+      assert.equal(await feedback.getAttribute('aria-current'), 'page');
+      assert.equal(await page.locator('#home-records-view').isVisible(), false);
+      assert.equal(await feedbackRoot.isVisible(), true);
+      assert.equal(await page.evaluate(() => scrollY), 0);
+      await openPanel(t);
+      await page.getByRole('button', { name: '标为已读', exact: true }).first().click();
+      assert.match(await feedback.innerText(), /11/);
+      const list = page.locator('.tf-list');
+      await list.evaluate(el => { el.scrollTop = 90; });
+      const listScroll = await list.evaluate(el => el.scrollTop);
+      assert.ok(listScroll > 0);
+      await page.evaluate(() => window.scrollTo({ top: 95, behavior: 'instant' }));
+      const feedbackScroll = await page.evaluate(() => scrollY);
+      assert.ok(feedbackScroll > 0);
+      const activeMessage = await page.locator('.tf-barrage').innerText();
+      await page.locator('.tf-barrage').evaluate(el => { el.getAnimations()[0].currentTime = 3500; });
+      const playing = await playbackStorage(t);
+      assert.equal(playing.played.length, 1);
+
+      await records.click();
+      await page.waitForFunction(y => Math.abs(scrollY - y) <= 1, recordScroll);
+      assert.equal(await page.locator('#tab-gist').getAttribute('aria-selected'), 'true');
+      await page.clock.fastForward(15000);
+      assert.deepEqual(await playbackStorage(t), playing);
+      await feedback.click();
+      await page.waitForFunction(y => Math.abs(scrollY - y) <= 1, feedbackScroll);
+      assert.equal(await list.evaluate(el => el.scrollTop), listScroll);
+      assert.equal(await page.locator('.tf-barrage').innerText(), activeMessage);
+      assert.ok(await page.locator('.tf-barrage').evaluate(el => el.getAnimations()[0].currentTime >= 3400), 'resume the current message at its previous position');
+      assert.equal(t.childRequests().length, 2, 'switching pages uses the loaded messages');
+
+      await page.setViewportSize({ width: 1024, height: 768 });
+      await page.locator('#mobile-home-nav').waitFor({ state: 'hidden' });
+      assert.equal(await page.locator('#home-records-view').isVisible(), true);
+      assert.equal(await feedbackRoot.isVisible(), true);
+      assert.deepEqual(t.errors, []);
+    } finally { await t.close(); }
+  }],
   ['desktop dark and mobile feedback fit viewport with readable reply controls', async () => {
     fs.mkdirSync(path.join(__dirname, 'artifacts'), { recursive: true });
     for (const mobile of [false, true]) {
       const t = await setup({ mobile, theme: 'dark', comments: [nativeNote('layout-note', '长留言测试。'.repeat(35))] });
       try {
-        await ready(t); await openPanel(t);
+        await ready(t);
+        if (mobile) await t.page.locator('#home-show-feedback').click();
+        await openPanel(t);
         assert.equal(await t.page.locator('.tf-barrage').evaluate(el => getComputedStyle(el).animationName), 'tf-drift', 'desktop and mobile both use scrolling barrage');
         await t.page.locator('.tf-barrage').evaluate(el => {
           for (const animation of el.getAnimations()) {

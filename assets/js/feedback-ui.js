@@ -2,7 +2,7 @@
 (function () {
     'use strict';
     if (window.TimerFeedback) return;
-    var ui, state, epoch = 0, modalOpen = false;
+    var ui, state, epoch = 0, modalOpen = false, pageVisible = true, pausedTime = null;
     var core = window.TimerFeedbackCore;
     var gestures = { coffee: '☕ 递一杯咖啡', light: '☼ 留一盏灯', sit: '⌑ 在旁边坐坐' };
     var motion = window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)') : null;
@@ -43,8 +43,14 @@
         save(state.prefix + 'played', JSON.stringify(Array.from(state.played).slice(-4000)));
         save(state.prefix + 'read', JSON.stringify(Array.from(state.read).slice(-4000)));
     }
+    function getSummary() {
+        return {
+            available: !!(state && state.gistId),
+            unread: state ? liveNotes().filter(function (item) { return !state.read.has(item.id); }).length : 0
+        };
+    }
     function updateControls() {
-        var unread = liveNotes().filter(function (item) { return !state.read.has(item.id); }).length;
+        var summary = getSummary(), unread = summary.unread;
         ui.open.textContent = '留言' + (unread ? ' · ' + unread + ' 未读' : ' · ' + liveNotes().length);
         ui.refresh.disabled = !state.store || state.loading || state.sending;
         ui.refresh.textContent = state.loading ? '读取中…' : '刷新留言';
@@ -66,6 +72,7 @@
         ui.targetLabel.textContent = state.target ? '回复 ' + state.target.author + '：' + state.target.text.slice(0, 50) : '选择一条留言回复';
         ui.form.hidden = !state.target;
         presentationHint();
+        window.dispatchEvent(new CustomEvent('timer:feedback-summary', { detail: summary }));
     }
     function dateLabel(value) {
         var date = new Date(value);
@@ -117,7 +124,21 @@
         var active = document.activeElement;
         return active && (active.matches('input,textarea,select') || active.isContentEditable);
     }
-    function paused() { return modalOpen || document.hidden || inputFocused() || !!(document.activeElement && document.activeElement.classList.contains('tf-barrage')); }
+    function paused() { return !pageVisible || modalOpen || document.hidden || inputFocused() || !!(document.activeElement && document.activeElement.classList.contains('tf-barrage')); }
+    function setPageVisible(isVisible) {
+        if (pageVisible === isVisible) return;
+        pageVisible = isVisible;
+        if (!state) return;
+        var item = ui.lane.firstElementChild;
+        var animation = item && item.getAnimations && item.getAnimations()[0];
+        // Hiding the page cancels its CSS animation. Resume the same note at the saved point.
+        if (!isVisible) pausedTime = animation ? animation.currentTime : null;
+        else {
+            if (animation && pausedTime !== null) animation.currentTime = pausedTime;
+            pausedTime = null;
+        }
+        syncPresentation();
+    }
     function presentationHint() {
         var text;
         if (!state.barrage) text = '弹幕已关闭，仍可打开留言查看和回复。';
@@ -134,7 +155,7 @@
         if (!paused()) showNext();
         presentationHint();
     }
-    function clearLane() { state.queue = []; state.presented = null; ui.lane.replaceChildren(); ui.lane.hidden = true; }
+    function clearLane() { state.queue = []; state.presented = null; pausedTime = null; ui.lane.replaceChildren(); ui.lane.hidden = true; }
     function replay() {
         clearLane();
         if (state.barrage) state.queue = recentMessages();
@@ -320,6 +341,6 @@
         document.addEventListener('focusout', function () { Promise.resolve().then(syncPresentation); });
         if (configure()) refresh();
     }
-    window.TimerFeedback = { configure: configure, close: close };
+    window.TimerFeedback = { configure: configure, close: close, getSummary: getSummary, setPageVisible: setPageVisible };
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot, { once: true }); else boot();
 })();

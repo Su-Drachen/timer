@@ -410,6 +410,7 @@
         <!-- 留言独立于本地/云端打卡；未配置子项目时保持隐藏。 -->
         <div id="timer-feedback-root" hidden></div>
 
+        <div id="home-records-view">
         <!-- 标签页切换 -->
         <div class="nb-mode-tabs max-w-2xl mx-auto mb-6 p-1 rounded-xl grid grid-cols-2 gap-1 border" style="background-color: var(--bg-card); border-color: var(--border-color);" role="tablist" aria-label="数据存储方式">
             <button id="tab-local" role="tab" aria-selected="true" aria-controls="content-local" class="tab-btn active py-2.5 rounded-lg font-semibold text-sm transition-all shadow-sm"><i class="fa fa-laptop mr-1.5 opacity-70"></i>本地记录</button>
@@ -669,11 +670,17 @@
 </a>
         </div>
 
+        </div><!-- home-records-view -->
     </main>
 
     <footer class="mt-auto py-5 text-center text-xs opacity-50 border-t" style="border-color: var(--border-color);">
         <p>© 时间笔记 · 简单记录每一瞬间</p>
     </footer>
+
+    <nav id="mobile-home-nav" aria-label="主页切换" hidden>
+        <button type="button" id="home-show-records" aria-controls="home-records-view" aria-current="page"><i class="fa fa-clock-o" aria-hidden="true"></i>记录</button>
+        <button type="button" id="home-show-feedback" aria-controls="timer-feedback-root"><i class="fa fa-comments-o" aria-hidden="true"></i>弹幕<span id="home-unread" hidden></span></button>
+    </nav>
 
 <script>
 // --- 主题管理 ---
@@ -1503,8 +1510,58 @@ const gistApp = {
     }
 };
 
+function initMobileHomePages() {
+    const mobile = window.matchMedia('(max-width: 767px)');
+    const nav = document.getElementById('mobile-home-nav');
+    const recordsButton = document.getElementById('home-show-records');
+    const feedbackButton = document.getElementById('home-show-feedback');
+    const badge = document.getElementById('home-unread');
+    const feedback = window.TimerFeedback;
+    if (!feedback) return;
+
+    const positions = { records: 0, feedback: 0 };
+    let page = 'records';
+    let summary = feedback.getSummary();
+
+    function update() {
+        const { available, unread } = summary;
+        const split = mobile.matches && available;
+        if (!available) page = 'records';
+        const showFeedback = !mobile.matches || (split && page === 'feedback');
+        if (!showFeedback) feedback.setPageVisible(false);
+
+        if (split) document.body.dataset.homePage = page;
+        else delete document.body.dataset.homePage;
+        nav.hidden = !split;
+        recordsButton.setAttribute('aria-current', page === 'records' ? 'page' : 'false');
+        feedbackButton.setAttribute('aria-current', page === 'feedback' ? 'page' : 'false');
+        feedbackButton.setAttribute('aria-label', unread ? '弹幕，' + unread + ' 条未读' : '弹幕');
+        badge.hidden = !unread;
+        badge.textContent = unread > 99 ? '99+' : String(unread);
+        if (showFeedback) feedback.setPageVisible(true);
+    }
+
+    function select(next) {
+        if (next === page) return;
+        positions[page] = window.scrollY;
+        page = next;
+        update();
+        window.scrollTo(0, positions[page]);
+    }
+
+    recordsButton.addEventListener('click', () => select('records'));
+    feedbackButton.addEventListener('click', () => select('feedback'));
+    mobile.addEventListener('change', update);
+    window.addEventListener('timer:feedback-summary', event => {
+        summary = event.detail;
+        update();
+    });
+    update();
+}
+
 // --- 启动初始化 ---
 document.addEventListener('DOMContentLoaded', () => {
+    initMobileHomePages();
     initTheme();
     localApp.init();
     updateAllCurrentTime();
