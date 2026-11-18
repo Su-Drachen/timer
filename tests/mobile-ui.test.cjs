@@ -240,6 +240,49 @@ const tests = [
       } finally { await t.close(); }
     }
   }],
+  ['bottom navigation tracks the last tap, history and reduced-motion settings', async () => {
+    const t = await setup();
+    const page = t.page;
+    const nav = page.locator('#mobile-home-nav');
+    try {
+      await page.emulateMedia({ reducedMotion: 'no-preference' });
+      await page.locator('#home-show-tools').click();
+      await page.locator('#home-tools-view').waitFor();
+      assert.equal(await page.locator('#home-tools-view').evaluate(el => getComputedStyle(el).animationName), 'home-page-enter');
+      assert.match(await nav.locator('.home-nav-indicator').evaluate(el => getComputedStyle(el).transitionProperty), /transform/);
+      await page.evaluate(() => {
+        for (const id of ['home-show-feedback', 'home-show-records', 'home-show-profile']) document.getElementById(id).click();
+      });
+      await page.locator('#home-profile-view').waitFor();
+      assert.equal(await nav.locator('[aria-current="page"]').getAttribute('data-page'), 'personal');
+      assert.equal(await page.locator('#home-records-view').isVisible(), false);
+      await page.waitForFunction(() => {
+        const nav = document.querySelector('#mobile-home-nav');
+        const indicator = nav.querySelector('.home-nav-indicator').getBoundingClientRect();
+        const selected = nav.querySelector('[aria-current="page"]').getBoundingClientRect();
+        return Math.abs(indicator.left - selected.left) < 1 && Math.abs(indicator.width - selected.width) < 1;
+      });
+      const accent = await page.evaluate(() => {
+        const active = document.querySelector('#mobile-home-nav [aria-current="page"]');
+        const swatch = document.createElement('span');
+        swatch.style.color = 'var(--nb-accent)';
+        active.append(swatch);
+        const matches = getComputedStyle(active).color === getComputedStyle(swatch).color;
+        swatch.remove();
+        return matches;
+      });
+      assert.ok(accent);
+      await page.emulateMedia({ reducedMotion: 'reduce' });
+      await page.locator('#home-show-tools').click();
+      await page.locator('#home-tools-view').waitFor();
+      assert.equal(await page.locator('#home-tools-view').evaluate(el => getComputedStyle(el).animationName), 'none');
+      assert.equal(await nav.locator('.home-nav-indicator').evaluate(el => el.getAnimations().length), 0);
+      await page.goBack();
+      await page.locator('#home-profile-view').waitFor();
+      assert.equal(await nav.locator('[aria-current="page"]').count(), 1);
+      assert.deepEqual(t.errors, []);
+    } finally { await t.close(); }
+  }],
   ['white theme uses neutral surfaces and accents; blue and dark remain distinct', async () => {
     const t = await setup();
     try {

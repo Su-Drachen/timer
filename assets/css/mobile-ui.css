@@ -1,9 +1,21 @@
 /* Loaded last on the main project pages; index and see stay unchanged. */
 :root {
+    --app-system-font: -apple-system, BlinkMacSystemFont, system-ui, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    --ui-page-title: clamp(1.5rem, 2.8vw, 1.75rem);
+    --ui-section-title: 1rem;
+    --ui-hairline: rgba(38, 58, 55, .11);
+    --ui-motion-fast: 120ms;
+    --ui-motion-page: 180ms;
+    --ui-ease: cubic-bezier(.2, .75, .25, 1);
     --app-viewport-height: 100vh;
     --app-viewport-width: 100vw;
     --app-viewport-top: 0px;
     --app-viewport-left: 0px;
+}
+:root[data-theme="dark"] { --ui-hairline: rgba(225, 240, 236, .13); }
+:root[data-theme="white"] { --ui-hairline: rgba(28, 28, 28, .12); }
+@media (prefers-reduced-motion: reduce) {
+    :root { --ui-motion-fast: 0s; --ui-motion-page: 0s; }
 }
 @supports (height: 100dvh) { :root { --app-viewport-height: 100dvh; } }
 html.app-dialog-open { overscroll-behavior: none; }

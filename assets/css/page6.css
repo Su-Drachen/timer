@@ -90,8 +90,8 @@
 
 /* The embedded desk follows the theme of its containing notebook. */
 :root.desk-embedded[data-theme="blue"] {
-  --bg: #f5f7fb; --panel: #fff; --line: #dbe4f1; --text: #19283f;
-  --muted: #526680; --soft: #60728b; --accent: #315cc6;
+  --bg: #f5f7f7; --panel: #fff; --line: var(--ui-hairline, #dce4e3); --text: #192d30;
+  --muted: #536868; --soft: #667878; --accent: #166f66; --accent-soft: #e4f0ed;
 }
 :root.desk-embedded[data-theme="blue"] :is(.write-note, #deskSubmit) {
   background: #3867d6; border-color: #3867d6; color: #fff;
@@ -109,10 +109,11 @@
 :root.desk-embedded[data-theme="blue"] :is(.month-day.selected,.calendar-cell.selected) { outline-color: var(--accent); }
 :root.desk-embedded[data-theme="blue"] .status.ok i { background: #40845f; }
 :root.desk-embedded[data-theme="dark"] {
-  --bg: #0f1724; --panel: #182334; --line: #33435a; --text: #e7edf7;
-  --muted: #b5c1d3; --soft: #a7b6cc; --accent: #abc4ff;
-  --paper: var(--panel); --ink: var(--text); --accent-soft: #253957;
+  --bg: #121718; --panel: #1d2426; --line: var(--ui-hairline, #354142); --text: #edf3f2;
+  --muted: #b4c3c1; --soft: #a3b3b0; --accent: #88d3c6; --accent-soft: #243a37;
+  --paper: var(--panel); --ink: var(--text);
 }
+:root.desk-embedded[data-theme="white"] { --line: var(--ui-hairline, #dedede); --accent-soft: #ededed; }
 :root.desk-embedded[data-theme="dark"] body { background: var(--bg); }
 :root.desk-embedded[data-theme="dark"] :is(.activity, .record-panel, .desk-note, .composer-panel) {
   color-scheme: dark; color: var(--text); background: var(--panel); border-color: var(--line); box-shadow: none;
@@ -229,18 +230,11 @@ body[data-desk-view] .bookmark button { grid-column: 2; grid-row: 1 / 4; gap: 6p
   .desk-reply-select-label, .delete-include { min-height: 44px; }
 }
 
-:root.desk-embedded[data-theme="blue"] {
-  --bg: #f6f8f9;
-  --line: #dbe6e5;
-  --text: #253648;
-  --muted: #546775;
-  --accent: #257d76;
-}
-.desk-embedded body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif; }
-.desk-embedded .wrap { margin: 0 auto; padding-inline: clamp(16px, 4vw, 36px); }
-.desk-embedded .desk-embedded-head { padding-block: 12px; z-index: 3; }
-.desk-embedded .desk-embedded-head h1 { font-family: inherit; font-size: 24px; font-weight: 650; line-height: 1.25; }
-.desk-embedded #deskNotesOpen { min-height: 44px; padding: 0 18px; font-size: 15px; font-weight: 600; border-radius: 999px; }
+.desk-embedded body { font-family: var(--app-system-font, -apple-system, BlinkMacSystemFont, system-ui, "PingFang SC", "Microsoft YaHei", sans-serif); }
+.desk-embedded .wrap { margin: 0 auto; padding-inline: clamp(16px, 4vw, 32px); }
+.desk-embedded .desk-embedded-head { padding-block: 10px; gap: 10px; z-index: 3; }
+.desk-embedded .desk-embedded-head h1 { font-family: inherit; font-size: var(--ui-page-title, clamp(28px, 4vw, 32px)); font-weight: 700; line-height: 1.18; letter-spacing: -.035em; }
+.desk-embedded #deskNotesOpen { min-height: 44px; padding: 0 16px; font-size: 15px; font-weight: 600; border-radius: 14px; }
 .desk-embedded #desk-barrage-slot { margin-bottom: 6px; }
 .desk-embedded #desk-barrage-slot .tf-barrage-host { border-radius: 14px; }
 .desk-embedded #desk-barrage-slot .tf-button { min-height: 44px; padding-inline: 10px; }
@@ -248,7 +242,9 @@ body[data-desk-view] .bookmark button { grid-column: 2; grid-row: 1 / 4; gap: 6p
 .desk-embedded #deskNotes .note-tools { margin: 0; }
 .desk-embedded #deskNotesRefresh { padding: 0 8px; background: transparent; color: var(--accent); border: 0; font-size: 14px; }
 .desk-embedded #friends-more { position: relative; margin-left: auto; }
-.desk-embedded #friends-more summary { display: grid; place-items: center; min-width: 50px; min-height: 44px; color: var(--muted); cursor: pointer; list-style: none; font-size: 15px; }
+.desk-embedded #friends-more summary { display: flex; justify-content: center; align-items: center; gap: 9px; min-width: 58px; min-height: 44px; padding-inline: 10px; border-radius: 12px; color: var(--accent); cursor: pointer; list-style: none; font-size: 14px; font-weight: 550; }
+.desk-embedded #friends-more summary::before { content: ""; width: 3px; height: 3px; margin-inline: 4px; border-radius: 50%; background: currentColor; box-shadow: -4px 0 currentColor, 4px 0 currentColor; }
+.desk-embedded #friends-more[open] summary { background: var(--accent-soft); }
 .desk-embedded #friends-more summary::-webkit-details-marker { display: none; }
 .desk-embedded #friends-more summary:focus-visible { outline: 2px solid var(--accent); border-radius: 12px; }
 .desk-embedded .friends-options { position: absolute; top: calc(100% + 5px); right: 0; z-index: 5; display: grid; gap: 2px; width: 180px; padding: 9px; border-radius: 16px; border: 1px solid var(--line); background: var(--panel); box-shadow: 0 8px 24px #15292b1c; }
@@ -257,19 +253,51 @@ body[data-desk-view] .bookmark button { grid-column: 2; grid-row: 1 / 4; gap: 6p
 .desk-embedded .friends-options button { display: block; width: 100%; min-height: 44px; margin: 0; padding: 0 9px; text-align: left; font-size: 14px; color: var(--text); background: transparent; border: 0; }
 .desk-embedded .friends-options :is(button,select,summary):focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 .desk-embedded .friends-options button:hover:not(:disabled) { background: var(--bg); }
-.desk-embedded .desk-note { margin-block: 10px; border-radius: 18px; padding: 16px; }
+.desk-embedded .desk-note { margin-block: 8px; border-radius: 16px; padding: 16px; }
+.desk-embedded .desk-note::before { display: none; }
+.desk-embedded .desk-note-author { color: var(--text); font-size: 15px; font-weight: 650; }
+.desk-embedded .desk-note-header { margin-bottom: 8px; }
+:root.desk-embedded .desk-note-text { font-size: 16px; line-height: 1.65; margin-bottom: 8px; }
+.desk-embedded .desk-note-actions { padding-top: 3px; }
+.desk-embedded .desk-note-actions .desk-note-reply { color: var(--accent); font-weight: 550; }
 .desk-embedded .desk-note-header .desk-note-read { display: grid; place-items: center; width: 44px; min-height: 44px; margin: -8px -10px -8px -8px; padding: 0; border: 0; background: transparent; }
 .desk-embedded .desk-note-read::after { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
 .desk-embedded #deskNotes .notes-heading h2,
-.desk-embedded .friends-composer .composer-heading h2 { font-family: inherit; font-size: 20px; font-weight: 650; letter-spacing: 0; }
+.desk-embedded .friends-composer .composer-heading h2 { font-family: inherit; font-size: var(--ui-section-title, 20px); font-weight: 650; letter-spacing: -.015em; }
 .desk-embedded .friends-composer { display: block; margin: 24px 0 12px; scroll-margin-top: 86px; }
-.desk-embedded .friends-composer .composer-panel { width: 100%; max-width: none; max-height: none; padding: 18px; border-radius: 20px; overflow: visible; }
+.desk-embedded .friends-composer .composer-panel { width: 100%; max-width: none; max-height: none; padding: 18px; border-radius: 16px; overflow: visible; }
 .desk-embedded .friends-composer .sheet-handle { display: none; }
 .desk-embedded .friends-composer .composer-bottom { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 18px; }
 .desk-embedded .friends-composer .composer-bottom > span { font-size: 12px; }
-.desk-embedded .friends-composer #deskSubmit { flex: 0 1 auto; min-width: 110px; min-height: 46px; font-size: 15px; }
+.desk-embedded .friends-composer #deskSubmit { flex: 0 1 auto; min-width: 110px; min-height: 46px; font-size: 15px; font-weight: 600; border-radius: 12px; }
 .desk-embedded .friends-composer :is(#deskNickname,#deskText) { font: inherit; font-size: 16px; scroll-margin-block: 82px 16px; }
-.desk-embedded .desk-note-record { display: inline-block; overflow-wrap: anywhere; }
-:root.desk-embedded[data-theme="blue"] :is(#deskNotesOpen, #deskSubmit) { background: var(--accent); border-color: var(--accent); color: white; }
-.desk-embedded[data-theme="blue"] #desk-barrage-slot { --primary-light: #e4f4f0; --bg-card: #fff; }
-:root.desk-embedded[data-theme="blue"] .desk-note-record { background: #e4f4f0; color: #285e59; border-color: #cce3e0; }
+.desk-embedded .friends-composer :is(.input-label, .gesture-caption) { color: var(--muted); font-size: 13px; font-weight: 500; }
+.desk-embedded :is(#deskNickname, #deskText, .gesture-picker button) { border-radius: 10px; }
+.desk-embedded .gesture-picker button > span { font-family: inherit; font-variant-emoji: text; font-size: 14px; vertical-align: baseline; }
+.desk-embedded :is(.desk-note:not(.desk-note--pinned), .friends-composer .composer-panel) { border-width: 0; }
+.desk-embedded .desk-note-record { display: inline-block; margin: 0 0 8px; padding: 4px 8px; border: 0; border-radius: 7px; overflow-wrap: anywhere; }
+:root.desk-embedded:is([data-theme="blue"], [data-theme="white"]) :is(#deskNotesOpen, #deskSubmit) { background: var(--accent); border-color: var(--accent); color: white; }
+.desk-embedded .notes-unconfigured { padding: 18px; border: 1px solid var(--line); border-radius: 16px; color: var(--muted); background: var(--panel); }
+.desk-embedded #desk-barrage-slot { --primary-light: var(--accent-soft); --bg-card: var(--panel); }
+:root.desk-embedded[data-theme="blue"] .desk-note-record { background: var(--accent-soft); color: #285e59; }
+
+@supports ((-webkit-backdrop-filter: blur(12px)) or (backdrop-filter: blur(12px))) and (background: color-mix(in srgb, white, transparent)) {
+  .desk-embedded .desk-embedded-head {
+    background: color-mix(in srgb, var(--bg) 90%, transparent);
+    -webkit-backdrop-filter: saturate(125%) blur(12px);
+    backdrop-filter: saturate(125%) blur(12px);
+  }
+}
+.desk-embedded :is(button, a, summary) { transition: none; }
+@media (prefers-reduced-motion: no-preference) {
+  .desk-embedded :is(button:not(.tf-barrage), summary, .notes-unconfigured a) {
+    transition: opacity var(--ui-motion-fast, 140ms) var(--ui-ease, ease-out), transform var(--ui-motion-fast, 140ms) var(--ui-ease, ease-out);
+  }
+  .desk-embedded :is(button:not(:disabled):not(.tf-barrage), summary, .notes-unconfigured a):active { opacity: .76; transform: scale(.98); }
+  .desk-embedded #friends-more[open] .friends-options { animation: friends-options-in var(--ui-motion-fast, 140ms) var(--ui-ease, ease-out); }
+  @keyframes friends-options-in { from { opacity: 0; transform: translateY(-3px); } to { opacity: 1; transform: translateY(0); } }
+}
+@media (prefers-reduced-motion: reduce) { html.desk-embedded { scroll-behavior: auto; } }
+@media (forced-colors: active) {
+  .desk-embedded :is(.desk-note:not(.desk-note--pinned), .friends-composer .composer-panel) { border: 1px solid CanvasText; }
+}

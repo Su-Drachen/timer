@@ -1,12 +1,47 @@
+#home-tools-view, #home-profile-view {
+    font-family: var(--app-system-font, -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif);
+    --list-line: var(--ui-hairline, color-mix(in srgb, var(--nb-ink) 11%, transparent));
+    --row-press: color-mix(in srgb, var(--nb-ink) 7%, var(--nb-surface));
+    --control-time: var(--ui-motion-fast, 140ms);
+    --control-ease: var(--ui-ease, ease-out);
+}
+#home-tools-view .home-heading, .profile-header h1, .settings-detail h1 {
+    font-size: var(--ui-page-title, 1.5rem);
+    font-weight: 700;
+    line-height: 1.25;
+}
+.tool-group, .settings-group { margin-bottom: 24px; }
+.tool-group h2, .settings-group h2 {
+    margin: 0 4px 8px;
+    color: var(--nb-muted);
+    font-size: var(--ui-section-title, 1rem);
+    font-weight: 600;
+    line-height: 1.4;
+}
+.profile-header { margin: 6px 0 24px; }
+.profile-mark { width: 52px; height: 52px; margin-bottom: 8px; font-size: 23px; }
+.profile-header p { margin: 4px 0 0; line-height: 1.4; }
+.tool-mark, .settings-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    font-size: 17px;
+    line-height: 1;
+}
+.tool-copy strong, .settings-copy strong { font-size: 1rem; font-weight: 600; line-height: 1.4; }
+.tool-copy small { margin-top: 2px; font-size: .8125rem; line-height: 1.45; }
 .settings-list {
     overflow: hidden;
-    border: 1px solid var(--nb-line);
-    border-radius: 18px;
+    border: 1px solid var(--list-line);
+    border-radius: 16px;
     background: var(--nb-surface);
 }
 .settings-list .settings-row {
     position: relative;
+    min-height: 60px;
+    gap: 12px;
     margin: 0;
+    padding: 10px 16px;
     border: 0;
     border-radius: 0;
     background: transparent;
@@ -14,11 +49,19 @@
 .settings-list .settings-row + .settings-row::before {
     content: '';
     position: absolute;
-    inset: 0 20px auto 80px;
-    border-top: 1px solid var(--nb-line);
+    inset: 0 16px auto 64px;
+    border-top: 1px solid var(--list-line);
 }
-.settings-list .settings-row:hover, .tool-card:hover { background: var(--nb-soft); }
-.settings-list .settings-row:focus-visible, .tool-entry .tool-card:focus-visible { outline-offset: -3px; }
+.settings-state { font-size: .8125rem; line-height: 1.4; }
+.settings-row > .fa-angle-right { font-size: 16px; opacity: .75; }
+.settings-list .settings-row, .tool-entry .tool-card, .tool-pin,
+.settings-themes button, .settings-actions button, .preference-examples button {
+    transition: background-color var(--control-time) var(--control-ease), color var(--control-time) var(--control-ease);
+}
+.settings-list .settings-row:focus-visible, .tool-entry .tool-card:focus-visible {
+    outline: 2px solid var(--nb-accent);
+    outline-offset: -3px;
+}
 .settings-guide {
     display: inline-flex;
     align-items: center;
@@ -28,12 +71,46 @@
     color: var(--nb-muted);
     font-size: 14px;
 }
+.settings-detail > p { margin-top: 6px; line-height: 1.6; }
+.settings-form {
+    gap: 16px;
+    margin: 16px 0;
+    padding: clamp(16px, 3vw, 24px);
+    border-color: var(--list-line);
+    border-radius: 16px;
+}
+.settings-form label { gap: 7px; font-size: .9375rem; }
+.settings-form input:not([type="checkbox"]) {
+    border-color: var(--list-line);
+    border-radius: 10px;
+}
+.settings-themes {
+    display: inline-flex;
+    max-width: 100%;
+    gap: 2px;
+    margin-top: 16px;
+    padding: 3px;
+    border-radius: 13px;
+    background: var(--nb-soft);
+}
+.settings-themes button {
+    flex: 1 1 auto;
+    min-width: 64px;
+    border-radius: 10px;
+    background: transparent;
+    color: var(--nb-muted);
+}
+.settings-themes button[aria-pressed="true"] {
+    background: var(--nb-surface);
+    color: var(--nb-ink);
+    box-shadow: 0 1px 3px color-mix(in srgb, var(--nb-ink) 15%, transparent);
+}
 .settings-form .preference-toggle {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 16px;
-    min-height: 48px;
+    min-height: 50px;
     cursor: pointer;
 }
 .preference-toggle small {
@@ -45,30 +122,33 @@
 }
 .preference-toggle input {
     appearance: none;
+    -webkit-appearance: none;
     flex: none;
     position: relative;
-    width: 44px;
-    height: 26px;
-    border: 1px solid var(--nb-muted);
-    border-radius: 13px;
-    background: var(--nb-soft);
+    width: 46px;
+    height: 28px;
+    border: 0;
+    border-radius: 14px;
+    background: color-mix(in srgb, var(--nb-muted) 36%, var(--nb-soft));
     cursor: pointer;
+    transition: background-color var(--control-time) var(--control-ease);
 }
 .preference-toggle input::before {
     content: '';
     position: absolute;
     top: 3px;
     left: 3px;
-    width: 18px;
-    height: 18px;
+    width: 22px;
+    height: 22px;
     border-radius: 50%;
-    background: var(--nb-muted);
+    background: #fff;
+    box-shadow: 0 1px 3px rgb(0 0 0 / 22%);
+    transition: transform var(--control-time) var(--control-ease);
 }
 .preference-toggle input:checked {
     background: var(--nb-accent);
-    border-color: var(--nb-accent);
 }
-.preference-toggle input:checked::before { left: 21px; background: var(--nb-surface); }
+.preference-toggle input:checked::before { transform: translateX(18px); }
 .preference-words { min-width: 0; margin: 2px 0 0; padding: 0; border: 0; }
 .preference-words legend { font-weight: 600; }
 .preference-words p { margin: 3px 0 10px; }
@@ -85,14 +165,17 @@
     display: flex;
     align-items: center;
     overflow: hidden;
-    border: 1px solid var(--nb-line);
-    border-radius: 18px;
+    border: 1px solid var(--list-line);
+    border-radius: 16px;
     background: var(--nb-surface);
 }
-.tool-entry + .tool-entry { margin-top: 10px; }
+.tool-entry + .tool-entry { margin-top: 8px; }
 .tool-entry .tool-card {
     flex: 1;
     min-width: 0;
+    min-height: 68px;
+    gap: 12px;
+    padding: 12px 16px;
     align-self: stretch;
     border: 0;
     border-radius: 0;
@@ -103,16 +186,27 @@
     place-items: center;
     width: 44px;
     height: 44px;
-    margin-right: 9px;
+    margin-right: 8px;
     border-radius: 12px;
     color: var(--nb-muted);
 }
-.tool-pin[aria-pressed="true"], .tool-pin:hover { background: var(--nb-accent-soft); color: var(--nb-accent); }
+.tool-pin[aria-pressed="true"] { background: var(--nb-accent-soft); color: var(--nb-accent); }
 .tool-pin[aria-pressed="false"] i { transform: rotate(35deg); }
-@media (max-width: 767px) {
-    .settings-list .settings-row + .settings-row::before { inset-inline: 70px 14px; }
+@media (hover: hover) and (pointer: fine) {
+    .settings-list .settings-row:hover, .tool-entry .tool-card:hover,
+    .tool-pin:hover, .preference-examples button:enabled:hover { background: var(--nb-soft); }
+}
+.settings-list .settings-row:active, .tool-entry .tool-card:active,
+.tool-pin:active, .settings-themes button:active, .settings-secondary:active,
+.preference-examples button:enabled:active { background: var(--row-press); }
+.settings-primary:active { background: var(--nb-accent-hover); }
+@media (prefers-reduced-motion: reduce) {
+    .settings-list .settings-row, .tool-entry .tool-card, .tool-pin,
+    .settings-themes button, .settings-actions button, .preference-examples button,
+    .preference-toggle input, .preference-toggle input::before { transition: none; }
 }
 @media (forced-colors: active) {
-    .preference-toggle input { appearance: auto; }
+    .preference-toggle input { appearance: auto; -webkit-appearance: auto; }
     .preference-toggle input::before { content: none; }
+    .settings-themes button[aria-pressed="true"], .tool-pin[aria-pressed="true"] { outline: 2px solid Highlight; outline-offset: -3px; }
 }

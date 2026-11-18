@@ -1,14 +1,26 @@
 #home-records-view { min-width: 0; }
-#home-records-view .nb-mode-tabs { margin: 0 0 9px; max-width: 280px; }
-#home-records-view .nb-mode-tabs button { min-height: 40px; padding-block: 4px; }
+#home-records-view .nb-mode-tabs { margin: 0 0 9px; max-width: 280px; border-color: var(--ui-hairline, var(--nb-line)); border-radius: 15px; }
+#home-records-view .nb-mode-tabs button { min-height: 40px; padding-block: 4px; border-radius: 10px; }
+#home-records-view .nb-mode-tabs [aria-selected="true"] {
+    background-color: var(--nb-surface);
+    color: var(--nb-ink);
+    box-shadow: inset 0 0 0 1px var(--ui-hairline, var(--nb-line)), 0 1px 3px #0000000f;
+    font-weight: 650;
+}
 #home-records-view .app-stack { gap: 12px; }
-#home-records-view .entry-card { min-height: 0; padding: 14px 20px; border-radius: 20px; }
+#home-records-view :is(.entry-card, .record-panel, .stats-panel) {
+    border-color: var(--ui-hairline, var(--nb-line));
+    border-radius: 20px;
+    background-color: var(--nb-surface);
+    box-shadow: 0 1px 2px #00000005;
+}
+#home-records-view .entry-card { min-height: 0; padding: 14px 20px; background: var(--nb-hero); }
 #home-records-view .entry-card > .entry-top { margin: 0; }
 .entry-top, .entry-now, .entry-summary, .entry-receipt { display: flex; align-items: center; gap: 10px; }
 .entry-top, .entry-now, .entry-receipt { justify-content: space-between; }
 .entry-top, .entry-summary { color: var(--nb-muted); font-size: 12px; }
-.entry-now strong { color: var(--nb-ink); font-size: clamp(26px, 4vw, 38px); line-height: 1.2; }
-#home-records-view .entry-now button { display: inline-flex; gap: 8px; align-items: center; justify-content: center; width: auto; min-height: 44px; padding: 6px 22px; border-radius: 15px; }
+.entry-now strong { color: var(--nb-ink); font-size: clamp(26px, 4vw, 38px); line-height: 1.2; font-weight: 660; font-variant-numeric: tabular-nums; }
+#home-records-view .entry-now button { display: inline-flex; gap: 8px; align-items: center; justify-content: center; width: auto; min-height: 44px; padding: 6px 22px; border-radius: 999px; }
 .entry-summary { flex-wrap: wrap; margin-top: 4px; }
 .entry-summary b { color: var(--nb-ink); font-weight: 600; }
 #home-records-view .entry-summary time { margin: 0 0 0 auto; color: var(--nb-muted); font: inherit; letter-spacing: 0; font-variant-numeric: tabular-nums; }
@@ -16,21 +28,29 @@
 .entry-timer { padding-inline: 0; font-variant-numeric: tabular-nums; }
 .entry-timer + .entry-timer { padding-inline: 12px; color: var(--nb-muted); }
 #home-show-records.has-active-timer > i::after { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--nb-accent); position: absolute; top: 2px; margin-left: 27px; }
-.entry-receipt { flex-wrap: wrap; gap: 4px; border-top: 1px solid var(--nb-line); margin-top: 8px; font-size: 13px; }
+.entry-receipt { flex-wrap: wrap; gap: 4px; border-top: 1px solid var(--ui-hairline, var(--nb-line)); margin-top: 8px; font-size: 13px; }
 .entry-receipt p { margin: 0; }
 .entry-receipt button { min-height: 44px; }
 .entry-receipt [hidden], .entry-receipt[hidden], .entry-backfill[hidden], .entry-timer[hidden], .record-date-fields[hidden], #record-frozen-time[hidden], #edit-end-field[hidden] { display: none; }
 .record-date-fields, .record-tags { display: flex; flex-wrap: wrap; gap: 8px; }
 .record-date-fields label { flex: 1 1 110px; min-width: 0; font-size: 13px; }
-.record-date-fields input { display: block; width: 100%; min-width: 0; padding: 8px; background: var(--nb-surface); border: 1px solid var(--nb-line); border-radius: 10px; color: var(--nb-ink); }
-.record-tags button { border-radius: 12px; background: var(--nb-accent-soft); margin-bottom: 6px; }
+.record-date-fields input { display: block; width: 100%; min-width: 0; padding: 8px; border: 1px solid var(--ui-hairline, var(--nb-line)); }
+.record-tags button { border-radius: 999px; background: var(--nb-accent-soft); margin-bottom: 6px; }
 .calendar-month { position: relative; display: inline-flex; align-items: center; gap: 8px; min-height: 44px; }
 .calendar-month i { font-size: 14px; }
 .calendar-month input { position: absolute; inset: 0; width: 100%; height: 100%; cursor: pointer; opacity: 0; }
-.calendar-month:focus-within { outline: 2px solid var(--nb-accent); }
-.calendar-days small { color: var(--nb-accent); font-size: 9px; font-weight: 600; position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); line-height: 11px; }
+.calendar-month:has(input:focus-visible) { outline: 2px solid var(--nb-accent); outline-offset: 2px; border-radius: 6px; }
+.calendar-days small {
+    position: absolute;
+    top: 1px;
+    right: max(1px, calc(50% - 20px));
+    color: var(--nb-accent);
+    font-size: 10px;
+    line-height: 12px;
+    font-weight: 650;
+}
 
-.record-calendar { margin-bottom: 18px; border-bottom: 1px solid var(--nb-line); }
+.record-calendar { margin-bottom: 18px; border-bottom: 1px solid var(--ui-hairline, var(--nb-line)); }
 .record-calendar:empty { display: none; }
 .calendar-heading, .calendar-actions, .calendar-footer, .calendar-footer span {
     display: flex;
@@ -47,7 +67,6 @@
     border-radius: 10px;
 }
 .calendar-actions i { font-size: 19px; }
-.calendar-actions button:hover, .calendar-footer button:hover { background: var(--nb-accent-soft); }
 .calendar-week, .calendar-days { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); text-align: center; }
 .calendar-week { margin-top: 8px; padding: 5px 0; color: var(--nb-muted); font-size: 12px; }
 .nb-home .calendar-days button {
@@ -59,19 +78,26 @@
     font-variant-numeric: tabular-nums;
     border-radius: 10px;
 }
-.calendar-days button:hover { background: var(--nb-soft); }
-.calendar-days button[aria-current="date"] span {
+.calendar-days button > span {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     min-width: 28px;
     height: 28px;
-    border: 1px solid var(--nb-accent);
-    border-radius: 9px;
+    border-radius: 50%;
 }
-.calendar-days button[aria-pressed="true"] { color: var(--nb-accent); background: var(--nb-accent-soft); font-weight: 700; }
+.calendar-days button[aria-current="date"] span { box-shadow: inset 0 0 0 1px var(--nb-accent); color: var(--nb-accent); }
+.calendar-days button[aria-pressed="true"] span {
+    color: var(--nb-surface);
+    background: var(--nb-accent);
+    font-weight: 650;
+}
+.calendar-days button[aria-pressed="true"][aria-current="date"] span {
+    outline: 1px solid var(--nb-accent);
+    outline-offset: 2px;
+}
 .calendar-days i, .calendar-footer i { width: 5px; height: 5px; background: var(--nb-accent); border-radius: 50%; }
-.calendar-days i { position: absolute; left: 50%; bottom: 3px; transform: translateX(-50%); }
+.calendar-days i { position: absolute; left: 50%; bottom: 1px; transform: translateX(-50%); }
 .calendar-footer { min-height: 44px; color: var(--nb-muted); font-size: 12px; }
 .calendar-footer span { gap: 7px; }
 .calendar-footer [hidden] { display: none; }
@@ -79,4 +105,89 @@
 @media (max-width: 420px) {
     #home-records-view .nb-mode-tabs { max-width: 250px; }
     .calendar-actions { gap: 0; }
+}
+@media (max-width: 350px) {
+    .nb-home .calendar-heading h2 { font-size: 15px; }
+    .calendar-month { gap: 4px; }
+    #record-date, #record-clock-input { padding-inline: 4px; }
+    .record-date-fields input::-webkit-calendar-picker-indicator { padding: 0; margin-inline: 0; }
+}
+
+.nb-home {
+    --record-destructive: #b13933;
+    --record-focus: color-mix(in srgb, var(--nb-accent) 28%, transparent);
+}
+:root[data-theme="dark"] .nb-home { --record-destructive: #ffaca4; }
+:root[data-theme="white"] .nb-home { --record-destructive: var(--nb-ink); }
+#home-records-view [id$="-record-count-badge"] { background: var(--nb-soft); color: var(--nb-muted); font-variant-numeric: tabular-nums; }
+#home-records-view .record-item .icon-btn { color: var(--nb-muted); opacity: 1; }
+#home-records-view .record-item .icon-btn.text-red-500 { color: var(--record-destructive); }
+#home-records-view .btn-theme-primary, :is(#record-form, #edit-form) .btn-theme-primary {
+    background: var(--nb-accent);
+    color: var(--nb-surface);
+    box-shadow: none;
+    font-weight: 650;
+}
+
+:is(#record-modal-overlay, #edit-modal-overlay, #confirm-modal-overlay) [data-mobile-panel] {
+    background: var(--nb-surface);
+    border-color: var(--ui-hairline, var(--nb-line));
+    border-radius: 22px;
+    box-shadow: 0 14px 42px #00000021;
+}
+:is(#record-form, #edit-form) :is(input:not([type="hidden"]), textarea) {
+    --border-color: var(--ui-hairline, var(--nb-line));
+    font-family: var(--app-system-font, system-ui, sans-serif);
+    border-radius: 12px;
+    background: var(--nb-soft);
+    color: var(--nb-ink);
+    caret-color: var(--nb-accent);
+}
+:is(#record-form, #edit-form) :is(input, textarea):focus-visible {
+    outline: 2px solid var(--nb-accent);
+    outline-offset: 1px;
+    box-shadow: 0 0 0 3px var(--record-focus);
+}
+:is(#record-modal-overlay, #edit-modal-overlay) .icon-btn { background: var(--nb-soft); color: var(--nb-muted); border-radius: 50%; opacity: 1; }
+:is(#record-modal-overlay, #edit-modal-overlay, #confirm-modal-overlay) [data-mobile-actions] {
+    border-color: var(--ui-hairline, var(--nb-line));
+}
+:is(#record-modal-overlay, #edit-modal-overlay, #confirm-modal-overlay) [data-mobile-actions] > button {
+    border-radius: 14px;
+}
+#confirm-modal-overlay #confirm-action-btn {
+    border-color: var(--record-destructive);
+    background: var(--record-destructive);
+    color: var(--nb-surface);
+}
+
+@media (hover: hover) {
+    #home-records-view .calendar-days button:not([aria-pressed="true"]):hover span,
+    #home-records-view :is(.calendar-actions, .calendar-footer) button:hover,
+    #home-records-view .record-item .icon-btn:hover { background: var(--nb-soft); }
+    #home-records-view .entry-now button:hover, :is(#record-form, #edit-form) .btn-theme-primary:hover {
+        background: var(--nb-accent-hover);
+    }
+}
+:is(#home-records-view, #record-modal-overlay, #edit-modal-overlay, #confirm-modal-overlay) button {
+    transition-property: background-color, color, box-shadow, opacity, transform;
+    transition-duration: var(--ui-motion-fast, 120ms);
+    transition-timing-function: var(--ui-ease, ease-out);
+}
+:is(#home-records-view, #record-modal-overlay, #edit-modal-overlay, #confirm-modal-overlay) button:active:not(:disabled) { transform: scale(.975); }
+:is(#home-records-view, #record-modal-overlay, #edit-modal-overlay, #confirm-modal-overlay) button:disabled { opacity: .55; }
+@media (prefers-reduced-motion: no-preference) {
+    :is(#record-modal-overlay, #edit-modal-overlay, #confirm-modal-overlay):not(.hidden) > [data-mobile-panel] {
+        animation: record-dialog-in var(--ui-motion-page, 160ms) var(--ui-ease, ease-out);
+    }
+    @keyframes record-dialog-in {
+        from { opacity: 0; transform: translateY(4px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    :is(#home-records-view, #record-modal-overlay, #edit-modal-overlay, #confirm-modal-overlay) button {
+        transition: none;
+    }
+    :is(#home-records-view, #record-modal-overlay, #edit-modal-overlay, #confirm-modal-overlay) button:active:not(:disabled) { transform: none; }
 }

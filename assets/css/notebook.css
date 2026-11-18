@@ -2,18 +2,18 @@
 :root,
 :root[data-theme="blue"] {
     color-scheme: light;
-    --nb-bg: #f5f7fb;
+    --nb-bg: #f5f7f7;
     --nb-surface: #ffffff;
-    --nb-soft: #edf2f9;
-    --nb-ink: #19283f;
-    --nb-muted: #697991;
-    --nb-line: #e1e7f0;
-    --nb-accent: #3867d6;
-    --nb-accent-hover: #2854ba;
-    --nb-accent-soft: #eaf0ff;
-    --nb-shadow: 0 5px 24px rgba(30, 51, 87, .035), 0 1px 2px rgba(30, 51, 87, .025);
+    --nb-soft: #edf2f1;
+    --nb-ink: #192d30;
+    --nb-muted: #576967;
+    --nb-line: #dce4e2;
+    --nb-accent: #166f66;
+    --nb-accent-hover: #115e57;
+    --nb-accent-soft: #deefea;
+    --nb-shadow: 0 2px 8px rgba(28, 51, 46, .035);
     --nb-header: rgba(255, 255, 255, .92);
-    --nb-hero: #edf3ff;
+    --nb-hero: #eef6f3;
 }
 :root[data-theme="white"] {
     color-scheme: light;
@@ -32,18 +32,18 @@
 }
 :root[data-theme="dark"] {
     color-scheme: dark;
-    --nb-bg: #0f1724;
-    --nb-surface: #182334;
-    --nb-soft: #202e42;
-    --nb-ink: #e7edf7;
-    --nb-muted: #9aaac0;
-    --nb-line: #2b3b51;
-    --nb-accent: #8aafff;
-    --nb-accent-hover: #b0c9ff;
-    --nb-accent-soft: #253957;
+    --nb-bg: #121718;
+    --nb-surface: #1d2426;
+    --nb-soft: #283132;
+    --nb-ink: #edf3f2;
+    --nb-muted: #a4b4b1;
+    --nb-line: #354140;
+    --nb-accent: #88d3c6;
+    --nb-accent-hover: #a5e3d8;
+    --nb-accent-soft: #263e3a;
     --nb-shadow: 0 5px 24px rgba(0, 0, 0, .11), 0 1px 2px rgba(0, 0, 0, .12);
-    --nb-header: rgba(20, 31, 47, .94);
-    --nb-hero: #1c2e49;
+    --nb-header: rgba(27, 34, 35, .95);
+    --nb-hero: #202e2d;
 }
 :root[data-theme] {
     --bg-page: var(--nb-bg);
@@ -66,7 +66,7 @@ body.nb-page {
     margin: 0;
     background: var(--nb-bg);
     color: var(--nb-ink);
-    font-family: Inter, "Noto Sans SC", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+    font-family: var(--app-system-font, system-ui, sans-serif);
     font-size: 14px;
     line-height: 1.6;
     -webkit-font-smoothing: antialiased;
@@ -140,8 +140,7 @@ body.nb-page {
 .nb-page .nb-nav a { flex: 0 0 auto; padding: 8px 16px; color: var(--nb-muted); font-size: 12px; font-weight: 500; border-radius: 9px; text-decoration: none; white-space: nowrap; transition: background .18s, color .18s; }
 .nb-page .nb-nav a:hover { color: var(--nb-accent); background: var(--nb-accent-soft); }
 .nb-page .nb-nav a[aria-current="page"] { background: var(--nb-accent-soft); color: var(--nb-accent); font-weight: 700; }
-.nb-page .nb-card, .nb-page .card-box { background: var(--nb-surface); border: 1px solid var(--nb-line); border-radius: 20px; box-shadow: var(--nb-shadow); }
-.nb-page .card-box:hover { border-color: color-mix(in srgb, var(--nb-accent) 24%, var(--nb-line)); }
+.nb-page .nb-card, .nb-page .card-box { background: var(--nb-surface); border: 1px solid var(--ui-hairline); border-radius: 20px; box-shadow: var(--nb-shadow); }
 .nb-page .bg-white { background-color: var(--nb-surface); }
 .nb-page :is(.bg-slate-50, .bg-slate-100, .bg-gray-50, .bg-gray-100) { background-color: var(--nb-soft); }
 .nb-page :is(.bg-slate-200, .bg-gray-200) { background-color: var(--nb-line); }

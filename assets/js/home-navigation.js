@@ -20,7 +20,12 @@
         if (next !== 'friends') window.TimerHomeDesk.setVisible(false);
         document.body.dataset.homePage = next;
         document.getElementById('home-records-header').hidden = next !== 'records';
-        panels.forEach((panel, id) => { panel.hidden = id !== next; });
+        for (const [id, panel] of panels) {
+            panel.hidden = id !== next;
+            if (current !== next) panel.classList.toggle('home-page-enter', !!current && id === next);
+        }
+        nav.classList.toggle('nav-initialized', !!current);
+        nav.style.setProperty('--nav-index', buttons.findIndex(button => button.dataset.page === next));
         buttons.forEach(button => {
             if (button.dataset.page === next) button.setAttribute('aria-current', 'page');
             else button.removeAttribute('aria-current');
