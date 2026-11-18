@@ -31,11 +31,9 @@ let lastMetricsMinute;
 function updateAllCurrentTime() {
     const now = new Date();
     const timeString = now.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
-    const dateString = now.toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' });
     document.getElementById('local-current-time').textContent = timeString;
     document.getElementById('gist-current-time').textContent = timeString;
-    document.getElementById('local-current-date').textContent = dateString;
-    document.getElementById('gist-current-date').textContent = dateString;
+    refreshTimers(now);
     const minute = Math.floor(now.getTime() / 60000);
     if (minute !== lastMetricsMinute) {
         lastMetricsMinute = minute;
@@ -48,19 +46,11 @@ function updateAllCurrentTime() {
 }
 
 function formatRecordTime(date = new Date()) {
-    return date.toLocaleString('zh-CN', {
-        year: 'numeric', month: '2-digit', day: '2-digit',
-        hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
-    });
+    return RecordEntries.format(date);
 }
 
 function parseRecordDate(value) {
-    const raw = String(value || '').trim();
-    const local = /^(\d{4})[/-](\d{1,2})[/-](\d{1,2})(?:[ T](\d{1,2}):(\d{2})(?::(\d{2}))?)?$/.exec(raw);
-    const date = local
-        ? new Date(+local[1], +local[2] - 1, +local[3], +(local[4] || 0), +(local[5] || 0), +(local[6] || 0))
-        : new Date(raw);
-    return Number.isNaN(date.getTime()) ? null : date;
+    return RecordEntries.parse(value);
 }
 
 function escapeHTML(value) {
@@ -127,11 +117,7 @@ function parseCsvRows(content) {
 }
 
 function parseRecordCsv(content) {
-    return parseCsvRows(content).slice(1).map(columns => {
-        const time = (columns[1] || '').trim();
-        const remark = columns.slice(2).join(',').trim();
-        return time ? { time, remark } : null;
-    }).filter(Boolean);
+    return RecordEntries.fromRows(parseCsvRows(content));
 }
 
 function updateRecordMetrics(version, index, now = new Date()) {
@@ -164,19 +150,47 @@ function hideAppDialog(id) {
     window.TimerMobile?.closeDialog(dialog);
 }
 
-function openRecordModal(version) {
+let recordDraft;
+let editTarget;
+
+function fillTags(containerId, inputId) {
+    const container = document.getElementById(containerId);
+    const input = document.getElementById(inputId);
+    container.replaceChildren();
+    for (const tag of preferences().tags) {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.textContent = tag;
+        button.addEventListener('click', () => {
+            input.value = [input.value.trim(), tag].filter(Boolean).join(' ').slice(0, input.maxLength);
+        });
+        container.appendChild(button);
+    }
+}
+
+function openRecordModal(version, entry, day = '') {
+    recordDraft = { version, entry, day, connection: appFor(version).config };
     document.getElementById('record-version').value = version;
-    document.getElementById('record-time-preview').textContent = formatRecordTime();
+    document.getElementById('record-modal-title').textContent = day ? '补记这天' : '记录此刻';
+    document.getElementById('record-time-preview').textContent = entry.time;
+    document.getElementById('record-frozen-time').hidden = !!day;
+    document.getElementById('record-backfill-fields').hidden = !day;
+    document.getElementById('record-date').value = day;
+    document.getElementById('record-clock-input').value = entry.time.slice(-8);
     document.getElementById('record-remark').value = '';
-    showAppDialog('record-modal-overlay', closeRecordModal, '#record-remark');
+    fillTags('record-tags', 'record-remark');
+    showAppDialog('record-modal-overlay', closeRecordModal, day ? '#record-clock-input' : '#record-remark');
 }
 
 function closeRecordModal() {
+    recordDraft = null;
     hideAppDialog('record-modal-overlay');
 }
 
-function openConfirmModal(callback, message = '删除后无法恢复，请确认继续。') {
+function openConfirmModal(callback, message = '删除后无法恢复，请确认继续。', title = '删除这条记录？') {
     pendingConfirmAction = callback;
+    document.getElementById('confirm-modal-title').textContent = title;
+    document.getElementById('confirm-action-btn').textContent = title === '取消这次计时？' ? '确认取消计时' : '确认删除';
     document.getElementById('confirm-modal-message').textContent = message;
     showAppDialog('confirm-modal-overlay', closeConfirmModal, '#cancel-confirm-btn');
 }
@@ -190,14 +204,20 @@ function openEditModal(version, index) {
     const app = version === 'local' ? localApp : gistApp;
     const record = app.records[index];
     if (!record) return;
+    editTarget = { record: { ...record }, connection: app.config, occurrence: occurrenceAt(app.records, index) };
+    document.querySelector('label[for="edit-time"]').textContent = record.endTime ? '开始时间' : '记录时间';
+    document.getElementById('edit-end-field').hidden = !record.endTime;
+    document.getElementById('edit-end').value = record.endTime || '';
     document.getElementById('edit-version').value = version;
     document.getElementById('edit-index').value = index;
     document.getElementById('edit-time').value = record.time;
     document.getElementById('edit-remark').value = record.remark || '';
+    fillTags('edit-tags', 'edit-remark');
     showAppDialog('edit-modal-overlay', closeEditModal, '#edit-remark');
 }
 
 function closeEditModal() {
+    editTarget = null;
     hideAppDialog('edit-modal-overlay');
 }
 
@@ -296,6 +316,7 @@ function renderRecordList(version, app) {
     const selected = app.calendar.selected;
     const chosenIndices = app.calendar.index.byDay.get(selected) || [];
     const count = selected ? chosenIndices.length : app.records.length;
+    document.getElementById(prefix + '-backfill').hidden = !selected;
     document.getElementById(prefix + '-list-title').textContent = selected ? selected.slice(5).replace('-', '/') + ' 记录' : '全部记录';
     badge.textContent = count;
 
@@ -314,12 +335,15 @@ function renderRecordList(version, app) {
     const indices = selected ? chosenIndices : Array.from({ length: app.isExpanded ? count : Math.min(3, count) }, (_, i) => i);
     container.innerHTML = indices.map(idx => {
         const item = app.records[idx];
-        const time = escapeHTML(item.time);
+        const time = escapeHTML(selected ? (parseRecordDate(item.time) ? formatRecordTime(parseRecordDate(item.time)).slice(-8) : item.time) : item.time);
         const remark = escapeHTML(item.remark || '无备注');
+        const session = item.endTime && Number.isFinite(item.durationSeconds)
+            ? `<p class="text-xs">至 ${escapeHTML(item.endTime)} · 用时 ${RecordEntries.duration(item.durationSeconds)}</p>` : '';
         return `
             <div class="record-item flex items-center justify-between p-3 rounded-xl border transition-all" style="border-color: var(--border-color); background-color: var(--bg-card);">
                 <div class="min-w-0 flex-1 pr-2">
                     <p class="text-xs sm:text-sm font-semibold font-mono tracking-tight">${time}</p>
+                    ${session}
                     <p class="text-xs opacity-60 truncate mt-0.5" title="${remark}">${remark}</p>
                 </div>
                 <div class="flex items-center gap-1 flex-shrink-0">
@@ -349,9 +373,7 @@ const localApp = {
 
     init() {
         this.loadRecordsFromLocal();
-        document.getElementById('local-record-btn').addEventListener('click', () => openRecordModal('local'));
-        document.getElementById('local-download-btn').addEventListener('click', () => this.exportToCsv());
-        document.getElementById('local-import-btn').addEventListener('click', () => document.getElementById('csv-file-input').click());
+        bindSource('local');
         document.getElementById('local-expand-btn').addEventListener('click', () => {
             this.isExpanded = !this.isExpanded;
             this.renderRecords();
@@ -368,81 +390,7 @@ const localApp = {
         this.renderRecords();
     },
 
-    saveRecordsToLocal(nextRecords) {
-        if (!safeSetStorage(localStorage, 'timeRecords', JSON.stringify(nextRecords))) return false;
-        this.records = nextRecords;
-        return true;
-    },
-
-    handleAddRecord(remark = '') {
-        const nextRecords = [{ time: formatRecordTime(), remark: remark.trim() }, ...this.records];
-        if (!this.saveRecordsToLocal(nextRecords)) return false;
-        this.renderRecords();
-        showToast("已记录当前时间 (本地)", "success");
-        return true;
-    },
-
-    handleDeleteRecord(index) {
-        if (!this.records[index]) return;
-        openConfirmModal(() => {
-            const nextRecords = this.records.filter((_, recordIndex) => recordIndex !== index);
-            if (!this.saveRecordsToLocal(nextRecords)) return false;
-            this.renderRecords();
-            showToast('已删除记录', 'success');
-            return true;
-        });
-    },
-
-    handleEditSave(index, newTime, newRemark) {
-        if (!newTime) return showToast('时间不能为空', 'error');
-        if (!this.records[index]) return showToast('记录不存在，请重新选择', 'error');
-        const nextRecords = [...this.records];
-        nextRecords[index] = { time: newTime, remark: newRemark };
-        if (!this.saveRecordsToLocal(nextRecords)) return false;
-        this.renderRecords();
-        closeEditModal();
-        showToast('本地记录已更新', 'success');
-        return true;
-    },
-
-    importFromCsv(csvContent) {
-        try {
-            const fileRecords = parseRecordCsv(csvContent);
-
-            const map = new Map(this.records.map(r => [r.time, r]));
-            const originSize = map.size;
-            fileRecords.forEach(r => map.set(r.time, r));
-            const newRecords = Array.from(map.values());
-            const added = newRecords.length - originSize;
-
-            if (added > 0) {
-                if (!this.saveRecordsToLocal(newRecords)) return false;
-                this.renderRecords();
-                showToast(`导入成功！新增 ${added} 条记录`, 'success');
-                return true;
-            } else {
-                showToast('数据已是最新，无需导入', 'info');
-            }
-        } catch (e) {
-            showToast(`导入失败: ${e.message}`, 'error');
-        }
-    },
-
-    exportToCsv() {
-        if (this.records.length === 0) return showToast('暂无记录可导出', 'error');
-        let csv = "序号,时间,备注\n";
-        const sorted = [...this.records].sort((a, b) => (parseRecordDate(b.time)?.getTime() || 0) - (parseRecordDate(a.time)?.getTime() || 0));
-        sorted.forEach((r, idx) => {
-            const remarkText = r.remark ? `"${r.remark.replace(/"/g, '""')}"` : '""';
-            csv += `${sorted.length - idx},"${r.time}",${remarkText}\n`;
-        });
-        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.setAttribute('download', `时间记录_本地_${new Date().toISOString().slice(0,10)}.csv`);
-        link.click();
-        setTimeout(() => URL.revokeObjectURL(link.href), 0);
-    },
+    handleDeleteRecord(index) { confirmDeletion('local', index); },
 
     renderRecords() {
         return renderSharedRecords('local', this);
@@ -462,13 +410,7 @@ const gistApp = {
 
     init() {
         this.refreshConnection();
-        document.getElementById('gist-record-btn').addEventListener('click', () => {
-            if (!this.hasConnection()) return openGistConfig();
-            if (this.canWrite) return openRecordModal('gist');
-            showToast(this.isLoading ? '正在读取云端记录，请稍候' : '请先重试读取云端记录');
-        });
-        document.getElementById('gist-download-btn').addEventListener('click', () => this.exportToCsv());
-        document.getElementById('gist-import-btn').addEventListener('click', () => document.getElementById('csv-file-input').click());
+        bindSource('gist');
         document.getElementById('gist-config-open-btn').addEventListener('click', openGistConfig);
         document.getElementById('gist-expand-btn').addEventListener('click', () => {
             this.isExpanded = !this.isExpanded;
@@ -485,6 +427,8 @@ const gistApp = {
     },
 
     refreshConnection() {
+        this.receipt = null;
+        paintReceipt('gist');
         this.config = window.TimerConfig.read();
         this.canWrite = false;
         this.records = [];
@@ -506,8 +450,11 @@ const gistApp = {
             throw new Error(err.message || `API 请求错误 (${res.status})`);
         }
         const data = await res.json();
-        const file = data.files && data.files['records.json'];
-        if (!file || !file.content) return [];
+        if (!data.files || data.truncated) throw new Error('未能读取完整的 Gist 文件列表');
+        const file = data.files['records.json'];
+        if (!file) return [];
+        if (file.truncated || typeof file.content !== 'string') throw new Error('未能读取完整的记录文件');
+        if (!file.content.trim()) return [];
         try {
             const parsed = JSON.parse(file.content);
             if (!Array.isArray(parsed)) throw new Error();
@@ -583,124 +530,7 @@ const gistApp = {
         return verified;
     },
 
-    async handleAddRecord(remark = '') {
-        if (this.isLoading) {
-            return showToast("云端数据正在加载中，请稍候再试", "error");
-        }
-
-        const btn = document.getElementById('gist-record-btn');
-        const originHtml = btn.innerHTML;
-        const newRecords = [{ time: formatRecordTime(), remark: remark.trim() }, ...this.records];
-
-        btn.disabled = true;
-        btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i><span>云端保存并校验中...</span>';
-
-        try {
-            const confirmed = await this.saveAndVerify(newRecords);
-            this.records = confirmed;
-            this.renderRecords();
-            showToast("云端已成功保存并完成验证！", "success");
-        } catch (error) {
-            showToast(`保存失败: ${error.message}`, "error");
-        } finally {
-            btn.disabled = false;
-            btn.innerHTML = originHtml;
-        }
-    },
-
-    async handleDeleteRecord(index) {
-        if (this.isLoading) {
-            return showToast("云端数据正在加载中，请稍候再试", "error");
-        }
-        if (!this.records[index]) return;
-        const newRecords = [...this.records];
-        openConfirmModal(async () => {
-            newRecords.splice(index, 1);
-            showToast("正在删除并同步云端...", "info");
-            try {
-                const confirmed = await this.saveAndVerify(newRecords);
-                this.records = confirmed;
-                this.renderRecords();
-                showToast('云端记录已删除', 'success');
-            } catch (error) {
-                showToast(`删除失败: ${error.message}`, 'error');
-            }
-        }, '这条记录会从 Gist 中删除，删除后无法恢复。');
-    },
-
-    async handleEditSave(index, newTime, newRemark) {
-        if (this.isLoading) {
-            return showToast("云端数据正在加载中，请稍候再试", "error");
-        }
-        if (!newTime) return showToast('时间不能为空', 'error');
-
-        const btn = document.getElementById('save-edit-btn');
-        const originText = btn.textContent;
-        btn.disabled = true;
-        btn.innerHTML = '<i class="fa fa-spinner fa-spin mr-1"></i>保存校验中...';
-
-        const newRecords = [...this.records];
-        newRecords[index] = { time: newTime, remark: newRemark };
-
-        try {
-            const confirmed = await this.saveAndVerify(newRecords);
-            this.records = confirmed;
-            this.renderRecords();
-            closeEditModal();
-            showToast('云端记录已更新并验证成功！', 'success');
-        } catch (error) {
-            showToast(`修改失败: ${error.message}`, 'error');
-        } finally {
-            btn.disabled = false;
-            btn.textContent = originText;
-        }
-    },
-
-    async importFromCsv(csvContent) {
-        if (this.isLoading) {
-            return showToast("云端数据正在加载中，请稍候再试", "error");
-        }
-        showToast('正在解析合并并同步云端...', 'info');
-        try {
-            const fileRecords = parseRecordCsv(csvContent);
-
-            const map = new Map(this.records.map(r => [r.time, r]));
-            const originSize = map.size;
-            fileRecords.forEach(r => map.set(r.time, r));
-            const newRecords = Array.from(map.values());
-            const added = newRecords.length - originSize;
-
-            if (added > 0) {
-                const confirmed = await this.saveAndVerify(newRecords);
-                this.records = confirmed;
-                this.renderRecords();
-                showToast(`导入成功！新增并同步 ${added} 条数据`, 'success');
-            } else {
-                showToast('云端数据已是最新', 'info');
-            }
-        } catch (error) {
-            showToast(`导入失败: ${error.message}`, 'error');
-        }
-    },
-
-    exportToCsv() {
-        if (this.isLoading) {
-            return showToast("云端数据正在加载中，请稍候再试", "error");
-        }
-        if (this.records.length === 0) return showToast('暂无记录可导出', 'error');
-        let csv = "序号,时间,备注\n";
-        const sorted = [...this.records].sort((a, b) => (parseRecordDate(b.time)?.getTime() || 0) - (parseRecordDate(a.time)?.getTime() || 0));
-        sorted.forEach((r, idx) => {
-            const remarkText = r.remark ? `"${r.remark.replace(/"/g, '""')}"` : '""';
-            csv += `${sorted.length - idx},"${r.time}",${remarkText}\n`;
-        });
-        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.setAttribute('download', `时间记录_云端_${new Date().toISOString().slice(0,10)}.csv`);
-        link.click();
-        setTimeout(() => URL.revokeObjectURL(link.href), 0);
-    },
+    handleDeleteRecord(index) { confirmDeletion('gist', index); },
 
     renderRecords() {
         return renderSharedRecords('gist', this);
@@ -742,6 +572,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    window.addEventListener('storage', event => {
+        if (event.key === 'timeRecords' || event.key === null) localApp.loadRecordsFromLocal();
+        refreshTimers();
+    });
+    window.addEventListener('timer:preferences-changed', () => refreshTimers());
+
     const pageParams = new URLSearchParams(window.location.search);
     if (pageParams.get('tab') === 'gist') {
         tabGist.click();
@@ -749,17 +585,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (pageParams.get('config') === '1') openGistConfig();
     }
 
-    document.getElementById('record-form').addEventListener('submit', (e) => {
-        e.preventDefault();
-        const version = document.getElementById('record-version').value;
-        const remark = document.getElementById('record-remark').value.trim();
-        if (version === 'local') {
-            if (localApp.handleAddRecord(remark)) closeRecordModal();
-        } else {
-            closeRecordModal();
-            gistApp.handleAddRecord(remark);
-        }
-    });
+    document.getElementById('record-form').addEventListener('submit', submitDraft);
 
     ['cancel-record-btn', 'cancel-record-btn-secondary'].forEach(id => {
         document.getElementById(id).addEventListener('click', closeRecordModal);
@@ -778,16 +604,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (e.target === e.currentTarget) closeConfirmModal();
     });
 
-    document.getElementById('edit-form').addEventListener('submit', (e) => {
-        e.preventDefault();
-        const ver = document.getElementById('edit-version').value;
-        const idx = parseInt(document.getElementById('edit-index').value, 10);
-        const time = document.getElementById('edit-time').value.trim();
-        const remark = document.getElementById('edit-remark').value.trim();
-
-        if (ver === 'local') localApp.handleEditSave(idx, time, remark);
-        else gistApp.handleEditSave(idx, time, remark);
-    });
+    document.getElementById('edit-form').addEventListener('submit', submitEdit);
 
     document.getElementById('cancel-edit-btn').addEventListener('click', closeEditModal);
     document.getElementById('close-edit-btn').addEventListener('click', closeEditModal);
@@ -802,20 +619,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const file = e.target.files[0];
         if (!file) return;
 
-        const reader = new FileReader();
-        reader.onload = function(evt) {
-            const activeTab = document.querySelector('.tab-btn.active').id;
-            if (activeTab === 'tab-local') {
-                localApp.importFromCsv(evt.target.result);
-            } else {
-                if (!gistApp.isInitialized) {
-                    gistApp.init();
-                    gistApp.isInitialized = true;
-                }
-                gistApp.importFromCsv(evt.target.result);
-            }
-        };
-        reader.readAsText(file);
-        e.target.value = null;
+        const version = document.querySelector('.tab-btn.active').id === 'tab-local' ? 'local' : 'gist';
+        const connection = appFor(version).config;
+        file.text().then(content => importCsv(version, content, connection)).catch(error => showToast(error.message, 'error'));
+        e.target.value = '';
+
     });
 });

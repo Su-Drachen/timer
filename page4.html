@@ -25,6 +25,8 @@
         }
     </script>
     <style>
+        .duration-empty-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 14px; }
+        .duration-empty-actions a { display: inline-flex; align-items: center; min-height: 44px; background: var(--nb-accent-soft); color: var(--nb-accent); font-weight: 600; }
         body {
             -webkit-tap-highlight-color: transparent;
         }
@@ -51,6 +53,8 @@
     <link rel="stylesheet" href="assets/css/page-data.css">
     <script src="assets/js/notebook-theme.js"></script>
     <script src="assets/js/app-config.js"></script>
+    <script src="assets/js/record-entries.js"></script>
+    <script src="assets/js/record-durations.js"></script>
     <link rel="stylesheet" href="assets/css/mobile-ui.css">
     <script src="assets/js/mobile-ui.js" defer></script>
 </head>
@@ -68,7 +72,7 @@
                 </h1>
             </div>
             <div class="flex items-center gap-1.5 sm:gap-2">
-                <button onclick="fetchRecordsAndProcess()" id="refresh-btn" class="bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors flex items-center text-xs sm:text-sm font-semibold py-1.5 px-2.5 sm:px-3 rounded-lg" title="从云端获取最新实时数据">
+                <button onclick="fetchRecordsAndProcess()" id="refresh-btn" class="bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors flex items-center text-xs sm:text-sm font-semibold py-1.5 px-2.5 sm:px-3 rounded-lg" title="刷新时长记录">
                     <i class="fa fa-refresh mr-1"></i>
                     <span>刷新</span>
                 </button>
@@ -85,7 +89,7 @@
             <div>
                 <p class="nb-kicker">时间笔记 / INSIGHTS</p>
                 <h2 id="page-heading">读懂自己的时间节奏。</h2>
-                <p>连接本地与云端记录，从时长、趋势与明细中回看日常。</p>
+                <p>回看每次实际计时，以及由本机和云端时间点推算的间隔。</p>
             </div>
         </section>
         <nav class="nb-nav" aria-label="功能导航">
@@ -129,27 +133,14 @@
         let chartInstance = null;
         let generatedPromptText = "";
 
-        // --- 进阶鉴权检查 ---
-        function loadConfig() {
-            config = window.TimerConfig.read();
-            if (window.TimerConfig.isGistId(config.GIST_ID) && config.GITHUB_PAT) {
-                return true;
-            } else {
-                const container = document.getElementById('health-app-container');
-                container.innerHTML = `
-                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 text-center py-10 px-4">
-                        <i class="fa fa-lock text-3xl sm:text-4xl text-warning mb-3"></i>
-                        <h3 class="text-base sm:text-lg font-bold text-slate-800">连接云端记录后查看时长</h3>
-                        <p class="text-slate-500 my-2 text-xs sm:text-sm max-w-sm mx-auto leading-relaxed">
-                            该分析需要依赖「云端同步数据」与「本地打卡数据」进行时序闭环匹配。
-                        </p>
-                        <a href="pagemain.html#personal/cloud?return=page4.html" class="mt-4 inline-block bg-primary-500 text-white text-xs sm:text-sm py-2.5 px-6 rounded-xl hover:bg-primary-600 transition-colors font-semibold shadow-md">
-                            配置云端记录
-                        </a>
-                    </div>
-                `;
-                return false;
-            }
+        function escapeText(value) {
+            const text = document.createElement('span');
+            text.textContent = String(value ?? '');
+            return text.innerHTML;
+        }
+
+        function hasCloud() {
+            return window.TimerConfig.isGistId(config.GIST_ID) && !!config.GITHUB_PAT;
         }
 
         // --- Toast 提示函数 ---
@@ -213,27 +204,20 @@
                 refreshBtn.innerHTML = '<i class="fa fa-spinner fa-spin mr-1"></i><span>同步中</span>';
             }
 
-            const savedLocal = localStorage.getItem('timeRecords');
-            localRecords = savedLocal ? JSON.parse(savedLocal) : [];
-
             try {
-                const realTimeGistData = await fetchDirectFromGitHubApi();
-                gistRecords = Array.isArray(realTimeGistData) ? realTimeGistData : [];
-
-                matchRecordsReadOnly();
+                config = window.TimerConfig.read();
+                localRecords = JSON.parse(localStorage.getItem('timeRecords') || '[]');
+                gistRecords = [];
+                let cloudFailed = false;
+                if (hasCloud()) {
+                    try { gistRecords = await fetchDirectFromGitHubApi(); }
+                    catch (_) { cloudFailed = true; }
+                }
+                allMatchedPairs = RecordDurations.collect(localRecords, gistRecords);
                 renderHealthDashboard();
-                showToast("已同步最新实时数据！", "success");
-            } catch (error) {
-                console.error("实时同步失败:", error);
-                showToast(`同步失败: ${error.message}`, "error");
-                document.getElementById('health-app-container').innerHTML = `
-                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 text-center py-10 px-4 text-rose-600">
-                        <i class="fa fa-exclamation-triangle text-3xl mb-3"></i>
-                        <h3 class="text-base font-bold text-slate-800">无法拉取云端实时数据</h3>
-                        <p class="my-2 text-slate-500 text-xs">${error.message}</p>
-                        <button onclick="fetchRecordsAndProcess()" class="mt-3 px-4 py-2 bg-slate-800 text-white rounded-xl text-xs font-medium">重试连接</button>
-                    </div>
-                `;
+                if (cloudFailed) showToast('云端读取失败，当前仅显示本机计时。可点刷新重试。', 'warning');
+            } catch (_) {
+                document.getElementById('health-app-container').textContent = '记录读取失败，请重试。';
             } finally {
                 if (refreshBtn) {
                     refreshBtn.disabled = false;
@@ -242,84 +226,8 @@
             }
         }
 
-        // --- 双向只读时间轴匹配 (过滤 <1分钟 间隔，<=12小时) ---
-        function matchRecordsReadOnly() {
-            allMatchedPairs = [];
-            if (!localRecords.length || !gistRecords.length) return;
-
-            const unifiedEvents = [];
-
-            localRecords.forEach((r) => {
-                const ts = new Date(r.time.replace(/\//g, '-')).getTime();
-                if (!isNaN(ts)) {
-                    unifiedEvents.push({
-                        type: 'local',
-                        time: r.time,
-                        remark: r.remark || '',
-                        timestamp: ts,
-                        used: false
-                    });
-                }
-            });
-
-            gistRecords.forEach((r) => {
-                const ts = new Date(r.time.replace(/\//g, '-')).getTime();
-                if (!isNaN(ts)) {
-                    unifiedEvents.push({
-                        type: 'gist',
-                        time: r.time,
-                        remark: r.remark || '',
-                        timestamp: ts,
-                        used: false
-                    });
-                }
-            });
-
-            unifiedEvents.sort((a, b) => a.timestamp - b.timestamp);
-            const MIN_INTERVAL_MS = 60 * 1000;
-            const MAX_INTERVAL_MS = 12 * 60 * 60 * 1000;
-
-            for (let i = 0; i < unifiedEvents.length; i++) {
-                const current = unifiedEvents[i];
-                if (current.used) continue;
-
-                for (let j = i + 1; j < unifiedEvents.length; j++) {
-                    const target = unifiedEvents[j];
-                    if (!target.used && target.type !== current.type) {
-                        const diffMs = target.timestamp - current.timestamp;
-
-                        if (diffMs >= MIN_INTERVAL_MS && diffMs <= MAX_INTERVAL_MS) {
-                            current.used = true;
-                            target.used = true;
-
-                            const diffMinutes = Math.round(diffMs / (1000 * 60));
-                            const isCrossDay = new Date(current.timestamp).getDate() !== new Date(target.timestamp).getDate();
-                            const direction = current.type === 'local' ? 'local_to_gist' : 'gist_to_local';
-
-                            allMatchedPairs.push({
-                                start: { time: current.time, remark: current.remark },
-                                end: { time: target.time, remark: target.remark },
-                                direction: direction,
-                                startTimestamp: current.timestamp,
-                                endTimestamp: target.timestamp,
-                                durationMinutes: diffMinutes,
-                                isCrossDay: isCrossDay
-                            });
-                            break;
-                        }
-                    }
-                }
-            }
-
-            allMatchedPairs.sort((a, b) => b.startTimestamp - a.startTimestamp);
-        }
-
-        // --- 格式化时长显示 ---
         function formatMinutes(minutes) {
-            if (minutes < 60) return `${minutes} 分钟`;
-            const h = Math.floor(minutes / 60);
-            const m = minutes % 60;
-            return m === 0 ? `${h} 小时` : `${h}h ${m}m`;
+            return RecordDurations.formatSeconds(minutes * 60);
         }
 
         // --- 根据 Filter 过滤配对列表 ---
@@ -372,28 +280,28 @@
             const latest = allMatchedPairs[0];
             const recent10 = allMatchedPairs.slice(0, 10);
             const recentDurations = recent10.map(p => p.durationMinutes);
-            const avgRecent = Math.round(recentDurations.reduce((a, b) => a + b, 0) / recentDurations.length);
+            const avgRecent = recentDurations.reduce((a, b) => a + b, 0) / recentDurations.length;
             const maxRecent = Math.max(...recentDurations);
             const minRecent = Math.min(...recentDurations);
 
             let recentListText = recent10.map((p, idx) => {
                 const remarkPart = (p.start.remark || p.end.remark) ? ` (备注: ${p.start.remark || p.end.remark})` : '';
-                return `${idx + 1}. [${p.start.time} 至 ${p.end.time}] 单次历时: ${p.durationMinutes}分钟${p.isCrossDay ? ' (跨天/深夜)' : ''}${remarkPart}`;
+                return `${idx + 1}. [${p.start.time} 至 ${p.end.time}] ${RecordDurations.label(p)}，历时 ${formatMinutes(p.durationMinutes)}${p.isCrossDay ? ' (跨日)' : ''}${remarkPart}`;
             }).join('\n');
 
-            return `你是一名专业、温和且具有循证医学背景的性健康与生活方式顾问。我记录了自己近期的自慰（手淫）行为时间数据（已通过计时工具准确记录了单次起始与结束时间）。请根据我的客观记录数据，为我提供一份科学、客观、无道德评判的健康分析与建议。
+            return `你是一名专业、温和且具有循证医学背景的性健康与生活方式顾问。我记录了自己近期的自慰（手淫）行为时间数据。明细中标有实际计时或配对估算，请在分析中区分两种来源。请根据我的客观记录数据，为我提供一份科学、客观、无道德评判的健康分析与建议。
 
 【最新 1 次行为数据】
 - 开始时间：${latest.start.time}
 - 结束时间：${latest.end.time}
-- 单次持续时长：${latest.durationMinutes} 分钟 (${formatMinutes(latest.durationMinutes)})
-- 是否跨午夜/深夜：${latest.isCrossDay ? '是 (涉及夜间/跨日)' : '否'}
+- 单次持续时长：${formatMinutes(latest.durationMinutes)}（${RecordDurations.label(latest)}）
+- 是否跨日：${latest.isCrossDay ? '是' : '否'}
 - 记录备注：${latest.start.remark || latest.end.remark || '无'}
 
 【近期行为历史概况 (近 ${recent10.length} 次记录)】
-- 样本平均单次时长：${avgRecent} 分钟
-- 样本单次最长时间：${maxRecent} 分钟
-- 样本单次最短时间：${minRecent} 分钟
+- 样本平均单次时长：${formatMinutes(avgRecent)}
+- 样本单次最长时间：${formatMinutes(maxRecent)}
+- 样本单次最短时间：${formatMinutes(minRecent)}
 - 近期明细清单：
 ${recentListText}
 
@@ -453,10 +361,14 @@ ${recentListText}
                 container.innerHTML = `
                     <div class="bg-white rounded-2xl shadow-sm border border-slate-200 text-center py-12 px-4">
                         <i class="fa fa-hourglass-o text-3xl text-slate-300 mb-3"></i>
-                        <h3 class="text-base font-bold text-slate-700">暂无有效的使用间隔</h3>
+                        <h3 class="text-base font-bold text-slate-700">暂无时长记录</h3>
                         <p class="text-slate-400 my-1 max-w-sm mx-auto text-xs leading-relaxed">
-                            未能匹配到 1分钟~12小时 以内的「本地与云端」行为闭环（小于1分钟间隔已自动剔除）。
+                            开启计时可记录每次时长。连接云端后，也可用本机和云端的历史时间点估算时长。
                         </p>
+                        <div class="duration-empty-actions">
+                            <a href="pagemain.html#personal/recording?return=page4.html">开启计时</a>
+                            <a href="pagemain.html#personal/cloud?return=page4.html">连接云端记录</a>
+                        </div>
                     </div>
                 `;
                 return;
@@ -468,7 +380,7 @@ ${recentListText}
             const count = durations.length;
             const minVal = count ? Math.min(...durations) : 0;
             const maxVal = count ? Math.max(...durations) : 0;
-            const avgVal = count ? Math.round(durations.reduce((a, b) => a + b, 0) / count) : 0;
+            const avgVal = count ? durations.reduce((a, b) => a + b, 0) / count : 0;
             const modeRange = calculateModeRange(durations);
 
             generatedPromptText = generateAIPrompt();
@@ -478,11 +390,11 @@ ${recentListText}
                 <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 sm:p-5 space-y-3">
                     <div class="flex items-center justify-between">
                         <div>
-                            <h2 class="text-sm sm:text-base font-bold text-slate-800">行为间隔趋势</h2>
-                            <p class="text-[11px] sm:text-xs text-slate-400">已自动剔除小于 1 分钟的短记录</p>
+                            <h2 class="text-sm sm:text-base font-bold text-slate-800">记录时长趋势</h2>
+                            <p class="text-[11px] sm:text-xs text-slate-400">直接计时保留到秒，历史配对估算范围为 1 分钟至 12 小时。</p>
                         </div>
                         <span class="text-xs px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-600 font-bold">
-                            有效配对 ${allMatchedPairs.length} 次
+                            共 ${allMatchedPairs.length} 条
                         </span>
                     </div>
 
@@ -512,7 +424,7 @@ ${recentListText}
                     <div class="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200 shadow-sm">
                         <span class="text-[11px] sm:text-xs text-slate-400 font-medium block">单次最短历时</span>
                         <span class="text-base sm:text-xl font-extrabold text-emerald-600 mt-1 block">${count ? formatMinutes(minVal) : '--'}</span>
-                        <span class="text-[10px] text-slate-400 mt-0.5 block">最快闭环</span>
+                        <span class="text-[10px] text-slate-400 mt-0.5 block">最短记录</span>
                     </div>
                     <div class="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200 shadow-sm">
                         <span class="text-[11px] sm:text-xs text-slate-400 font-medium block">高频主力区间</span>
@@ -552,7 +464,7 @@ ${recentListText}
 
                     <!-- 提示词预览框 -->
                     <div class="relative">
-                        <pre class="bg-slate-900 text-slate-200 text-[11px] sm:text-xs rounded-xl p-3 sm:p-4 overflow-x-auto whitespace-pre-wrap font-sans leading-relaxed max-h-52 sm:max-h-60 border border-slate-800 select-all">${generatedPromptText}</pre>
+                        <pre class="bg-slate-900 text-slate-200 text-[11px] sm:text-xs rounded-xl p-3 sm:p-4 overflow-x-auto whitespace-pre-wrap font-sans leading-relaxed max-h-52 sm:max-h-60 border border-slate-800 select-all">${escapeText(generatedPromptText)}</pre>
                     </div>
 
                     <p class="text-[11px] text-slate-400 flex items-center gap-1.5 pt-0.5">
@@ -564,7 +476,7 @@ ${recentListText}
                 <!-- 配对流水列表 (手机卡片 / 电脑表格 自适应) -->
                 <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
                     <div class="p-4 border-b border-slate-100 flex justify-between items-center">
-                        <h3 class="text-xs sm:text-sm font-bold text-slate-800">配对记录明细</h3>
+                        <h3 class="text-xs sm:text-sm font-bold text-slate-800">时长明细</h3>
                         <span class="text-[11px] text-slate-400">按时间倒序</span>
                     </div>
 
@@ -575,11 +487,8 @@ ${recentListText}
                                 <div class="flex items-center justify-between">
                                     <div class="flex items-center gap-1.5">
                                         <span class="w-5 h-5 rounded-full bg-slate-100 text-slate-500 text-[10px] font-mono flex items-center justify-center">${idx + 1}</span>
-                                        ${pair.direction === 'local_to_gist'
-                                            ? '<span class="px-2 py-0.5 rounded text-[10px] bg-blue-50 text-blue-600 font-medium">本地 ➔ 云端</span>'
-                                            : '<span class="px-2 py-0.5 rounded text-[10px] bg-purple-50 text-purple-600 font-medium">云端 ➔ 本地</span>'
-                                        }
-                                        ${pair.isCrossDay ? '<span class="px-1.5 py-0.5 rounded text-[9px] bg-indigo-50 text-indigo-600 font-bold">隔天/深夜</span>' : ''}
+                                        <span class="text-xs font-semibold">${RecordDurations.label(pair)}</span>
+                                        ${pair.isCrossDay ? '<span class="px-1.5 py-0.5 rounded text-[9px] bg-indigo-50 text-indigo-600 font-bold">跨日</span>' : ''}
                                     </div>
                                     <span class="px-2 py-0.5 rounded-full text-xs font-bold ${pair.durationMinutes > 180 ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-700'}">
                                         ${formatMinutes(pair.durationMinutes)}
@@ -587,14 +496,14 @@ ${recentListText}
                                 </div>
                                 <div class="grid grid-cols-2 gap-2 text-xs pt-1">
                                     <div class="bg-slate-50 p-2 rounded-xl">
-                                        <span class="text-[10px] text-slate-400 block">开始 (${pair.direction === 'local_to_gist' ? '本地' : '云端'})</span>
-                                        <p class="font-mono text-[11px] font-semibold mt-0.5">${pair.start.time.slice(5)}</p>
-                                        <p class="text-[10px] text-slate-500 truncate">${pair.start.remark || '无备注'}</p>
+                                        <span class="text-[10px] text-slate-400 block">开始 (${pair.start.source})</span>
+                                        <p class="font-mono text-[11px] font-semibold mt-0.5">${escapeText(pair.start.time.slice(5))}</p>
+                                        <p class="text-[10px] text-slate-500 truncate">${escapeText(pair.start.remark || '无备注')}</p>
                                     </div>
                                     <div class="bg-slate-50 p-2 rounded-xl">
-                                        <span class="text-[10px] text-slate-400 block">结束 (${pair.direction === 'local_to_gist' ? '云端' : '本地'})</span>
-                                        <p class="font-mono text-[11px] font-semibold mt-0.5">${pair.end.time.slice(5)}</p>
-                                        <p class="text-[10px] text-slate-500 truncate">${pair.end.remark || '无备注'}</p>
+                                        <span class="text-[10px] text-slate-400 block">结束 (${pair.end.source})</span>
+                                        <p class="font-mono text-[11px] font-semibold mt-0.5">${escapeText(pair.end.time.slice(5))}</p>
+                                        <p class="text-[10px] text-slate-500 truncate">${escapeText(pair.end.remark || '无备注')}</p>
                                     </div>
                                 </div>
                             </div>
@@ -607,7 +516,7 @@ ${recentListText}
                             <thead class="bg-slate-50 text-slate-500 uppercase text-[11px]">
                                 <tr>
                                     <th class="p-3.5 w-12 text-center">#</th>
-                                    <th class="p-3.5">时序流向</th>
+                                    <th class="p-3.5">时长来源</th>
                                     <th class="p-3.5">开始打卡</th>
                                     <th class="p-3.5">结束打卡</th>
                                     <th class="p-3.5 text-center">历时间隔</th>
@@ -619,18 +528,15 @@ ${recentListText}
                                     <tr class="hover:bg-slate-50/80 transition-colors">
                                         <td class="p-3.5 text-center text-slate-400 font-mono text-xs">${idx + 1}</td>
                                         <td class="p-3.5">
-                                            ${pair.direction === 'local_to_gist'
-                                                ? '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] bg-blue-50 text-blue-600 font-medium">本地 <i class="fa fa-arrow-right text-[9px]"></i> 云端</span>'
-                                                : '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] bg-purple-50 text-purple-600 font-medium">云端 <i class="fa fa-arrow-right text-[9px]"></i> 本地</span>'
-                                            }
+                                            <span class="text-xs font-semibold">${RecordDurations.label(pair)}</span>
                                         </td>
                                         <td class="p-3.5">
-                                            <div class="font-mono font-medium">${pair.start.time}</div>
-                                            <div class="text-[11px] text-slate-400 truncate max-w-[140px]">${pair.start.remark || '无备注'}</div>
+                                            <div class="font-mono font-medium">${escapeText(pair.start.time)}</div>
+                                            <div class="text-[11px] text-slate-400 truncate max-w-[140px]">${escapeText(pair.start.remark || '无备注')}</div>
                                         </td>
                                         <td class="p-3.5">
-                                            <div class="font-mono font-medium text-slate-900">${pair.end.time}</div>
-                                            <div class="text-[11px] text-slate-400 truncate max-w-[140px]">${pair.end.remark || '无备注'}</div>
+                                            <div class="font-mono font-medium text-slate-900">${escapeText(pair.end.time)}</div>
+                                            <div class="text-[11px] text-slate-400 truncate max-w-[140px]">${escapeText(pair.end.remark || '无备注')}</div>
                                         </td>
                                         <td class="p-3.5 text-center">
                                             <span class="px-2.5 py-1 rounded-full text-xs font-bold ${pair.durationMinutes > 180 ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-700'}">
@@ -725,9 +631,7 @@ ${recentListText}
 
         // --- 启动初始化 ---
         document.addEventListener('DOMContentLoaded', () => {
-            if (loadConfig()) {
-                fetchRecordsAndProcess();
-            }
+            fetchRecordsAndProcess();
         });
     </script>
 </body>

@@ -1,0 +1,118 @@
+.settings-list {
+    overflow: hidden;
+    border: 1px solid var(--nb-line);
+    border-radius: 18px;
+    background: var(--nb-surface);
+}
+.settings-list .settings-row {
+    position: relative;
+    margin: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+}
+.settings-list .settings-row + .settings-row::before {
+    content: '';
+    position: absolute;
+    inset: 0 20px auto 80px;
+    border-top: 1px solid var(--nb-line);
+}
+.settings-list .settings-row:hover, .tool-card:hover { background: var(--nb-soft); }
+.settings-list .settings-row:focus-visible, .tool-entry .tool-card:focus-visible { outline-offset: -3px; }
+.settings-guide {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+    padding-inline: 6px;
+    color: var(--nb-muted);
+    font-size: 14px;
+}
+.settings-form .preference-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    min-height: 48px;
+    cursor: pointer;
+}
+.preference-toggle small {
+    display: block;
+    margin-top: 4px;
+    color: var(--nb-muted);
+    font-size: 13px;
+    font-weight: 400;
+}
+.preference-toggle input {
+    appearance: none;
+    flex: none;
+    position: relative;
+    width: 44px;
+    height: 26px;
+    border: 1px solid var(--nb-muted);
+    border-radius: 13px;
+    background: var(--nb-soft);
+    cursor: pointer;
+}
+.preference-toggle input::before {
+    content: '';
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--nb-muted);
+}
+.preference-toggle input:checked {
+    background: var(--nb-accent);
+    border-color: var(--nb-accent);
+}
+.preference-toggle input:checked::before { left: 21px; background: var(--nb-surface); }
+.preference-words { min-width: 0; margin: 2px 0 0; padding: 0; border: 0; }
+.preference-words legend { font-weight: 600; }
+.preference-words p { margin: 3px 0 10px; }
+.preference-inputs { display: grid; gap: 8px; }
+.preference-examples { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.preference-examples button {
+    min-height: 44px;
+    padding-inline: 9px;
+    color: var(--nb-accent);
+    font-size: 13px;
+}
+.preference-examples button:disabled { color: var(--nb-muted); opacity: .6; }
+.tool-entry {
+    display: flex;
+    align-items: center;
+    overflow: hidden;
+    border: 1px solid var(--nb-line);
+    border-radius: 18px;
+    background: var(--nb-surface);
+}
+.tool-entry + .tool-entry { margin-top: 10px; }
+.tool-entry .tool-card {
+    flex: 1;
+    min-width: 0;
+    align-self: stretch;
+    border: 0;
+    border-radius: 0;
+}
+.tool-pin {
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    margin-right: 9px;
+    border-radius: 12px;
+    color: var(--nb-muted);
+}
+.tool-pin[aria-pressed="true"], .tool-pin:hover { background: var(--nb-accent-soft); color: var(--nb-accent); }
+.tool-pin[aria-pressed="false"] i { transform: rotate(35deg); }
+@media (max-width: 767px) {
+    .settings-list .settings-row + .settings-row::before { inset-inline: 70px 14px; }
+}
+@media (forced-colors: active) {
+    .preference-toggle input { appearance: auto; }
+    .preference-toggle input::before { content: none; }
+}

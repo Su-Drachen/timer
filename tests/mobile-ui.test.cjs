@@ -70,7 +70,8 @@ async function setup(file = 'pagemain.html', options = {}) {
     }
     if (url.hostname === 'gist.githubusercontent.com') return route.fulfill({ json: fixture.records });
     if (url.hostname === 'cdn.tailwindcss.com') {
-      const css = legacyCss.get(file);
+      const pageFile = new URL(req.frame().url()).pathname.split('/').pop();
+      const css = legacyCss.get(pageFile || file);
       if (!css) throw new Error('Missing legacy CSS fixture for ' + file);
       const script = 'window.tailwind={};const style=document.createElement("style");style.textContent=' + JSON.stringify(css) + ';document.currentScript.before(style);';
       return route.fulfill({ contentType: 'application/javascript', body: script });
@@ -163,6 +164,62 @@ async function screenshot(page, name) {
 }
 
 const tests = [
+  ['one-tap note and undo preserve a same-second entry; backfill stays on the chosen date', async () => {
+    const t = await setup();
+    try {
+      const page = t.page;
+      await page.clock.setFixedTime(new Date(2026, 10, 18, 23, 59, 50));
+      await page.reload({ waitUntil: 'networkidle' });
+      await page.locator('#local-record-btn').click();
+      await page.locator('#local-receipt [data-receipt="note"]').waitFor();
+      await page.locator('#local-record-btn').click();
+      await page.waitForFunction(() => JSON.parse(localStorage.timeRecords).length === 4);
+      const snapshot = await page.evaluate(() => JSON.parse(localStorage.timeRecords));
+      assert.equal(snapshot[0].time, snapshot[1].time);
+      assert.notEqual(snapshot[0].id, snapshot[1].id);
+      await page.locator('#local-receipt [data-receipt="undo"]').click();
+      await page.waitForFunction(() => JSON.parse(localStorage.timeRecords).length === 3);
+      assert.equal(await page.evaluate(() => JSON.parse(localStorage.timeRecords)[0].id), snapshot[1].id);
+      await page.evaluate(() => TimerPreferences.save({ tags: ['睡前'] }));
+      await page.locator('#local-calendar [data-day="2026-11-17"]').click();
+      await page.locator('#local-backfill').click();
+      assert.equal(await page.locator('#record-date').inputValue(), '2026-11-17');
+      await page.locator('#record-clock-input').fill('22:08:00');
+      await page.locator('#record-tags').getByRole('button', { name: '睡前' }).click();
+      await page.locator('#save-record-btn').click();
+      await page.locator('#record-modal-overlay').waitFor({ state: 'hidden' });
+      assert.ok(await page.evaluate(() => JSON.parse(localStorage.timeRecords).some(row => row.time === '2026/11/17 22:08:00' && row.remark.includes('睡前'))));
+      await page.evaluate(() => TimerPreferences.save({ quickRecord: false }));
+      await page.locator('#local-record-btn').click();
+      await page.clock.setFixedTime(new Date(2026, 10, 19, 0, 3));
+      await page.locator('#record-remark').fill('跨日草稿');
+      await page.locator('#save-record-btn').click();
+      await page.locator('#record-modal-overlay').waitFor({ state: 'hidden' });
+      assert.equal(await page.evaluate(() => JSON.parse(localStorage.timeRecords).find(row => row.remark === '跨日草稿').time), '2026/11/18 23:59:50');
+      assert.deepEqual(t.errors, []);
+    } finally { await t.close(); }
+  }],
+  ['a timer survives a reload and a date change, then appears with exact seconds in the duration tool', async () => {
+    const t = await setup();
+    try {
+      const page = t.page;
+      await page.clock.setFixedTime(new Date(2026, 10, 18, 23, 59, 50));
+      await page.evaluate(() => TimerPreferences.save({ timerEnabled: true }));
+      await page.locator('#local-timer-btn').click();
+      await page.waitForFunction(() => document.getElementById('local-timer-btn').textContent.includes('结束计时'));
+      await page.locator('#home-show-tools').click();
+      await page.reload();
+      await page.clock.setFixedTime(new Date(2026, 10, 19, 0, 0, 15));
+      await page.locator('#home-show-records').click();
+      await page.locator('#local-timer-btn').click();
+      await page.waitForFunction(() => JSON.parse(localStorage.timeRecords).some(row => row.durationSeconds === 25));
+      await page.locator('#home-show-tools').click();
+      await page.locator('#tool-directory a[href="page4.html"]').click();
+      await page.getByText('本机计时', { exact: true }).first().waitFor();
+      assert.ok((await page.locator('#health-app-container').innerText()).includes('25 秒'));
+      assert.deepEqual(t.errors, []);
+    } finally { await t.close(); }
+  }],
   ['all main-project pages fit 320/390 px; common touch controls are at least 44 px', async () => {
     const controls = {
       'pagemain.html': '#local-record-btn,#local-import-btn,#local-download-btn,#local-records-container .icon-btn,#mobile-home-nav button',
@@ -225,6 +282,7 @@ const tests = [
   ['homepage record and edit dialogs stay usable above a simulated keyboard and restore focus', async () => {
     const t = await setup();
     try {
+      await t.page.evaluate(() => TimerPreferences.save({ quickRecord: false }));
       await t.page.locator('#local-record-btn').click();
       await t.page.locator('#record-remark').fill('键盘测试备注');
       assert.ok(await t.page.locator('#record-remark').evaluate(el => parseFloat(getComputedStyle(el).fontSize) >= 16));
@@ -238,7 +296,7 @@ const tests = [
       await screenshot(t.page, 'mobile-record-keyboard.png');
       await keyboardReset(t.page);
       await t.page.locator('#save-record-btn').click();
-      assert.equal(await t.page.locator('#record-modal-overlay').isVisible(), false);
+      await t.page.locator('#record-modal-overlay').waitFor({ state: 'hidden' });
       assert.equal(await t.page.locator('#mobile-home-nav').isVisible(), true);
       assert.equal(await t.page.evaluate(() => document.activeElement.id), 'local-record-btn');
       const item = t.page.locator('#local-records-container .record-item').filter({ hasText: '键盘测试备注' });
@@ -300,12 +358,14 @@ const tests = [
       });
       await t.page.locator('#tab-gist').click();
       await t.page.locator('.cloud-retry').waitFor();
+      await t.page.evaluate(() => TimerPreferences.save({ quickRecord: false }));
       await t.page.locator('#gist-record-btn').click();
       assert.equal(await t.page.locator('#record-modal-overlay').isVisible(), false);
       assert.equal(await t.page.evaluate(() => gistApp.saveAndVerify([]).then(() => true, () => false)), false);
       assert.ok(!t.requests.some(request => request.method === 'PATCH'));
       await t.page.locator('.cloud-retry').click();
       await t.page.waitForFunction(() => gistApp.canWrite && gistApp.records.length === 2);
+      await t.page.evaluate(() => TimerPreferences.save({ quickRecord: false }));
       await t.page.locator('#gist-record-btn').click();
       assert.equal(await t.page.locator('#record-modal-overlay').isVisible(), true);
       assert.deepEqual(t.errors, []);

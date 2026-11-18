@@ -234,11 +234,14 @@
     <link rel="stylesheet" href="assets/css/notebook.css">
     <script src="assets/js/notebook-theme.js"></script>
     <script src="assets/js/app-config.js"></script>
+    <script src="assets/js/preferences.js"></script>
     <link rel="stylesheet" href="assets/css/mobile-ui.css">
     <link rel="stylesheet" href="assets/css/home.css">
+    <link rel="stylesheet" href="assets/css/tools-profile.css">
     <link rel="stylesheet" href="assets/css/record-calendar.css">
     <script src="assets/js/mobile-ui.js" defer></script>
     <script src="assets/js/record-calendar.js"></script>
+    <script src="assets/js/record-entries.js"></script>
 </head>
 <body class="nb-page nb-home min-h-screen flex flex-col font-sans antialiased">
 
@@ -258,12 +261,17 @@
             </div>
             <form id="record-form" class="space-y-4">
                 <input type="hidden" id="record-version">
-                <div class="rounded-xl p-3" style="background-color: var(--table-header);">
+                <div id="record-backfill-fields" class="record-date-fields" hidden>
+                    <label>日期<input type="date" id="record-date"></label>
+                    <label>时间<input type="time" step="1" id="record-clock-input"></label>
+                </div>
+                <div id="record-frozen-time" class="rounded-xl p-3" style="background-color: var(--table-header);">
                     <p class="text-xs opacity-60">记录时间</p>
                     <p id="record-time-preview" class="font-mono font-semibold mt-1"></p>
                 </div>
                 <div>
-                    <label for="record-remark" class="block text-xs font-semibold uppercase tracking-wider mb-1 opacity-80">备注内容</label>
+                    <div id="record-tags" class="record-tags"></div>
+                    <label for="record-remark" class="block text-xs font-semibold uppercase tracking-wider mb-1 opacity-80">备注（可选）</label>
                     <textarea id="record-remark" rows="3" maxlength="240" placeholder="写下此刻在做什么（可选）" class="w-full px-3.5 py-2.5 rounded-xl border bg-transparent text-sm focus:outline-none" style="border-color: var(--border-color);"></textarea>
                 </div>
                 <div data-mobile-actions class="flex justify-end gap-3 pt-2">
@@ -300,10 +308,15 @@
                 <div>
                     <label for="edit-time" class="block text-xs font-semibold uppercase tracking-wider mb-1 opacity-80">记录时间</label>
                     <input type="text" id="edit-time" class="w-full px-3.5 py-2.5 rounded-xl border bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" style="border-color: var(--border-color);" required>
-                    <p class="text-xs opacity-50 mt-1">格式: YYYY/MM/DD HH:MM:SS</p>
+                    <p class="text-xs opacity-50 mt-1">年/月/日 时:分:秒</p>
+                </div>
+                <div id="edit-end-field" hidden>
+                    <label for="edit-end">结束时间</label>
+                    <input id="edit-end" type="text" class="w-full px-3.5 py-2.5 rounded-xl border text-sm bg-transparent">
                 </div>
                 <div>
-                    <label for="edit-remark" class="block text-xs font-semibold uppercase tracking-wider mb-1 opacity-80">备注内容</label>
+                    <div id="edit-tags" class="record-tags"></div>
+                    <label for="edit-remark" class="block text-xs font-semibold uppercase tracking-wider mb-1 opacity-80">备注</label>
                     <textarea id="edit-remark" rows="3" maxlength="240" class="w-full px-3.5 py-2.5 rounded-xl border bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" style="border-color: var(--border-color);"></textarea>
                 </div>
                 <div data-mobile-actions class="flex justify-end gap-3 pt-2">
@@ -323,6 +336,7 @@
     <header id="home-records-header" class="home-header">
         <div class="home-brand"><span class="nb-brand-icon"><i class="fa fa-clock-o" aria-hidden="true"></i></span><h1>时间笔记</h1></div>
         <div id="offline-status" class="offline-status" role="status" aria-live="polite">
+            <button id="offline-info" type="button" aria-label="离线已就绪，查看说明" aria-controls="offline-message" aria-expanded="false" hidden><i class="fa fa-check-circle-o" aria-hidden="true"></i></button>
             <span id="offline-message">正在准备离线使用…</span>
             <button id="offline-retry" type="button" hidden>重试准备</button>
         </div>
@@ -339,23 +353,18 @@
         <!-- 本地版内容 -->
         <div id="content-local" role="tabpanel" aria-labelledby="tab-local">
             <div class="app-stack max-w-3xl mx-auto">
-                <!-- 实时打卡卡片 -->
-                <div class="card-box hero-card rounded-2xl p-5 sm:p-7">
-                    <div class="record-clock-label">
-                        <h2>记录此刻</h2>
-                        <span class="record-location"><i class="fa fa-mobile" aria-hidden="true"></i> 保存到本机</span>
+                <div class="card-box hero-card entry-card">
+                    <div class="entry-top"><span>距上次记录</span><span class="record-location">本机保存</span></div>
+                    <div class="entry-now">
+                        <strong id="local-last-record">—</strong>
+                        <button id="local-record-btn" data-mobile-focus-fallback aria-label="记录当前时间" class="btn-theme-primary"><i class="fa fa-plus" aria-hidden="true"></i> 记现在</button>
                     </div>
-                    <p id="local-current-time" class="record-time font-mono" aria-label="当前时间">--:--:--</p>
-                    <p id="local-current-date" class="text-xs opacity-60 mb-6">--</p>
-                    <button id="local-record-btn" data-mobile-focus-fallback aria-label="记录当前时间" class="w-full sm:w-auto btn-theme-primary font-semibold py-3 px-8 rounded-xl shadow-md flex items-center justify-center gap-2">
-                        <i class="fa fa-plus-circle text-lg"></i>
-                        <span>记录这一刻</span>
-                    </button>
-                </div>
-                <div class="stat-grid" aria-label="本地记录概览">
-                    <div class="stat-item"><span class="text-xs opacity-60">今日记录</span><strong id="local-today-count">0</strong></div>
-                    <div class="stat-item"><span class="text-xs opacity-60">本周记录</span><strong id="local-week-count">0</strong></div>
-                    <div class="stat-item"><span class="text-xs opacity-60">距上次记录</span><strong id="local-last-record">—</strong></div>
+                    <div class="entry-summary"><span>今日 <b id="local-today-count">0</b> 条</span><span>本周 <b id="local-week-count">0</b> 条</span><time id="local-current-time"></time></div>
+                    <button type="button" id="local-timer-btn" class="entry-timer" hidden>开始计时</button>
+                    <button type="button" id="local-timer-cancel" class="entry-timer" hidden>取消计时</button>
+                    <div id="local-receipt" class="entry-receipt" hidden>
+                        <p role="status"></p><div><button type="button" data-receipt="note">补备注</button><button type="button" data-receipt="undo">撤销</button><button type="button" data-receipt="retry" hidden>重试</button></div>
+                    </div>
                 </div>
 
                 <!-- 记录列表卡片 -->
@@ -365,6 +374,7 @@
                         <div class="flex items-center gap-2">
                             <h2 id="local-list-title" class="font-bold text-base">全部记录</h2>
                             <span id="local-record-count-badge" class="px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-500/10 text-blue-500">0</span>
+                            <button type="button" id="local-backfill" class="entry-backfill" hidden>补记这天</button>
                         </div>
                         <div class="flex items-center gap-1.5">
                             <button id="local-import-btn" class="px-2.5 py-1.5 rounded-lg border text-xs font-medium hover:opacity-80 flex items-center gap-1" style="border-color: var(--border-color);">
@@ -422,23 +432,18 @@
         <!-- 云端同步版内容 -->
         <div id="content-gist" class="hidden" role="tabpanel" aria-labelledby="tab-gist">
             <div class="app-stack max-w-3xl mx-auto">
-                <!-- 实时打卡卡片 -->
-                <div class="card-box hero-card rounded-2xl p-5 sm:p-7">
-                    <div class="record-clock-label">
-                        <h2>记录此刻</h2>
-                        <span id="gist-sync-status" class="flex items-center gap-2 text-xs font-medium opacity-70"><span class="status-dot"></span>等待同步</span>
+                <div class="card-box hero-card entry-card">
+                    <div class="entry-top"><span>距上次记录</span><span id="gist-sync-status" class="record-location">等待同步</span></div>
+                    <div class="entry-now">
+                        <strong id="gist-last-record">—</strong>
+                        <button id="gist-record-btn" aria-label="记录当前时间到云端" class="btn-theme-primary"><i class="fa fa-plus" aria-hidden="true"></i> 记现在</button>
                     </div>
-                    <p id="gist-current-time" class="record-time font-mono" aria-label="当前时间">--:--:--</p>
-                    <p id="gist-current-date" class="text-xs opacity-60 mb-6">--</p>
-                    <button id="gist-record-btn" aria-label="记录当前时间并同步到云端" class="w-full sm:w-auto btn-theme-primary font-semibold py-3 px-8 rounded-xl shadow-md flex items-center justify-center gap-2">
-                        <i class="fa fa-cloud-upload text-lg"></i>
-                        <span>记录到云端</span>
-                    </button>
-                </div>
-                <div class="stat-grid" aria-label="云端记录概览">
-                    <div class="stat-item"><span class="text-xs opacity-60">今日记录</span><strong id="gist-today-count">0</strong></div>
-                    <div class="stat-item"><span class="text-xs opacity-60">本周记录</span><strong id="gist-week-count">0</strong></div>
-                    <div class="stat-item"><span class="text-xs opacity-60">距上次记录</span><strong id="gist-last-record">—</strong></div>
+                    <div class="entry-summary"><span>今日 <b id="gist-today-count">0</b> 条</span><span>本周 <b id="gist-week-count">0</b> 条</span><time id="gist-current-time"></time></div>
+                    <button type="button" id="gist-timer-btn" class="entry-timer" hidden>开始计时</button>
+                    <button type="button" id="gist-timer-cancel" class="entry-timer" hidden>取消计时</button>
+                    <div id="gist-receipt" class="entry-receipt" hidden>
+                        <p role="status"></p><div><button type="button" data-receipt="note">补备注</button><button type="button" data-receipt="undo">撤销</button><button type="button" data-receipt="retry" hidden>重试</button></div>
+                    </div>
                 </div>
 
                 <!-- 记录列表卡片 -->
@@ -448,6 +453,7 @@
                         <div class="flex items-center gap-2">
                             <h2 id="gist-list-title" class="font-bold text-base">全部记录</h2>
                             <span id="gist-record-count-badge" class="px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-500/10 text-blue-500">0</span>
+                            <button type="button" id="gist-backfill" class="entry-backfill" hidden>补记这天</button>
                         </div>
                         <div class="flex items-center gap-1.5">
                             <button id="gist-import-btn" class="px-2.5 py-1.5 rounded-lg border text-xs font-medium hover:opacity-80 flex items-center gap-1" style="border-color: var(--border-color);">
@@ -527,6 +533,7 @@
     </nav>
 
 <script src="assets/js/records.js"></script>
+<script src="assets/js/record-actions.js"></script>
 <script src="assets/js/feedback-core.js"></script>
 <script src="assets/js/feedback-ui.js"></script>
 <script src="assets/js/profile.js"></script>

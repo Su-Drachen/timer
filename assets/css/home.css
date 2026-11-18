@@ -19,6 +19,10 @@
 .home-brand .nb-brand-icon { display: grid; place-items: center; font-size: 21px; border-radius: 50%; }
 .home-header .offline-status { padding: 6px 10px; margin: 0; border: none; border-radius: 15px; background: var(--nb-soft); }
 .home-header #offline-status[data-state="ready"] { color: var(--nb-accent); background: var(--nb-accent-soft); }
+.home-header #offline-status:has(#offline-info:not([hidden])) { padding: 0; }
+.home-header #offline-info { display: grid; place-items: center; min-width: 44px; min-height: 44px; padding: 0; border: 0; background: transparent; color: var(--nb-accent); font-size: 19px; }
+.home-header #offline-status:has(#offline-info[aria-expanded="false"]:not([hidden])) { background: transparent; }
+.home-header #offline-info[aria-expanded="true"] + span { padding: 5px 10px 5px 0; }
 .nb-home .nb-main { padding: 20px 32px 32px; }
 .home-heading, .profile-header h1, .settings-detail h1 { color: var(--nb-ink); font-size: 26px; font-weight: 700; }
 .home-heading { margin: 8px 0 24px; }

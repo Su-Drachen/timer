@@ -38,6 +38,31 @@
     writeButton.textContent = '写留言';
     writeButton.setAttribute('aria-controls', 'deskComposer');
     document.querySelector('.desk-embedded-head').appendChild(writeButton);
+    var more = document.getElementById('friends-more');
+    var moreButton = more.querySelector('summary');
+    more.hidden = !notesReady;
+    document.getElementById('friends-sort').appendChild(document.getElementById('deskNotesSort'));
+    more.querySelector('.friends-options').appendChild(document.getElementById('desk-mark-all-read'));
+    document.getElementById('deskNotesRefresh').textContent = '刷新';
+    document.getElementById('deskNotesRefresh').setAttribute('aria-label', '刷新留言');
+    more.addEventListener('keydown', function (event) {
+      if (event.key === 'Escape' && more.open) {
+        event.preventDefault();
+        more.open = false;
+        moreButton.focus();
+      }
+    });
+    more.addEventListener('click', function (event) {
+      if (event.target.closest('#desk-mark-all-read, .tf-replay')) {
+        more.open = false;
+        moreButton.focus();
+      }
+    });
+    function closeMoreOutside(event) {
+      if (more.open && !more.contains(event.target)) more.open = false;
+    }
+    document.addEventListener('click', closeMoreOutside);
+    document.addEventListener('focusin', closeMoreOutside);
     document.querySelector('.owner-settings').hidden = true;
     document.querySelector('#page6ConfigStatus a').href = 'pagemain.html#personal/comments?return=friends';
     var composer = document.getElementById('deskComposer');
@@ -564,7 +589,8 @@
           state.warnings = data.warnings || [];
           await prepareData();
           showWarnings(data.warnings);
-          feedStatus('纸条已更新 · ' + state.notes.filter(function (item) { return !item.deleted; }).length + ' 条留言与回复', false);
+          var count = state.notes.filter(function (item) { return !item.deleted; }).length;
+          feedStatus(home ? count + ' 条留言与回复' : '纸条已更新 · ' + count + ' 条留言与回复', false);
           return { ok: true };
         } catch (error) {
           feedStatus('暂时没能收取新纸条，已显示的内容仍可查看。' + errorText(error), true);
@@ -601,6 +627,19 @@
       var timestamp = node('time', 'desk-note-time', friendlyTime(item.createdAt));
       if (Number.isFinite(Date.parse(item.createdAt))) timestamp.dateTime = new Date(item.createdAt).toISOString();
       row.appendChild(timestamp);
+      if (home && !item.deleted) {
+        var readButton = button('desk-note-read', '', function () {
+          if (!guard('notes')) return;
+          home.TimerFeedback.markRead(item.id);
+          updateReadActions();
+          var next = row.closest('article').querySelector('.desk-note-reply');
+          if (next) next.focus({ preventScroll: true });
+        });
+        readButton.title = '未读，标为已读';
+        readButton.setAttribute('aria-label', readButton.title);
+        readButton.dataset.readNote = item.id;
+        row.appendChild(readButton);
+      }
       return row;
     }
     function noteBody(item, isReply) {
@@ -644,15 +683,6 @@
       if (!item.deleted && !(root && root.deleted)) actions.appendChild(button('desk-note-reply', '回复', function () {
         openComposer({ parentId: item.id, replyToName: item.author });
       }));
-      if (home && !item.deleted) {
-        var readButton = button('desk-note-read', '标为已读', function () {
-          if (!guard('notes')) return;
-          home.TimerFeedback.markRead(item.id);
-          updateReadActions();
-        });
-        readButton.dataset.readNote = item.id;
-        actions.appendChild(readButton);
-      }
       if (!isReply && own() && !item.deleted) {
         var pin = button('desk-note-pin', state.pinnedId === item.id ? '取下这张纸条' : '夹在桌边', function () { togglePin(item.id); });
         pin.disabled = state.pinning || state.deleting || state.deleteOpen;
@@ -737,7 +767,7 @@
       el.deskNotesFilter.hidden = !state.filter;
       el.deskNotesFilterLabel.textContent = state.filter ? '只看 ' + state.filter + ' 的纸条' : '';
       var fragment = document.createDocumentFragment();
-      if (!roots.length) fragment.appendChild(node('p', 'desk-empty', state.filter ? '这次开笔还没有纸条。可以留一句话，也可以回到全部纸条。' : '书桌边还没有纸条。随时可以留一句话。'));
+      if (!roots.length) fragment.appendChild(node('p', 'desk-empty', home ? '还没有留言。' : state.filter ? '这次开笔还没有纸条。可以留一句话，也可以回到全部纸条。' : '书桌边还没有纸条。随时可以留一句话。'));
       roots.slice(0, state.shown).forEach(function (item) {
         var card = noteBody(item, false);
         if (item.id === state.pinnedId) {
@@ -1274,6 +1304,7 @@
     function connectHome() {
       root.EmbeddedDesk = {
         barrageSlot: document.getElementById('desk-barrage-slot'),
+        playbackOptions: document.getElementById('friends-playback-options'),
         reply: function (id) {
           return firstFeed.then(function () {
             if (!root.DeskNotes || !guard('notes')) return;

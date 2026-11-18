@@ -105,6 +105,7 @@
     <link rel="stylesheet" href="assets/css/page-data.css">
     <script src="assets/js/notebook-theme.js"></script>
     <link rel="stylesheet" href="assets/css/mobile-ui.css">
+    <script src="assets/js/record-entries.js"></script>
     <script src="assets/js/mobile-ui.js" defer></script>
 </head>
 <body class="nb-page nb-page-repair min-h-screen flex flex-col font-sans antialiased">
@@ -504,7 +505,12 @@
                 const error = document.getElementById('repair-edit-error');
                 if (field === 'time' && !newVal) { error.textContent = '时间不能为空'; return; }
                 if (!this.records[idx]) { error.textContent = '记录已变化，请关闭后重新选择。'; return; }
-                const updated = this.records.map((record, index) => index === idx ? { ...record, [field]: newVal } : record);
+                let replacement = { ...this.records[idx], [field]: newVal };
+                if (field === 'time' && replacement.startTime) {
+                    try { replacement = RecordEntries.edit(this.records[idx], newVal, replacement.remark || ''); }
+                    catch (err) { error.textContent = err.message; return; }
+                }
+                const updated = this.records.map((record, index) => index === idx ? replacement : record);
                 try { localStorage.setItem('timeRecords', JSON.stringify(updated)); }
                 catch (_) { error.textContent = '保存失败，请检查浏览器存储空间后重试。'; return; }
                 this.records = updated;

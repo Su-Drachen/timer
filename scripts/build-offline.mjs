@@ -8,6 +8,7 @@ const files = [
   'assets/js/notebook-theme.js', 'assets/js/app-config.js', 'assets/js/feedback-core.js',
   'assets/css/page6.css', 'assets/js/page6.js', 'assets/js/home-desk.js',
   'assets/css/home.css', 'assets/css/record-calendar.css', 'assets/js/record-calendar.js', 'assets/js/records.js',
+  'assets/css/tools-profile.css', 'assets/js/preferences.js', 'assets/js/record-entries.js', 'assets/js/record-actions.js',
   'assets/js/home-navigation.js', 'assets/js/tool-directory.js', 'assets/js/profile.js',
   'assets/js/feedback-ui.js', 'assets/js/offline.js', 'assets/js/mobile-ui.js',
   'assets/vendor/chart.umd.min.js', 'assets/vendor/font-awesome.min.css',

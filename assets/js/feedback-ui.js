@@ -131,7 +131,7 @@
     function paused() {
         var view = deskMount ? deskMount.slot.ownerDocument : document;
         var active = view.activeElement;
-        return !pageVisible || modalOpen || document.hidden || view.hidden || view.documentElement.classList.contains('app-dialog-open') ||
+        return !pageVisible || modalOpen || !!(deskMount && state && state.manualPause) || document.hidden || view.hidden || view.documentElement.classList.contains('app-dialog-open') ||
             !!(active && (active.matches('input,textarea,select,.tf-barrage') || active.isContentEditable));
     }
     function afterFocusChange() { Promise.resolve().then(syncPresentation); }
@@ -152,7 +152,9 @@
         var doc = deskMount.slot.ownerDocument;
         doc.removeEventListener('focusin', syncPresentation);
         doc.removeEventListener('focusout', afterFocusChange);
+        ui.barrageHead.append(ui.toggle, ui.replay);
         deskMount = null;
+        ui.pause.hidden = true;
         moveBarrage(ui.panel.parentNode, ui.panel);
     }
     function mountDeskBarrage(slot, handlers) {
@@ -160,6 +162,7 @@
         if (deskMount && deskMount.slot === slot) return;
         restoreBarrage();
         deskMount = { slot: slot, reply: handlers.reply };
+        if (handlers.playbackOptions) handlers.playbackOptions.append(ui.toggle, ui.replay);
         slot.ownerDocument.addEventListener('focusin', syncPresentation);
         slot.ownerDocument.addEventListener('focusout', afterFocusChange);
         moveBarrage(slot, null);
@@ -179,12 +182,20 @@
     }
     function presentationHint() {
         var text;
+        var count = state.loaded ? recentMessages().length : 0;
         if (!state.barrage) text = '弹幕已关闭，仍可打开留言查看和回复。';
         else if (!state.loaded) text = state.loading ? '正在读取访客留言…' : '读取留言后，最近的访客留言会从这里飘过。';
-        else if (!recentMessages().length) text = '暂时没有访客留言，有人留言后可手动刷新查看。';
+        else if (!count) text = '暂时没有访客留言，有人留言后可手动刷新查看。';
         else if (paused() && (state.presented || state.queue.length)) text = '弹幕已暂停，移开焦点或关闭弹窗后继续。';
-        else if (state.presented || state.queue.length) text = '最近 ' + recentMessages().length + ' 条访客留言 · 点击弹幕查看和回复';
+        else if (state.presented || state.queue.length) text = '最近 ' + count + ' 条访客留言 · 点击弹幕查看和回复';
         else text = '本轮播放结束，可以重播或打开留言回复。';
+        if (deskMount) {
+            deskMount.slot.hidden = !state.barrage || !count;
+            ui.pause.hidden = !state.presented || !!(motion && motion.matches);
+            ui.pause.textContent = state.manualPause ? '继续' : '暂停';
+            ui.pause.setAttribute('aria-label', state.manualPause ? '继续弹幕' : '暂停弹幕');
+            if (!state.presented) text = state.queue.length ? '等待播放' : '本轮已播完';
+        }
         ui.laneHint.textContent = text;
     }
     function syncPresentation() {
@@ -196,6 +207,7 @@
     function clearLane() { state.queue = []; state.presented = null; pausedTime = null; ui.lane.replaceChildren(); ui.lane.hidden = true; }
     function replay() {
         clearLane();
+        state.manualPause = false;
         if (state.barrage) state.queue = recentMessages();
         syncPresentation();
     }
@@ -422,10 +434,14 @@
         toolbar.append(ui.open, ui.refresh); shell.appendChild(toolbar);
         ui.status = node('div', 'tf-status'); ui.status.setAttribute('role', 'status'); shell.appendChild(ui.status);
         var barrageHost = ui.barrageHost = node('section', 'tf-barrage-host'); barrageHost.setAttribute('aria-label', '访客留言弹幕');
-        var barrageHead = node('div', 'tf-barrage-head'); barrageHead.appendChild(node('span', 'tf-barrage-title', '留言弹幕'));
+        var barrageHead = ui.barrageHead = node('div', 'tf-barrage-head'); barrageHead.appendChild(node('span', 'tf-barrage-title', '弹幕'));
         ui.replay = button('重播弹幕', replay, 'tf-replay'); barrageHead.append(ui.toggle, ui.replay); barrageHost.appendChild(barrageHead);
         ui.lane = node('div', 'tf-lane'); ui.lane.hidden = true; barrageHost.appendChild(ui.lane);
-        ui.laneHint = node('p', 'tf-lane-hint'); barrageHost.appendChild(ui.laneHint); shell.appendChild(barrageHost);
+        ui.laneHint = node('p', 'tf-lane-hint'); barrageHost.appendChild(ui.laneHint);
+        ui.pause = button('暂停', function () { state.manualPause = !state.manualPause; syncPresentation(); }, 'tf-pause');
+        ui.pause.hidden = true;
+        barrageHost.appendChild(ui.pause);
+        shell.appendChild(barrageHost);
         ui.panel = node('section', 'tf-panel'); ui.panel.id = 'timer-feedback-panel'; ui.panel.hidden = true;
         var head = node('div', 'tf-panel-head'); head.appendChild(node('h2', 'tf-title', '留言与回复'));
         ui.readAll = button('全部标为已读', markAllRead);

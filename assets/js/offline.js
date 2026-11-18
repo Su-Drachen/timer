@@ -7,6 +7,7 @@
     const box = document.getElementById('offline-status');
     const message = document.getElementById('offline-message');
     const retry = document.getElementById('offline-retry');
+    const info = document.getElementById('offline-info');
     let registration;
     let ready = false;
     let failed = false;
@@ -14,6 +15,10 @@
     let supported = true;
 
     function render() {
+        const compact = ready && navigator.onLine && !pendingUpdate && supported;
+        info.hidden = !compact;
+        if (!compact) info.setAttribute('aria-expanded', 'false');
+        message.hidden = compact && info.getAttribute('aria-expanded') !== 'true';
         retry.hidden = !failed || !navigator.onLine || !supported || pendingUpdate;
         if (!supported) {
             box.dataset.state = 'error';
@@ -104,6 +109,11 @@
         }
     }
 
+    info.addEventListener('click', () => {
+        const expanded = info.getAttribute('aria-expanded') === 'true';
+        info.setAttribute('aria-expanded', String(!expanded));
+        message.hidden = expanded;
+    });
     retry.addEventListener('click', function () {
         if (registration?.active) {
             failed = false;

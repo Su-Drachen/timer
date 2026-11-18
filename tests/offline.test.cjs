@@ -143,7 +143,7 @@ const tests = [
         const canvas = document.querySelector('#local-records-chart');
         return { display: getComputedStyle(document.querySelector('#local-record-btn')).display, hidden: getComputedStyle(document.querySelector('#record-modal-overlay')).display, iconFont: getComputedStyle(icon).fontFamily, iconContent: getComputedStyle(icon, '::before').content, fonts: [...document.fonts].filter(font => /FontAwesome/.test(font.family)).map(font => font.status), chartWidth: canvas.width, chartHeight: canvas.height, chart: !!Chart.getChart(canvas), overflow: document.documentElement.scrollWidth > innerWidth };
       });
-      assert.equal(visual.display, 'flex');
+      assert.ok(['flex', 'inline-flex'].includes(visual.display));
       assert.equal(visual.hidden, 'none');
       assert.match(visual.iconFont, /FontAwesome/);
       assert.ok(visual.iconContent !== 'none' && visual.iconContent !== 'normal');
@@ -151,10 +151,11 @@ const tests = [
       assert.ok(visual.chart && visual.chartWidth > 0 && visual.chartHeight > 0);
       assert.equal(visual.overflow, false);
 
+      await t.page.evaluate(() => TimerPreferences.save({ quickRecord: false }));
       await t.page.locator('#local-record-btn').click();
       await t.page.locator('#record-remark').fill('离线新增的合成记录');
       await t.page.locator('#save-record-btn').click();
-      assert.equal(await t.page.locator('#record-modal-overlay').isVisible(), false);
+      await t.page.locator('#record-modal-overlay').waitFor({ state: 'hidden' });
       assert.equal((await storedRecords(t.page)).length, 2);
       await t.page.reload({ waitUntil: 'networkidle' });
       assert.ok((await t.page.locator('#local-records-container').innerText()).includes('离线新增的合成记录'));
@@ -162,11 +163,13 @@ const tests = [
       await added.locator('[aria-label="编辑记录"]').click();
       await t.page.locator('#edit-remark').fill('离线编辑后已保存');
       await t.page.locator('#save-edit-btn').click();
+      await t.page.locator('#edit-modal-overlay').waitFor({ state: 'hidden' });
       await t.page.reload({ waitUntil: 'networkidle' });
       assert.ok((await storedRecords(t.page)).some(record => record.remark === '离线编辑后已保存'));
       const edited = t.page.locator('#local-records-container .record-item').filter({ hasText: '离线编辑后已保存' });
       await edited.locator('[aria-label="删除记录"]').click();
       await t.page.locator('#confirm-action-btn').click();
+      await t.page.waitForFunction(() => JSON.parse(localStorage.timeRecords).length === 1);
       await t.page.reload({ waitUntil: 'networkidle' });
       assert.deepEqual(await storedRecords(t.page), FIXTURE);
 
@@ -218,6 +221,7 @@ const tests = [
           return original.call(this, key, value);
         };
       });
+      await t.page.evaluate(() => TimerPreferences.save({ quickRecord: false }));
       await t.page.locator('#local-record-btn').click();
       await t.page.locator('#record-remark').fill('存储失败仍需保留的备注');
       await t.page.locator('#save-record-btn').click();
@@ -296,6 +300,7 @@ const tests = [
       await offlineState(t.page, 'ready');
       const original = await cacheSnapshot(t.page);
       const oldCacheName = original[0].name;
+      await t.page.evaluate(() => TimerPreferences.save({ quickRecord: false }));
       await t.page.locator('#local-record-btn').click();
       await t.page.locator('#record-remark').fill('更新等待期间保留的合成草稿');
       await t.page.evaluate(() => { window.offlineTestPageMarker = 'same-open-page'; });
@@ -319,6 +324,7 @@ const tests = [
         'an open page continues using its original build while the upgrade waits');
 
       await t.page.locator('#save-record-btn').click();
+      await t.page.locator('#record-modal-overlay').waitFor({ state: 'hidden' });
       assert.equal((await storedRecords(t.page)).length, 2);
       await removeCachedFile(t.page, oldCacheName, 'assets/vendor/fonts/fontawesome-webfont.woff2');
       await t.page.reload({ waitUntil: 'networkidle' });

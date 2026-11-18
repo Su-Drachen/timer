@@ -53,7 +53,7 @@
         let today = dayKey(now);
         element.innerHTML = `
             <div class="calendar-heading">
-                <h2 aria-live="polite"></h2>
+                <h2 aria-live="polite"><label class="calendar-month"><span></span><i class="fa fa-angle-down" aria-hidden="true"></i><input type="month" aria-label="跳转年月"></label></h2>
                 <div class="calendar-actions">
                     <button type="button" data-action="today">今天</button>
                     <button type="button" data-action="previous" aria-label="上个月"><i class="fa fa-angle-left" aria-hidden="true"></i></button>
@@ -65,7 +65,8 @@
             <div class="calendar-footer"><span><i aria-hidden="true"></i> 有记录</span>
                 <button type="button" data-action="all" hidden>查看全部记录</button>
             </div>`;
-        const heading = element.querySelector('h2');
+        const heading = element.querySelector('h2 span');
+        const monthInput = element.querySelector('input[type="month"]');
         const days = element.querySelector('.calendar-days');
         const reset = element.querySelector('[data-action="all"]');
 
@@ -73,6 +74,7 @@
             const year = month.getFullYear();
             const number = month.getMonth();
             heading.textContent = `${year} 年 ${number + 1} 月`;
+            monthInput.value = dayKey(month).slice(0, 7);
             const offset = (month.getDay() + 6) % 7;
             const last = new Date(year, number + 1, 0).getDate();
             let html = '';
@@ -82,12 +84,23 @@
                 const style = day === 1 ? ' style="grid-column-start:' + (offset + 1) + '"' : '';
                 html += `<button type="button" data-day="${key}"${style} aria-pressed="${selected === key}"
                     ${key === today ? 'aria-current="date"' : ''} aria-label="${key}，${count} 条记录">
-                    <span>${day}</span>${count ? '<i aria-hidden="true"></i>' : ''}</button>`;
+                    <span>${day}</span>${count > 1 ? '<small aria-hidden="true">' + count + '</small>' : count ? '<i aria-hidden="true"></i>' : ''}</button>`;
             }
             days.innerHTML = html;
             reset.hidden = !selected;
         }
 
+        monthInput.addEventListener('change', () => {
+            const match = /^(\d{4})-(\d{2})$/.exec(monthInput.value);
+            if (!match) return;
+            month = new Date(Number(match[1]), Number(match[2]) - 1, 1);
+            selected = '';
+            draw();
+            onSelect();
+        });
+        monthInput.addEventListener('click', () => {
+            try { monthInput.showPicker?.(); } catch (_) { /* Native input remains available. */ }
+        });
         element.addEventListener('click', event => {
             const button = event.target.closest('button');
             if (!button || !element.contains(button)) return;

@@ -55,6 +55,7 @@ async function setup(options = {}) {
   await context.addInitScript(({ config, theme, ownerId }) => {
     if (!sessionStorage.getItem('test.initialized')) {
       sessionStorage.setItem('test.initialized', 'yes');
+      localStorage.setItem('timer.recordPreferences', JSON.stringify({ quickRecord: false }));
       if (config) { localStorage.setItem('timeRecorderConfig', JSON.stringify(config)); localStorage.setItem('timeRecorderPat', 'synthetic-test-token'); }
       if (theme) localStorage.setItem('userTheme', theme);
       if (ownerId) localStorage.setItem('observer.desk.' + config.COMMENT_GIST_ID + '.ownerId', ownerId);
@@ -434,6 +435,7 @@ const tests = [
       assert.equal(t.requests.filter(r => r.path === '/gists/' + MAIN).length, 0, 'friends loads messages independently of private records');
       assert.equal(t.childRequests().length, 2, 'opening the desk reuses the already loaded notes');
 
+      await desk.locator('#friends-more summary').click();
       await desk.locator('#desk-mark-all-read').click();
       await page.waitForFunction(() => document.getElementById('home-unread').hidden);
       await deskDoc.evaluate(() => window.scrollTo({ top: 75, behavior: 'instant' }));
@@ -460,6 +462,52 @@ const tests = [
       assert.equal(await page.locator('#mobile-home-nav').isVisible(), true);
       assert.equal(await page.locator('#home-records-view').isVisible(), false);
       assert.equal(await desk.locator('#deskNotesList').isVisible(), true);
+      assert.deepEqual(t.errors, []);
+    } finally { await t.close(); }
+  }],
+  ['friends shows a compact player only for visitor notes; more keeps playback and sorting accessible', async () => {
+    const t = await setup({ mobile: true, comments: [] });
+    try {
+      const desk = await openDesk(t);
+      await desk.getByText('还没有留言。', { exact: true }).waitFor();
+      const slot = desk.locator('#desk-barrage-slot');
+      assert.equal(await slot.isVisible(), false);
+      assert.equal(await desk.locator('#deskComposer').isVisible(), true);
+      t.fixture.comments.push(nativeNote('early', '先到的留言'), nativeNote('later', '后到的留言', { createdAt: '2026-10-23T05:00:00Z' }));
+      const before = t.childRequests().length;
+      await desk.getByRole('button', { name: '刷新留言' }).click();
+      const playing = slot.locator('.tf-barrage');
+      await playing.waitFor();
+      assert.equal(t.childRequests().length, before + 2);
+      assert.ok((await slot.boundingBox()).height <= 56, 'barrage fits a single row');
+      const cards = desk.locator('#deskNotesList > article');
+      assert.ok((await cards.first().boundingBox()).y <= 220, 'the first note is near the top of the phone');
+      assert.equal(await cards.first().getAttribute('data-note-id'), 'later');
+      const menu = desk.locator('#friends-more summary');
+      const sort = desk.locator('#deskNotesSort');
+      assert.equal(await sort.isVisible(), false);
+      await menu.focus();
+      await t.page.keyboard.press('Enter');
+      await sort.selectOption('oldest');
+      assert.equal(await cards.first().getAttribute('data-note-id'), 'early');
+      await sort.focus();
+      await t.page.keyboard.press('Escape');
+      assert.equal(await sort.isVisible(), false);
+      assert.ok(await menu.evaluate(el => el === el.ownerDocument.activeElement));
+      await slot.getByRole('button', { name: '暂停弹幕' }).click();
+      assert.equal(await playing.evaluate(el => getComputedStyle(el).animationPlayState), 'paused');
+      await slot.getByRole('button', { name: '继续弹幕' }).click();
+      assert.equal(await playing.evaluate(el => getComputedStyle(el).animationPlayState), 'running');
+      await menu.click();
+      await desk.getByRole('button', { name: '弹幕开启' }).click();
+      assert.equal(await slot.isVisible(), false);
+      await desk.getByRole('button', { name: '弹幕关闭' }).click();
+      await desk.getByRole('button', { name: '重播弹幕' }).click();
+      await playing.waitFor();
+      assert.equal(await sort.isVisible(), false);
+      await cards.first().getByRole('button', { name: '未读，标为已读' }).click();
+      assert.deepEqual((await playbackStorage(t)).read, ['early']);
+      assert.equal(t.childRequests().length, before + 2, 'presentation changes never reload the feed');
       assert.deepEqual(t.errors, []);
     } finally { await t.close(); }
   }],
@@ -572,6 +620,17 @@ const tests = [
         assert.equal(await panel.evaluate(el => el.scrollWidth <= el.clientWidth), true);
         assert.equal(await surface.locator(mobile ? '#deskSubmit' : '.tf-send-row button[type=submit]').isVisible(), true);
         await panel.screenshot({ path: path.join(__dirname, 'artifacts', 'feedback-' + (mobile ? 'mobile' : 'desktop') + '-dark.png'), animations: 'disabled' });
+        if (mobile) {
+          const surfaces = surface.locator('#deskNotesList > article, #deskComposerPanel, #deskText');
+          const backgrounds = () => surfaces.evaluateAll(items => items.map(el =>
+            getComputedStyle(el).backgroundColor.match(/\d+/g).slice(0, 3).map(Number)));
+          assert.ok((await backgrounds()).every(rgb => Math.max(...rgb) < 100), 'all friends surfaces must be dark in night mode');
+          await t.page.evaluate(() => { document.documentElement.dataset.theme = 'blue'; });
+          await surface.locator('html[data-theme="blue"]').waitFor();
+          assert.ok((await backgrounds()).every(rgb => Math.min(...rgb) > 160), 'light surfaces return when the theme changes');
+          assert.equal(await surface.locator('#deskText').inputValue(), '可以在这里回复。');
+          await panel.screenshot({ path: path.join(__dirname, 'artifacts', 'feedback-mobile-light.png'), animations: 'disabled' });
+        }
         assert.deepEqual(t.errors, []);
       } finally { await t.close(); }
     }
@@ -586,6 +645,7 @@ const tests = [
   console.log('PASS JavaScript parse: main inline scripts and feedback modules');
   const allowed = new Set([
     '/pagemain.html', '/page6.html', '/assets/js/records.js', '/assets/js/home-desk.js', '/assets/js/page6.js', '/assets/css/page6.css',
+    '/assets/js/preferences.js', '/assets/js/record-entries.js', '/assets/js/record-actions.js', '/assets/css/tools-profile.css',
     '/assets/js/home-navigation.js', '/assets/js/profile.js', '/assets/js/tool-directory.js', '/assets/js/record-calendar.js',
     '/assets/css/home.css', '/assets/css/record-calendar.css',
     '/assets/js/app-config.js', '/assets/js/feedback-core.js', '/assets/js/feedback-ui.js',

@@ -3,21 +3,25 @@
     'use strict';
     const config = window.TimerConfig;
     const sections = {
+        recording: ['记录偏好', 'pencil-square-o', '设置记录方式和填写备注时常用的词。'],
         cloud: ['云端记录', 'cloud', '在自己的 GitHub Gist 中保存和查看记录。'],
         comments: ['朋友留言', 'comments-o', '连接存放纸条和回复的 Gist，与记录分开管理。'],
-        author: ['作者身份', 'key', '在这台设备上导入作者钥匙，可署名回复和管理纸条。'],
+        author: ['作者钥匙', 'key', '在这台设备上导入作者钥匙，可署名回复和管理纸条。'],
         ai: ['AI 服务', 'magic', '使用自己的清言 API 凭据。主动分析时，记录摘要及备注会发送给清言。'],
         appearance: ['外观', 'adjust', '选择此浏览器使用的主题。']
     };
     const themes = { blue: '清新', white: '极简白', dark: '暗夜黑' };
-    let view;
+    let view, commentsPage;
 
     function route() {
         const [path, query = ''] = location.hash.slice(1).split('?');
-        const [tab, section] = path.split('/');
+        const [tab, parent, child] = path.split('/');
+        const nestedAuthor = parent === 'comments' && child === 'author';
+        const section = nestedAuthor ? 'author' : parent;
         return {
             active: tab === 'personal',
             section: Object.hasOwn(sections, section || '') ? section : '',
+            nestedAuthor,
             back: config.returnPath(new URLSearchParams(query).get('return'))
         };
     }
@@ -25,6 +29,7 @@
     function statuses() {
         const gist = config.read(), ai = config.readAi();
         return {
+            recording: window.TimerPreferences.read().quickRecord ? '快记' : '填写后保存',
             cloud: gist.GIST_ID && gist.GITHUB_PAT ? '已配置' : '未配置',
             comments: gist.COMMENT_GIST_ID && gist.GITHUB_PAT ? '已配置' : '未配置',
             author: config.author()?.isOwner() ? '已启用' : '未启用',
@@ -32,17 +37,16 @@
             appearance: themes[document.documentElement.dataset.theme] || themes.blue
         };
     }
-    function row(key, state) {
+    function row(key, state, href = '#personal/' + key) {
         const [name, icon] = sections[key];
-        return `<a class="settings-row" href="#personal/${key}"><span class="settings-icon"><i class="fa fa-${icon}" aria-hidden="true"></i></span><span class="settings-copy"><strong>${name}</strong></span><span class="settings-state" data-state="${key}">${state}</span><i class="fa fa-angle-right" aria-hidden="true"></i></a>`;
+        return `<a class="settings-row" href="${href}"><span class="settings-icon"><i class="fa fa-${icon}" aria-hidden="true"></i></span><span class="settings-copy"><strong>${name}</strong></span><span class="settings-state" data-state="${key}">${state}</span><i class="fa fa-angle-right" aria-hidden="true"></i></a>`;
     }
     function overview() {
         const states = statuses();
         view.innerHTML = `<div class="profile-page"><header class="profile-header"><span class="profile-mark" aria-hidden="true"><i class="fa fa-user-o"></i></span><h1>个人</h1><p>当前设备 · 时间笔记</p></header>
-            <section class="settings-group"><h2>功能连接</h2>${['cloud', 'comments', 'ai'].map(key => row(key, states[key])).join('')}</section>
-            <section class="settings-group"><h2>偏好设置</h2>${row('author', states.author)}${row('appearance', states.appearance)}
-                <a class="settings-row" href="page0.html"><span class="settings-icon"><i class="fa fa-book" aria-hidden="true"></i></span><span class="settings-copy"><strong>进阶指南</strong></span><i class="fa fa-angle-right" aria-hidden="true"></i></a>
-            </section></div>`;
+            <section class="settings-group"><h2>使用偏好</h2><div class="settings-list">${row('recording', states.recording)}${row('appearance', states.appearance)}</div></section>
+            <section class="settings-group"><h2>功能连接</h2><div class="settings-list">${['cloud', 'comments', 'ai'].map(key => row(key, states[key])).join('')}</div></section>
+            <a class="settings-guide" href="page0.html"><i class="fa fa-book" aria-hidden="true"></i>进阶指南<i class="fa fa-angle-right" aria-hidden="true"></i></a></div>`;
     }
 
     function field(id, label, type = 'text') {
@@ -155,6 +159,49 @@
         };
     }
 
+    function recordPreferences(container, back) {
+        const initial = window.TimerPreferences.read();
+        container.innerHTML = `<form class="settings-form record-preferences">
+            <label class="preference-toggle"><span><strong>快记</strong><small>点记录按钮时直接保存当前时间</small></span><input type="checkbox" name="quickRecord" role="switch"></label>
+            <label class="preference-toggle"><span><strong>计时</strong><small>在记录页显示开始和结束计时的按钮</small></span><input type="checkbox" name="timerEnabled" role="switch"></label>
+            <fieldset class="preference-words"><legend>常用词</legend><p>最多 3 个，填写备注时可以点选。</p>
+                <div class="preference-inputs">${[1, 2, 3].map(i => `<input type="text" name="tag" aria-label="常用词 ${i}" placeholder="常用词 ${i}" autocomplete="off">`).join('')}</div>
+                <div class="preference-examples">${['睡前', '放松', '压力'].map(word => `<button type="button" data-example="${word}" aria-label="添加示例词${word}">＋ ${word}</button>`).join('')}</div>
+            </fieldset><div class="settings-actions"><button class="settings-primary" type="submit">保存偏好</button></div></form>`;
+        const form = container.querySelector('form');
+        const inputs = Array.from(form.querySelectorAll('input[name="tag"]'));
+        const examples = form.querySelector('.preference-examples');
+        form.elements.quickRecord.checked = initial.quickRecord;
+        form.elements.timerEnabled.checked = initial.timerEnabled;
+        inputs.forEach((input, i) => { input.value = initial.tags[i] || ''; });
+        function updateExamples() {
+            const words = inputs.map(input => input.value.trim());
+            examples.querySelectorAll('button').forEach(button => {
+                button.disabled = !words.includes('') || words.includes(button.dataset.example);
+            });
+        }
+        form.addEventListener('input', updateExamples);
+        examples.addEventListener('click', event => {
+            const button = event.target.closest('button');
+            const empty = inputs.find(input => !input.value.trim());
+            if (!button || !empty) return;
+            empty.value = button.dataset.example;
+            updateExamples();
+        });
+        updateExamples();
+        form.addEventListener('submit', event => {
+            event.preventDefault();
+            try {
+                window.TimerPreferences.save({
+                    quickRecord: form.elements.quickRecord.checked,
+                    timerEnabled: form.elements.timerEnabled.checked,
+                    tags: inputs.map(input => input.value)
+                });
+                finish(back, '记录偏好已保存');
+            } catch (_) { errorText('记录偏好保存失败，请检查浏览器存储权限后重试。'); }
+        });
+    }
+
     function themeControls(container) {
         container.innerHTML = `<div class="settings-themes">${Object.entries(themes).map(([key, name]) => `<button type="button" class="settings-secondary" data-theme-key="${key}" aria-pressed="${document.documentElement.dataset.theme === key}">${name}</button>`).join('')}</div>`;
         container.addEventListener('click', event => {
@@ -166,7 +213,7 @@
     }
     function syncAuthorState() {
         const { active, section } = route();
-        if (!active || (section && section !== 'author')) return;
+        if (!active || !['comments', 'author'].includes(section)) return;
         const auth = config.author();
         if (!auth) return;
         Promise.resolve(auth.initialized).then(() => {
@@ -178,16 +225,32 @@
     }
     function show() {
         if (!view) return;
-        const { active, section, back } = route();
+        const { active, section, back, nestedAuthor } = route();
+        if (!active || (section !== 'comments' && !nestedAuthor)) commentsPage = null;
         if (!active) { view.replaceChildren(); return; }
+        // Keep an unsaved message connection form while its author subsection is open.
+        if (section === 'comments' && commentsPage?.back === back) {
+            view.replaceChildren(commentsPage.node);
+            syncAuthorState();
+            return;
+        }
         if (!section) overview();
         else {
             const [name, , help] = sections[section];
-            view.innerHTML = `<div class="profile-page settings-detail"><a class="settings-back" href="${back || '#personal'}"><i class="fa fa-angle-left" aria-hidden="true"></i> ${back ? '返回原功能' : '个人'}</a><h1>${name}</h1><p>${help}</p><div data-controls></div><p role="status" class="settings-status"></p></div>`;
+            const suffix = back ? '?return=' + encodeURIComponent(back.replace(/^#/, '')) : '';
+            const parentComments = nestedAuthor || (section === 'author' && !back);
+            const destination = parentComments ? '#personal/comments' + suffix : back || '#personal';
+            const backLabel = parentComments ? '朋友留言' : back ? '返回原功能' : '个人';
+            view.innerHTML = `<div class="profile-page settings-detail"><a class="settings-back" href="${destination}"><i class="fa fa-angle-left" aria-hidden="true"></i> ${backLabel}</a><h1>${name}</h1><p>${help}</p><div data-controls></div><p role="status" class="settings-status"></p></div>`;
             const container = view.querySelector('[data-controls]');
-            if (section === 'author') authorControls(container, back);
+            if (section === 'author') authorControls(container, destination);
+            else if (section === 'recording') recordPreferences(container, back);
             else if (section === 'appearance') themeControls(container);
             else settingsForm(section, container, back);
+            if (section === 'comments') {
+                container.insertAdjacentHTML('afterend', `<div class="settings-list">${row('author', statuses().author, '#personal/comments/author' + suffix)}</div>`);
+                commentsPage = { back, node: view.firstElementChild };
+            }
         }
         syncAuthorState();
     }
