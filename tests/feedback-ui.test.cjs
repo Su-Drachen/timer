@@ -65,7 +65,10 @@ async function setup(options = {}) {
   page.on('pageerror', error => errors.push(error.message));
   page.on('dialog', dialog => dialog.accept());
   await page.clock.install({ time: new Date('2026-10-22T06:00:00Z') });
-  await page.goto(origin + '/pagemain.html', { waitUntil: 'networkidle' });
+  // The original feedback component still drives the shared feed/player. Exercise its
+  // standalone controls separately from the four-page app that embeds the player.
+  const useComponent = !options.mobile && !options.app;
+  await page.goto(origin + (useComponent ? '/feedback-component.html' : '/pagemain.html'), { waitUntil: 'networkidle' });
   await page.waitForFunction(() => !!window.TimerFeedback);
   const childRequests = () => requests.filter(req => req.path.startsWith('/gists/' + CHILD) || req.path.startsWith('/gists/' + OTHER));
   return { page, context, fixture, requests, errors, childRequests, close: () => context.close() };
@@ -76,7 +79,7 @@ async function ready(t, count = 1) {
 async function openDesk(t) {
   await t.page.locator('#home-show-feedback').click();
   const desk = t.page.frameLocator('#home-desk-frame');
-  await desk.locator('#desk-show-notes').waitFor({ state: 'visible' });
+  await desk.locator('.desk-embedded-head h1').waitFor({ state: 'visible' });
   return desk;
 }
 async function openPanel(t) {
@@ -119,12 +122,13 @@ async function recordCycle(t, mode) {
   else assert.deepEqual(t.fixture.records, []);
 }
 async function saveConfig(t, childId) {
-  await t.page.locator('#tab-gist').click();
-  await t.page.waitForFunction(() => gistApp.isInitialized && !gistApp.isLoading);
-  await t.page.locator('#gist-config-open-btn').click();
-  await t.page.locator('#gist-commentId').fill(childId);
-  await t.page.locator('#gist-config-form button[type=submit]').click();
-  await t.page.waitForFunction(() => !gistApp.isLoading);
+  await t.page.evaluate(() => { location.hash = 'personal/comments'; });
+  if (childId) {
+    await t.page.locator('#profile-gist').fill(childId);
+    await t.page.getByRole('button', { name: '保存配置' }).click();
+  } else {
+    await t.page.getByRole('button', { name: '移除此配置' }).click();
+  }
 }
 const tests = [
   ['unconfigured entry stays silent; local add/edit/delete work', async () => {
@@ -132,33 +136,29 @@ const tests = [
     try {
       assert.equal(await t.page.locator('#mobile-home-nav').isVisible(), true);
       assert.equal(await t.page.locator('#timer-feedback-root').isVisible(), false);
-      assert.equal(await t.page.locator('#gist-config-overlay').isVisible(), false);
       assert.equal(t.childRequests().length, 0);
       await recordCycle(t, 'local');
       const desk = await openDesk(t);
-      const configLink = desk.locator('a[href*="config=1"]').filter({ visible: true }).first();
-      await configLink.click();
-      await t.page.locator('#gist-config-overlay').waitFor({ state: 'visible' });
+      await desk.getByRole('link', { name: '配置留言连接' }).click();
+      await t.page.locator('#profile-gist').waitFor({ state: 'visible' });
+      assert.match(t.page.url(), /#personal\/comments\?return=friends$/);
       assert.equal(t.requests.length, 0);
       assert.deepEqual(t.errors, []);
     } finally { await t.close(); }
   }],
   ['optional blank child ID preserves local and cloud records; save does not read feedback', async () => {
-    const t = await setup({ config: { ...CONFIG, COMMENT_GIST_ID: '' } });
+    const t = await setup({ app: true, config: { ...CONFIG, COMMENT_GIST_ID: '' } });
     try {
-      assert.equal(await t.page.locator('#gist-commentId').getAttribute('required'), null);
       assert.equal(await t.page.locator('#timer-feedback-root').isVisible(), false);
       await recordCycle(t, 'local');
       await recordCycle(t, 'gist');
       assert.equal(t.childRequests().length, 0);
       await saveConfig(t, CHILD);
       assert.equal(t.childRequests().length, 0);
-      assert.equal(await t.page.locator('#timer-feedback-root').isVisible(), true);
-      assert.equal(await t.page.locator('.tf-barrage-host').isVisible(), true);
-      assert.match(await t.page.locator('.tf-lane-hint').innerText(), /读取|刷新/);
-      assert.match(await t.page.locator('.tf-status').innerText(), /刷新留言/);
       assert.equal(await t.page.evaluate(() => JSON.parse(localStorage.getItem('timeRecorderConfig')).COMMENT_GIST_ID), CHILD);
-      await refresh(t, 1);
+      const desk = await openDesk(t);
+      await desk.locator('#deskNotesList .desk-note').waitFor();
+      assert.equal(await desk.locator('.tf-barrage-host').isVisible(), true);
       await saveConfig(t, '');
       assert.equal(t.childRequests().length, 2);
       assert.equal(await t.page.locator('#timer-feedback-root').isVisible(), false);
@@ -431,7 +431,7 @@ const tests = [
       assert.equal(await page.locator('#timer-feedback-root').isVisible(), false);
       await desk.locator('#deskNotesList .desk-note').first().waitFor({ state: 'visible' });
       assert.match(await desk.locator('#deskNotesList').innerText(), /合成留言/);
-      assert.equal(t.requests.filter(r => r.path === '/gists/' + MAIN).length, 1);
+      assert.equal(t.requests.filter(r => r.path === '/gists/' + MAIN).length, 0, 'friends loads messages independently of private records');
       assert.equal(t.childRequests().length, 2, 'opening the desk reuses the already loaded notes');
 
       await desk.locator('#desk-mark-all-read').click();
@@ -454,16 +454,16 @@ const tests = [
       assert.equal(await barrage.innerText(), message);
       const resumed = await barrage.evaluate(el => el.getAnimations().find(animation => animation.animationName === 'tf-drift').currentTime);
       assert.ok(resumed >= 3400, 'expected the restored playhead near 3500 ms, got ' + resumed);
-      assert.equal(t.requests.length, 3);
+      assert.equal(t.requests.length, 2);
 
       await page.setViewportSize({ width: 1024, height: 768 });
-      await page.locator('#mobile-home-nav').waitFor({ state: 'hidden' });
-      assert.equal(await page.locator('#home-records-view').isVisible(), true);
-      assert.equal(await page.locator('#timer-feedback-root').isVisible(), true);
+      assert.equal(await page.locator('#mobile-home-nav').isVisible(), true);
+      assert.equal(await page.locator('#home-records-view').isVisible(), false);
+      assert.equal(await desk.locator('#deskNotesList').isVisible(), true);
       assert.deepEqual(t.errors, []);
     } finally { await t.close(); }
   }],
-  ['mobile desk links calendar dates, records and notes; replies write once and preserve context', async () => {
+  ['friends shows one scrolling feed, retains linked replies, and can send new notes or sign via personal settings', async () => {
     const time = '2026/10/22 08:00:00';
     const notes = [nativeNote('on-record', '关联这条记录', { recordTime: time, author: '访客甲' }), nativeNote('general', '无关联的纸条')];
     const records = [{ time, remark: '私人备注' }, { time: '2026/10/21 08:00:00', remark: '' }];
@@ -476,31 +476,20 @@ const tests = [
       await desk.locator('#desk-barrage-slot .tf-barrage').waitFor({ state: 'visible' });
       await desk.locator('#deskNotesList .desk-note').first().waitFor({ state: 'visible' });
       await t.page.screenshot({ path: path.join(previewDir, 'mobile-home-desk-notes.png') });
-      await desk.getByRole('button', { name: '日历', exact: true }).click();
-      await desk.locator('#monthPicker').selectOption('2026-10');
-      await t.page.screenshot({ path: path.join(previewDir, 'mobile-home-desk-calendar.png') });
-      await desk.locator('#monthGrid [data-date="2026/10/22"]').click();
-      const entry = desk.locator('#list .entry');
-      assert.equal(await entry.count(), 1);
-      assert.equal(await entry.getAttribute('data-record-time'), time);
+      assert.equal(await desk.getByRole('button', { name: '日历', exact: true }).count(), 0);
       assert.doesNotMatch(await desk.locator('body').innerText(), /私人备注/);
-      await entry.locator('.record-note-count').click();
       const list = desk.locator('#deskNotesList');
-      assert.equal(await desk.locator('body').getAttribute('data-desk-view'), 'notes');
-      assert.match(await list.innerText(), /关联这条记录/);
-      assert.doesNotMatch(await list.innerText(), /无关联的纸条/);
-      await list.getByRole('button', { name: '回复', exact: true }).click();
+      const card = list.locator('[data-note-id="on-record"]');
+      assert.match(await card.innerText(), /2026\/10\/22 08:00:00/);
+      assert.match(await list.innerText(), /无关联的纸条/);
+      assert.equal(await desk.locator('#deskComposer').getAttribute('role'), 'region');
+      await card.getByRole('button', { name: '回复', exact: true }).click();
       await desk.locator('#deskText').fill('稍后回复的草稿');
-      await desk.locator('#deskComposerClose').click();
       await t.page.locator('#home-show-records').click();
       await t.page.locator('#home-show-feedback').click();
-      await list.getByRole('button', { name: '回复', exact: true }).click();
       assert.equal(await desk.locator('#deskText').inputValue(), '稍后回复的草稿');
       await desk.locator('#deskSubmit').click();
-      await desk.locator('#deskComposer').waitFor({ state: 'hidden' }).catch(async error => {
-        throw new Error('Reply did not close: ' + await desk.locator('#deskComposerStatus').innerText(), { cause: error });
-      });
-      assert.match(await list.innerText(), /稍后回复的草稿/);
+      await list.getByText('稍后回复的草稿', { exact: true }).waitFor();
       const writes = t.requests.filter(r => r.method !== 'GET');
       assert.equal(writes.length, 1);
       assert.equal(writes[0].path, '/gists/' + CHILD + '/comments');
@@ -509,7 +498,13 @@ const tests = [
       assert.equal(data.replyToName, '访客甲');
       assert.equal(data.recordTime, time);
       await t.page.waitForFunction(() => document.querySelector('#timer-feedback-panel').textContent.includes('稍后回复的草稿'));
-      await desk.locator('#deskNotesClearFilter').click();
+      await desk.locator('#deskNotesOpen').click();
+      await desk.locator('#deskText').fill('新的普通留言');
+      await desk.locator('#deskSubmit').click();
+      await list.getByText('新的普通留言', { exact: true }).waitFor();
+      const fresh = JSON.parse(JSON.parse(t.requests.at(-1).body).body).data;
+      assert.equal(fresh.parentId, null);
+      assert.equal(fresh.recordTime, null);
       assert.match(await list.innerText(), /无关联的纸条/);
       const beforeRefresh = t.requests.length;
       t.fixture.comments.push(nativeNote('next-visit', '手动刷新后的新留言'));
@@ -517,8 +512,10 @@ const tests = [
       await list.getByText('手动刷新后的新留言', { exact: true }).waitFor();
       assert.equal(t.requests.length, beforeRefresh + 2, 'manual refresh reads the shared notes exactly once');
       const beforePin = t.requests.length;
-      await desk.locator('#deskOwnerImport').setInputFiles({ name: 'synthetic-author.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(authorFile)) });
-      const card = list.locator('[data-note-id="on-record"]');
+      await t.page.evaluate(() => { location.hash = 'personal/author?return=friends'; });
+      await t.page.locator('#profile-author-key').setInputFiles({ name: 'synthetic-author.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(authorFile)) });
+      await t.page.waitForFunction(() => TimerConfig.author().isOwner());
+      await t.page.locator('#home-show-feedback').click();
       await card.locator('.desk-note-pin').click();
       await list.locator('[data-note-id="on-record"].desk-note--pinned').waitFor();
       assert.equal(t.requests.length, beforePin + 1);
@@ -540,12 +537,10 @@ const tests = [
     const t = await setup({ mobile: true, config: { ...CONFIG, COMMENT_GIST_ID: '' }, records: [{ time }] });
     try {
       assert.equal(t.requests.length, 0);
-      await t.page.getByRole('link', { name: '打开观察书桌' }).click();
-      const desk = t.page.frameLocator('#home-desk-frame');
-      await desk.locator('#desk-show-calendar').click();
-      await desk.locator('#list .entry').waitFor({ state: 'visible' });
-      assert.equal(await desk.locator('#list .entry').getAttribute('data-record-time'), time);
-      assert.equal(await desk.locator('.record-note-button').isDisabled(), true);
+      await t.page.goto(origin + '/page6.html#desk-archive');
+      await t.page.locator('#list .entry').waitFor({ state: 'visible' });
+      assert.equal(await t.page.locator('#list .entry').getAttribute('data-record-time'), time);
+      assert.equal(await t.page.locator('.record-note-button').isDisabled(), true);
       assert.equal(t.requests.length, 1);
       assert.equal(t.childRequests().length, 0);
       assert.deepEqual(t.errors, []);
@@ -590,7 +585,9 @@ const tests = [
   for (const file of ['assets/js/app-config.js', 'assets/js/feedback-core.js', 'assets/js/feedback-ui.js']) new vm.Script(fs.readFileSync(path.join(ROOT, file), 'utf8'), { filename: file });
   console.log('PASS JavaScript parse: main inline scripts and feedback modules');
   const allowed = new Set([
-    '/pagemain.html', '/page6.html', '/assets/js/home-desk.js', '/assets/js/page6.js', '/assets/css/page6.css',
+    '/pagemain.html', '/page6.html', '/assets/js/records.js', '/assets/js/home-desk.js', '/assets/js/page6.js', '/assets/css/page6.css',
+    '/assets/js/home-navigation.js', '/assets/js/profile.js', '/assets/js/tool-directory.js', '/assets/js/record-calendar.js',
+    '/assets/css/home.css', '/assets/css/record-calendar.css',
     '/assets/js/app-config.js', '/assets/js/feedback-core.js', '/assets/js/feedback-ui.js',
     '/assets/css/feedback.css', '/assets/css/notebook.css', '/assets/js/notebook-theme.js',
     '/assets/css/tailwind.css', '/assets/css/offline.css', '/assets/js/offline.js', '/assets/css/mobile-ui.css', '/assets/js/mobile-ui.js',
@@ -600,6 +597,12 @@ const tests = [
   const mime = { '.html': 'text/html; charset=utf-8', '.css': 'text/css', '.js': 'application/javascript', '.woff2': 'font/woff2' };
   server = http.createServer((req, res) => {
     const pathname = new URL(req.url, 'http://localhost').pathname;
+    if (pathname === '/feedback-component.html') {
+      const fixture = html.replace('<div hidden><div id="timer-feedback-root"', '<div><div id="timer-feedback-root"')
+        .replace('<script src="assets/js/home-navigation.js"></script>', '');
+      res.writeHead(200, { 'Content-Type': mime['.html'] }).end(fixture);
+      return;
+    }
     if (!allowed.has(pathname)) { res.writeHead(404).end(); return; }
     let body = fs.readFileSync(path.join(ROOT, pathname.slice(1)));
     if (pathname === '/assets/js/feedback-core.js') body = body.toString('utf8') + '\nwindow.TimerFeedbackCore.authorPublicKey=' + JSON.stringify(publicKey) + ';';

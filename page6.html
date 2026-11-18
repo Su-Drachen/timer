@@ -19,14 +19,10 @@
       <div class="top-actions"><a class="home-link" href="pagemain.html">返回主页 ↗</a><span class="status" id="status" role="status"><i></i><span>读取中</span></span><button class="refresh" id="refresh" type="button" aria-label="刷新写作时间">刷新记录 <span aria-hidden="true">↻</span></button></div>
     </header>
     <header class="desk-embedded-head" hidden>
-      <h1>观察书桌</h1>
-      <nav aria-label="书桌内容">
-        <button type="button" id="desk-show-notes" aria-controls="deskNotes" aria-current="page">纸条</button>
-        <button type="button" id="desk-show-calendar" aria-controls="desk-archive">日历</button>
-      </nav>
+      <h1>朋友</h1>
     </header>
     <main>
-      <div id="page6ConfigStatus" class="page6-config-status" role="status"><span id="page6ConfigMessage">正在读取本机主页配置…</span><a href="pagemain.html?tab=gist&amp;config=1">前往主页配置 ↗</a></div>
+      <div id="page6ConfigStatus" class="page6-config-status" role="status"><span id="page6ConfigMessage">正在读取本机配置…</span><a href="pagemain.html#personal/cloud?return=page6.html">前往个人配置 ↗</a></div>
       <section class="intro">
         <div class="intro-copy"><div class="eyebrow"><span></span> 回看记录，收好每一张纸条</div><h1>观察书桌<span>。</span></h1><p>记录每一次开始，<br class="mobile-break">也让桌边的留言得到回应。</p><a class="intro-link" href="#deskNotes">去看看桌边的留言 <span aria-hidden="true">↗</span></a></div>
         <div class="bookmark" aria-label="最近一次开笔"><span class="bookmark-tape" aria-hidden="true"></span><div class="bookmark-top"><span>最近一次开笔</span><span aria-hidden="true">✎</span></div><div class="bookmark-date" id="bookmarkDate">等一会儿</div><div class="bookmark-time" id="bookmarkTime">正在翻开记录本</div><div class="bookmark-line" aria-hidden="true"></div><button type="button" id="bookmarkNote" disabled>给这一刻递张纸条 <span aria-hidden="true">↗</span></button><span class="bookmark-number" aria-hidden="true">a moment to keep</span></div>
@@ -63,7 +59,7 @@
       </div>
     </main>
     <footer class="foot"><span><span id="page6FooterAuthor">我的书桌</span><span class="foot-dot"> · </span>一次次开始，一张张纸条。</span><span>时间以北京时间呈现</span></footer>
-    <details class="owner-settings"><summary>作者入口</summary><div class="owner-settings-inner"><p id="deskOwnerState">导入作者钥匙后，可以署名回复和夹住纸条。</p><label class="owner-import" tabindex="0" role="button">导入作者钥匙<input id="deskOwnerImport" type="file" accept=".json,application/json"></label><button id="deskOwnerForget" type="button" hidden>退出作者身份</button><p id="deskOwnerStatus" role="status"></p></div></details>
+    <details class="owner-settings"><summary>作者身份</summary><div class="owner-settings-inner"><p id="deskOwnerState">导入作者钥匙后，可以署名回复和夹住纸条。</p><a class="owner-import" href="pagemain.html#personal/author?return=page6.html">管理作者钥匙 ↗</a><p id="deskOwnerStatus" role="status"></p></div></details>
   </div>
   <div class="mobile-note-bar"><span>在自己的书桌<br><b>收好记录与回应。</b></span><button type="button" id="mobileNoteOpen">递张纸条 <span aria-hidden="true">↗</span></button></div>
   <div id="deskComposer" class="composer-overlay" role="dialog" aria-modal="true" aria-labelledby="deskComposerTitle" data-mobile-dialog hidden>

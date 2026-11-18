@@ -1,5 +1,5 @@
 module.exports = {
-  content: ['./pagemain.html', './assets/js/feedback-ui.js', './assets/js/offline.js'],
+  content: ['./pagemain.html', './assets/js/records.js', './assets/js/feedback-ui.js', './assets/js/offline.js'],
   darkMode: 'class',
   theme: {
     extend: {

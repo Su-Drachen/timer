@@ -40,6 +40,7 @@
   </style>
   <link rel="stylesheet" href="assets/css/notebook.css">
   <script src="assets/js/notebook-theme.js"></script>
+    <script src="assets/js/app-config.js"></script>
   <link rel="stylesheet" href="assets/css/page-special.css">
   <link rel="stylesheet" href="assets/css/mobile-ui.css">
   <script src="assets/js/mobile-ui.js" defer></script>
@@ -54,7 +55,7 @@
       <div class="side-bottom">
         <button class="side-link" onclick="startHealthAnalysis()"><i class="fa fa-line-chart"></i><span>分析最新记录</span></button>
         <button class="side-link" onclick="openSettings()"><i class="fa fa-cog"></i><span>清言 API 设置</span><span id="apiStatus" class="status-dot"></span></button>
-        <a class="side-link" href="pagemain.html"><i class="fa fa-arrow-left"></i><span>返回主页</span></a>
+        <a class="side-link" href="pagemain.html#tools"><i class="fa fa-arrow-left"></i><span>返回工具</span></a>
       </div>
     </aside>
     <section class="main">
@@ -80,34 +81,23 @@
       </main>
       <footer class="composer-area"><div class="composer-inner">
         <div id="attachPreview" class="attach-preview"><i class="fa fa-file-o"></i><span id="attachName"></span><button class="remove-file" title="移除附件" aria-label="移除附件" onclick="clearAttachment()"><i class="fa fa-times"></i></button></div>
-        <div class="composer"><button class="icon-btn attach-btn" title="添加附件" aria-label="添加附件" onclick="document.getElementById('fileInput').click()"><i class="fa fa-paperclip"></i></button><input id="fileInput" type="file" hidden><textarea id="userInput" rows="1" placeholder="给 AI 健康顾问发送消息" aria-label="消息内容"></textarea><button id="sendButton" class="send" title="发送" aria-label="发送" disabled><i class="fa fa-arrow-up"></i></button></div>
+        <div class="composer"><button class="icon-btn attach-btn" title="添加附件" aria-label="添加附件" onclick="chooseAttachment()"><i class="fa fa-paperclip"></i></button><input id="fileInput" type="file" hidden><textarea id="userInput" rows="1" placeholder="给 AI 健康顾问发送消息" aria-label="消息内容"></textarea><button id="sendButton" class="send" title="发送" aria-label="发送" disabled><i class="fa fa-arrow-up"></i></button></div>
         <p class="disclaimer">AI 可能会犯错。健康建议仅供参考，不能替代医生诊断。</p>
       </div></footer>
     </section>
   </div>
-  <div id="settings" class="modal-bg" role="dialog" aria-modal="true" aria-labelledby="settingsTitle" data-mobile-dialog><div class="modal" data-mobile-panel tabindex="-1">
-    <div class="modal-head"><h2 id="settingsTitle">清言 API 设置</h2><button class="icon-btn" title="关闭" aria-label="关闭" onclick="closeSettings()"><i class="fa fa-times"></i></button></div>
-    <div class="field"><label for="cfgKey">API Key</label><input id="cfgKey" type="password" autocomplete="off" placeholder="开发者 API Key"></div>
-    <div class="field"><label for="cfgSecret">API Secret</label><input id="cfgSecret" type="password" autocomplete="off" placeholder="开发者 API Secret"></div>
-    <div class="field"><label for="cfgAssistant">Assistant ID</label><input id="cfgAssistant" type="text" autocomplete="off" placeholder="智能体 ID"></div>
-    <div class="note">凭证只保存在当前浏览器中。</div>
-    <div class="modal-actions" data-mobile-actions><button class="btn" onclick="closeSettings()">取消</button><button class="btn primary" onclick="saveSettings()">保存</button></div>
-  </div></div>
   <div id="toast" class="toast" role="status"></div>
   <script>
     const API_ROOT='https://chatglm.cn/chatglm/assistant-api/v1';
-    const DEFAULT_ASSISTANT='6a8564e18bde79fad1950bf2';
-    const DEFAULT_KEY='';
-    const DEFAULT_SECRET='';
     const STORE={sessions:'health_chat_sessions',current:'health_current_session_id'};
     const $=id=>document.getElementById(id);
-    const dom={sidebar:$('sidebar'),overlay:$('overlay'),sessionList:$('sessionList'),title:$('chatTitle'),welcome:$('welcome'),messages:$('messages'),scroll:$('chatScroll'),input:$('userInput'),send:$('sendButton'),file:$('fileInput'),preview:$('attachPreview'),fileName:$('attachName'),settings:$('settings'),apiStatus:$('apiStatus'),toast:$('toast')};
+    const dom={sidebar:$('sidebar'),overlay:$('overlay'),sessionList:$('sessionList'),title:$('chatTitle'),welcome:$('welcome'),messages:$('messages'),scroll:$('chatScroll'),input:$('userInput'),send:$('sendButton'),file:$('fileInput'),preview:$('attachPreview'),fileName:$('attachName'),apiStatus:$('apiStatus'),toast:$('toast')};
     const json=(value,fallback)=>{try{return JSON.parse(value)}catch{return fallback}};
     let sessions=json(localStorage.getItem(STORE.sessions),[]);
     if(!Array.isArray(sessions))sessions=[];
     sessions=sessions.map(s=>({...s,messages:Array.isArray(s.messages)?s.messages:[],conversationId:s.conversationId||null}));
     let currentId=localStorage.getItem(STORE.current)||null,selectedFile=null,generating=false,controller=null,cachedToken='',tokenExpiry=0,toastTimer;
-    const config=()=>({apiKey:localStorage.getItem('glm_api_key')||DEFAULT_KEY,apiSecret:localStorage.getItem('glm_api_secret')||DEFAULT_SECRET,assistantId:localStorage.getItem('glm_assistant_id')||DEFAULT_ASSISTANT});
+    const config = () => window.TimerConfig.readAi();
     const current=()=>sessions.find(s=>s.id===currentId)||null;
 
     function persist(){try{localStorage.setItem(STORE.sessions,JSON.stringify(sessions));if(currentId)localStorage.setItem(STORE.current,currentId)}catch{showToast('本地存储空间不足')}}
@@ -143,22 +133,23 @@
       while(true){const{done,value}=await reader.read();if(done)break;buffer+=decoder.decode(value,{stream:true});consume(false)}buffer+=decoder.decode();consume(true);if(streamError)throw new Error(streamError);return{text:[...texts.values(),...extras.values()].filter(Boolean).join('\n\n'),images:[...images],historyId}
     }
     async function generateReply(prompt,session,fileIds=[]){controller=new AbortController();setGenerating(true);dom.welcome.hidden=true;dom.messages.hidden=false;const live=renderMessage({role:'assistant',content:''});live.body.classList.add('typing');scrollBottom();let latest={text:'',images:[]};try{const result=await stream(prompt,session,fileIds,update=>{latest=update;setContent(live.body,update.text||'',update.images||[],'assistant');live.body.classList.add('typing');if(update.toolState){const state=document.createElement('div');state.className='tool';state.innerHTML=`<i class="fa fa-circle-o-notch"></i><span>${escapeHtml(update.toolState)}</span>`;live.body.prepend(state)}scrollBottom()},controller.signal);session.messages.push({role:'assistant',content:result.text||(result.images.length?'':'暂时没有生成可显示的内容。'),images:result.images,historyId:result.historyId||''})}catch(error){if(error.name==='AbortError')session.messages.push({role:'assistant',content:latest.text||'已停止生成。',images:latest.images||[]});else session.messages.push({role:'assistant',content:`请求未完成：${error.message}`,error:true})}finally{session.updatedAt=Date.now();persist();setGenerating(false);controller=null;renderMessages();renderSidebar()}}
-    async function sendMessage(){if(generating){stopGeneration();return}const text=dom.input.value.trim(),file=selectedFile;if(!text&&!file)return;const session=current()||newSession();const heading=text||file.name;if(!session.messages.length)session.title=heading.slice(0,24)+(heading.length>24?'…':'');session.messages.push({role:'user',content:text||'请分析这个附件。',fileName:file?.name||''});session.updatedAt=Date.now();persist();dom.input.value='';autoResize();clearAttachment();renderMessages();renderSidebar();let fileIds=[];if(file){try{setGenerating(true);controller=new AbortController();fileIds=[await upload(file,await getToken(),controller.signal)]}catch(error){session.messages.push({role:'assistant',content:error.name==='AbortError'?'已停止上传。':`附件未能上传：${error.message}`,error:true});session.updatedAt=Date.now();persist();setGenerating(false);controller=null;renderMessages();return}}await generateReply(text||'请分析这个附件。',session,fileIds)}
+    async function sendMessage(){if(generating){stopGeneration();return}const text=dom.input.value.trim(),file=selectedFile;if((!text&&!file)||!aiReady())return;const session=current()||newSession();const heading=text||file.name;if(!session.messages.length)session.title=heading.slice(0,24)+(heading.length>24?'…':'');session.messages.push({role:'user',content:text||'请分析这个附件。',fileName:file?.name||''});session.updatedAt=Date.now();persist();dom.input.value='';autoResize();clearAttachment();renderMessages();renderSidebar();let fileIds=[];if(file){try{setGenerating(true);controller=new AbortController();fileIds=[await upload(file,await getToken(),controller.signal)]}catch(error){session.messages.push({role:'assistant',content:error.name==='AbortError'?'已停止上传。':`附件未能上传：${error.message}`,error:true});session.updatedAt=Date.now();persist();setGenerating(false);controller=null;renderMessages();return}}await generateReply(text||'请分析这个附件。',session,fileIds)}
     function stopGeneration(){controller?.abort()}
-    async function regenerate(index){if(generating)return;const session=current();if(!session||session.messages[index]?.role!=='assistant')return;const prior=session.messages.slice(0,index),lastUser=[...prior].reverse().find(m=>m.role==='user');if(!lastUser)return;session.messages=prior;session.conversationId=null;persist();renderMessages();const context=prior.slice(-12).map(m=>`${m.role==='user'?'用户':'助手'}：${m.content}`).join('\n\n');await generateReply(`请根据以下对话重新回答最后一个用户问题。不要提及你正在重新回答。\n\n${context}`,session)}
+    async function regenerate(index){if(generating||!aiReady())return;const session=current();if(!session||session.messages[index]?.role!=='assistant')return;const prior=session.messages.slice(0,index),lastUser=[...prior].reverse().find(m=>m.role==='user');if(!lastUser)return;session.messages=prior;session.conversationId=null;persist();renderMessages();const context=prior.slice(-12).map(m=>`${m.role==='user'?'用户':'助手'}：${m.content}`).join('\n\n');await generateReply(`请根据以下对话重新回答最后一个用户问题。不要提及你正在重新回答。\n\n${context}`,session)}
     function usePrompt(prompt){dom.input.value=prompt;autoResize();refreshSend();sendMessage()}
 
     async function fetchGist(cfg,signal){const response=await fetch(`https://api.github.com/gists/${encodeURIComponent(cfg.GIST_ID)}`,{headers:{Authorization:`token ${cfg.GITHUB_PAT}`,Accept:'application/vnd.github.v3+json'},cache:'no-store',signal});const data=await response.json().catch(()=>({}));if(!response.ok)throw new Error(data.message||`同步失败（HTTP ${response.status}）`);const file=data.files?.['records.json'];return file?.content?json(file.content,[]):[]}
     function matchRecords(local,gist){const events=[];const add=(records,type)=>(Array.isArray(records)?records:[]).forEach(r=>{const timestamp=new Date(String(r.time||'').replace(/\//g,'-')).getTime();if(!Number.isNaN(timestamp))events.push({type,timestamp,time:r.time,remark:r.remark||'',used:false})});add(local,'local');add(gist,'gist');events.sort((a,b)=>a.timestamp-b.timestamp);const pairs=[];for(let i=0;i<events.length;i++){if(events[i].used)continue;for(let j=i+1;j<events.length;j++){const duration=events[j].timestamp-events[i].timestamp;if(duration>43200000)break;if(!events[j].used&&events[j].type!==events[i].type&&duration>=60000){events[i].used=events[j].used=true;pairs.push({start:events[i],end:events[j],minutes:Math.round(duration/60000),crossDay:new Date(events[i].timestamp).toDateString()!==new Date(events[j].timestamp).toDateString()});break}}}return pairs.sort((a,b)=>b.start.timestamp-a.start.timestamp)}
     function analysisPrompt(pairs){const recent=pairs.slice(0,10),values=recent.map(x=>x.minutes),avg=Math.round(values.reduce((a,b)=>a+b,0)/values.length),details=recent.map((x,i)=>`${i+1}. ${x.start.time} 至 ${x.end.time}，${x.minutes} 分钟${x.crossDay?'，跨日':''}${x.start.remark||x.end.remark?`，备注：${x.start.remark||x.end.remark}`:''}`).join('\n');return`请你以喵宝的身份。请基于下列个人时间记录给出简洁、具体、非诊断性的建议。避免羞辱或夸大风险；若存在明确风险信号，说明何时应咨询医生。\n\n最近 ${recent.length} 次记录平均 ${avg} 分钟，最长 ${Math.max(...values)} 分钟，最短 ${Math.min(...values)} 分钟。\n\n${details}\n\n请按以下结构回答：\n1. 数据观察\n2. 时长与时段评估\n3. 三条可执行建议\n4. 需要留意的风险信号`}
     async function startHealthAnalysis(){
-      if(generating)return;toggleSidebar(false);
+      if(generating||!aiReady())return;
+      const cfg = window.TimerConfig.read();
+      if (!cfg.GIST_ID || !cfg.GITHUB_PAT) { openSettings('cloud'); return; }
+      toggleSidebar(false);
       const session=newSession(`健康记录分析 ${new Date().toLocaleDateString('zh-CN',{month:'2-digit',day:'2-digit'})}`);
       session.messages.push({role:'user',content:'请你以喵宝的身份，分析我最近的时间记录，并给出具体建议。'});persist();renderMessages();renderSidebar();
       controller=new AbortController();setGenerating(true);
       try{
-        const cfg=json(localStorage.getItem('timeRecorderConfig'),{});
-        if(!cfg.GIST_ID||!cfg.GITHUB_PAT)throw new Error('尚未完成云端同步配置，请先在进阶配置中填写信息');
         const pairs=matchRecords(json(localStorage.getItem('timeRecords'),[]),await fetchGist(cfg,controller.signal));
         if(!pairs.length)throw new Error('没有找到 1 分钟至 12 小时范围内的有效闭环记录');
         setGenerating(false);controller=null;await generateReply(analysisPrompt(pairs),session);
@@ -169,13 +160,35 @@
       }finally{if(controller){controller=null;setGenerating(false)}}
     }
 
-    function openSettings(){const cfg=config();$('cfgKey').value=cfg.apiKey;$('cfgSecret').value=cfg.apiSecret;$('cfgAssistant').value=cfg.assistantId;dom.settings.classList.add('show');window.TimerMobile?.openDialog(dom.settings,{initialFocus:dom.settings.querySelector('[data-mobile-panel]'),onClose:closeSettings})}
-    function closeSettings(){if(!dom.settings.classList.contains('show'))return;dom.settings.classList.remove('show');window.TimerMobile?.closeDialog(dom.settings)}
-    function saveSettings(){const key=$('cfgKey').value.trim(),secret=$('cfgSecret').value.trim(),assistant=$('cfgAssistant').value.trim();if(!key||!secret||!assistant){showToast('请完整填写三项 API 配置');return}localStorage.setItem('glm_api_key',key);localStorage.setItem('glm_api_secret',secret);localStorage.setItem('glm_assistant_id',assistant);cachedToken='';tokenExpiry=0;updateApiStatus();closeSettings();showToast('API 配置已保存')}
+    const draftKey = 'timer.ai.settingsDraft';
+    function openSettings(section = 'ai') {
+      if (generating) { showToast('请先停止当前回复'); return; }
+      try {
+        if (dom.input.value) sessionStorage.setItem(draftKey, dom.input.value);
+        else sessionStorage.removeItem(draftKey);
+      } catch (_) {}
+      location.assign('pagemain.html#personal/' + section + '?return=page5.html');
+    }
+    function chooseAttachment() {
+      if (aiReady()) dom.file.click();
+    }
+    function restoreDraft() {
+      try {
+        const draft = sessionStorage.getItem(draftKey);
+        if (draft !== null) { dom.input.value = draft; sessionStorage.removeItem(draftKey); autoResize(); refreshSend(); }
+      } catch (_) {}
+    }
+    function aiReady() {
+      const cfg = config();
+      if (cfg.apiKey && cfg.apiSecret && cfg.assistantId) return true;
+      openSettings();
+      return false;
+    }
     function updateApiStatus(){const cfg=config();dom.apiStatus.classList.toggle('ready',Boolean(cfg.apiKey&&cfg.apiSecret&&cfg.assistantId))}
-    dom.overlay.onclick=()=>toggleSidebar(false);dom.settings.onclick=e=>{if(e.target===dom.settings)closeSettings()};dom.input.oninput=()=>{autoResize();refreshSend()};dom.input.onkeydown=e=>{if(e.key==='Enter'&&!e.shiftKey&&!e.isComposing&&!matchMedia('(pointer: coarse)').matches){e.preventDefault();sendMessage()}};dom.send.onclick=sendMessage;dom.file.onchange=()=>{const file=dom.file.files?.[0];if(!file)return;if(file.size>100*1024*1024){showToast('附件不能超过 100MB');dom.file.value='';return}selectedFile=file;dom.fileName.textContent=file.name;dom.preview.classList.add('show');refreshSend()};document.addEventListener('keydown',e=>{if(e.defaultPrevented||e.isComposing)return;if(e.key==='Escape'){if(!window.TimerMobile)closeSettings();toggleSidebar(false)}if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){e.preventDefault();createNewChat()}});
+    dom.overlay.onclick=()=>toggleSidebar(false);dom.input.oninput=()=>{autoResize();refreshSend()};dom.input.onkeydown=e=>{if(e.key==='Enter'&&!e.shiftKey&&!e.isComposing&&!matchMedia('(pointer: coarse)').matches){e.preventDefault();sendMessage()}};dom.send.onclick=sendMessage;dom.file.onchange=()=>{const file=dom.file.files?.[0];if(!file)return;if(file.size>100*1024*1024){showToast('附件不能超过 100MB');dom.file.value='';return}selectedFile=file;dom.fileName.textContent=file.name;dom.preview.classList.add('show');refreshSend()};document.addEventListener('keydown',e=>{if(e.defaultPrevented||e.isComposing)return;if(e.key==='Escape'){toggleSidebar(false)}if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){e.preventDefault();createNewChat()}});
     window.visualViewport?.addEventListener('resize',autoResize);
-    if(!sessions.length)newSession();if(!sessions.some(s=>s.id===currentId))currentId=sessions[0].id;persist();renderSidebar();renderMessages();updateApiStatus();refreshSend();
+    if(!sessions.length)newSession();if(!sessions.some(s=>s.id===currentId))currentId=sessions[0].id;persist();renderSidebar();renderMessages();updateApiStatus();refreshSend();restoreDraft();
+    window.addEventListener('pageshow', () => { updateApiStatus(); restoreDraft(); });
   </script>
 </body>
 </html>

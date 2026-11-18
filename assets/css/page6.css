@@ -127,10 +127,6 @@
   background: var(--bg);
 }
 .desk-embedded-head h1 { margin: 0; color: var(--text); font: 500 22px "Songti SC", SimSun, serif; }
-.desk-embedded-head nav { display: flex; gap: 2px; padding: 3px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; }
-.desk-embedded-head button { min-width: 56px; min-height: 44px; padding: 5px 10px; background: transparent; color: var(--muted); border: 0; font-size: 14px; }
-.desk-embedded-head button[aria-current="page"] { color: var(--text); background: var(--bg); font-weight: 650; box-shadow: 0 1px 4px #0002; }
-.desk-embedded[data-theme="blue"] .desk-embedded-head button[aria-current="page"] { background: #edf3ff; color: var(--accent); }
 body[data-desk-view] .wrap { max-width: 720px; padding-bottom: 20px; }
 body[data-desk-view] :is(.top,.foot,.mobile-note-bar,.home-link,.intro-copy,.bookmark-number,.bookmark-tape,.desk-endnote),
 body[data-desk-view] .page6-config-status:not(.is-warning),
@@ -203,3 +199,32 @@ body[data-desk-view] .bookmark button { grid-column: 2; grid-row: 1 / 4; gap: 6p
   .mobile-note-bar { padding-left: max(16px, env(safe-area-inset-left)); padding-right: max(16px, env(safe-area-inset-right)); }
   .desk-reply-select-label, .delete-include { min-height: 44px; }
 }
+
+:root.desk-embedded[data-theme="blue"] {
+  --bg: #f6f8f9;
+  --line: #dbe6e5;
+  --text: #253648;
+  --muted: #546775;
+  --accent: #257d76;
+}
+.desk-embedded body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif; }
+.desk-embedded .wrap { margin: 0 auto; padding-inline: clamp(16px, 4vw, 36px); }
+.desk-embedded .desk-embedded-head { padding-block: 17px; z-index: 3; }
+.desk-embedded .desk-embedded-head h1 { font-family: inherit; font-size: 24px; font-weight: 650; line-height: 1.25; }
+.desk-embedded #deskNotesOpen { min-height: 44px; padding: 0 18px; font-size: 15px; font-weight: 600; border-radius: 999px; }
+.desk-embedded #desk-barrage-slot .tf-barrage-host { border-radius: 20px; }
+.desk-embedded #desk-barrage-slot .tf-button { min-height: 44px; padding-inline: 10px; }
+.desk-embedded .desk-note { margin-block: 10px; border-radius: 18px; padding: 16px; }
+.desk-embedded #deskNotes .notes-heading h2,
+.desk-embedded .friends-composer .composer-heading h2 { font-family: inherit; font-size: 20px; font-weight: 650; letter-spacing: 0; }
+.desk-embedded .friends-composer { display: block; margin: 24px 0 12px; scroll-margin-top: 86px; }
+.desk-embedded .friends-composer .composer-panel { width: 100%; max-width: none; max-height: none; padding: 18px; border-radius: 20px; overflow: visible; }
+.desk-embedded .friends-composer .sheet-handle { display: none; }
+.desk-embedded .friends-composer .composer-bottom { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 18px; }
+.desk-embedded .friends-composer .composer-bottom > span { font-size: 12px; }
+.desk-embedded .friends-composer #deskSubmit { flex: 0 1 auto; min-width: 110px; min-height: 46px; font-size: 15px; }
+.desk-embedded .friends-composer :is(#deskNickname,#deskText) { font: inherit; font-size: 16px; scroll-margin-block: 82px 16px; }
+.desk-embedded .desk-note-record { display: inline-block; overflow-wrap: anywhere; }
+:root.desk-embedded[data-theme="blue"] :is(#deskNotesOpen, #deskSubmit) { background: var(--accent); border-color: var(--accent); color: white; }
+.desk-embedded[data-theme="blue"] #desk-barrage-slot { --primary-light: #e4f4f0; --bg-card: #fff; }
+:root.desk-embedded[data-theme="blue"] .desk-note-record { background: #e4f4f0; color: #285e59; border-color: #cce3e0; }

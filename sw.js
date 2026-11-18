@@ -55,7 +55,12 @@ self.addEventListener('fetch', event => {
     const request = event.request;
     if (request.method !== 'GET' || request.headers.has('Authorization') || request.headers.has('Range') || request.cache === 'no-store') return;
     const url = new URL(request.url);
-    if (url.origin !== self.location.origin || url.search) return;
+    if (url.origin !== self.location.origin) return;
+    if (url.search) {
+        // The friends tab navigates to a fixed view of the same cached document.
+        if (request.mode !== 'navigate' || url.href !== new URL('page6.html?view=friends', SCOPE).href) return;
+        url.search = '';
+    }
     const key = url.href === SCOPE ? INDEX : url.href;
     if (!ALLOWED.has(key)) return; // Includes all API calls, see/, downloads and unknown paths.
     event.respondWith((async () => {

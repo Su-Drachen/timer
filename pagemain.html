@@ -235,45 +235,14 @@
     <script src="assets/js/notebook-theme.js"></script>
     <script src="assets/js/app-config.js"></script>
     <link rel="stylesheet" href="assets/css/mobile-ui.css">
+    <link rel="stylesheet" href="assets/css/home.css">
+    <link rel="stylesheet" href="assets/css/record-calendar.css">
     <script src="assets/js/mobile-ui.js" defer></script>
+    <script src="assets/js/record-calendar.js"></script>
 </head>
 <body class="nb-page nb-home min-h-screen flex flex-col font-sans antialiased">
 
     <!-- ==== 全局模态框与Toast提示 ==== -->
-
-    <!-- Gist 配置模态框 -->
-    <div id="gist-config-overlay" data-mobile-dialog class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 hidden" role="dialog" aria-modal="true" aria-labelledby="gist-config-title">
-        <div data-mobile-panel class="card-box rounded-2xl shadow-2xl p-6 w-full max-w-md overflow-y-auto">
-            <div class="flex items-start justify-between gap-4 mb-2">
-                <h2 id="gist-config-title" class="text-xl font-bold">云同步配置 (Gist)</h2>
-                <button type="button" id="close-gist-config-btn" class="icon-btn w-8 h-8 rounded-lg flex items-center justify-center opacity-60 hover:opacity-100" aria-label="关闭云端配置" title="关闭"><i class="fa fa-times"></i></button>
-            </div>
-            <p class="text-sm opacity-70 mb-5 leading-relaxed">请填入 GitHub 账户信息与拥有 Gist 权限的个人访问令牌 (PAT)。配置仅保存在当前浏览器本地。</p>
-            <form id="gist-config-form" class="space-y-4">
-                <div>
-                    <label for="gist-username" class="block text-xs font-semibold uppercase tracking-wider mb-1 opacity-80">用户名 (Username)</label>
-                    <input type="text" id="gist-username" autocapitalize="none" spellcheck="false" enterkeyhint="next" class="w-full px-3.5 py-2.5 rounded-xl border bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" style="border-color: var(--border-color);" required>
-                </div>
-                <div>
-                    <label for="gist-gistId" class="block text-xs font-semibold uppercase tracking-wider mb-1 opacity-80">Gist ID</label>
-                    <input type="text" id="gist-gistId" autocapitalize="none" spellcheck="false" enterkeyhint="next" class="w-full px-3.5 py-2.5 rounded-xl border bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" style="border-color: var(--border-color);" required>
-                </div>
-                <div>
-                    <label for="gist-pat" class="block text-xs font-semibold uppercase tracking-wider mb-1 opacity-80">访问令牌 (PAT Token)</label>
-                    <input type="password" id="gist-pat" class="w-full px-3.5 py-2.5 rounded-xl border bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" style="border-color: var(--border-color);" required>
-                </div>
-                <div>
-                    <label for="gist-commentId" class="block text-xs font-semibold mb-1 opacity-80">留言 Gist ID <span class="font-normal opacity-60">（子项目，选填）</span></label>
-                    <input type="text" id="gist-commentId" autocomplete="off" spellcheck="false" aria-describedby="gist-comment-help" placeholder="留空则不开启留言功能" class="w-full px-3.5 py-2.5 rounded-xl border bg-transparent text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" style="border-color: var(--border-color);">
-                    <p id="gist-comment-help" class="text-xs opacity-60 mt-2 leading-relaxed">仅进入主页或点击“刷新留言”时读取。保存后请手动刷新留言或重新进入主页；不影响打卡同步。</p>
-                </div>
-                <div data-mobile-actions class="flex flex-col sm:flex-row gap-2 mt-2">
-                    <button type="submit" class="flex-1 btn-theme-primary font-medium py-3 px-4 rounded-xl shadow-lg">保存并开始同步</button>
-                    <button type="button" id="clear-gist-config-btn" class="flex-1 font-medium py-3 px-4 rounded-xl border text-red-500 hover:bg-red-500/10" style="border-color: var(--border-color);">清除本地配置</button>
-                </div>
-            </form>
-        </div>
-    </div>
 
     <!-- 通用编辑模态框 -->
     <div id="record-modal-overlay" data-mobile-dialog class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 hidden" role="dialog" aria-modal="true" aria-labelledby="record-modal-title">
@@ -351,70 +320,20 @@
         <span id="toast-message"></span>
     </div>
 
-    <!-- ==== 顶部导航栏 ==== -->
-    <header class="nb-header header-bg sticky top-0 z-40 border-b" style="border-color: color-mix(in srgb, var(--header-text) 14%, transparent);">
-        <div class="nb-header-inner max-w-5xl mx-auto px-4 py-3.5 flex justify-between items-center">
-            <div class="flex items-center gap-2.5">
-                <div class="nb-brand-icon w-8 h-8 rounded-xl flex items-center justify-center bg-white/20 backdrop-blur">
-                    <i class="fa fa-clock-o text-lg"></i>
-                </div>
-                <div>
-                    <h1 class="text-base sm:text-lg font-bold tracking-tight">时间笔记</h1>
-                    <p class="hidden sm:block text-[10px] opacity-60 tracking-[0.16em] uppercase">A personal journal of time</p>
-                </div>
-            </div>
-
-            <!-- 主题切换胶囊 -->
-            <div class="nb-theme-picker flex items-center p-1 rounded-xl bg-black/10 backdrop-blur text-xs font-medium gap-1">
-                <button type="button" onclick="switchTheme('blue')" id="theme-btn-blue" class="px-2.5 py-1 rounded-lg transition-all flex items-center gap-1" aria-label="切换科技蓝主题" title="科技蓝">
-                    <span class="w-2.5 h-2.5 rounded-full bg-[#165DFF] inline-block"></span>
-                    <span class="hidden sm:inline">科技蓝</span>
-                </button>
-                <button type="button" onclick="switchTheme('white')" id="theme-btn-white" class="px-2.5 py-1 rounded-lg transition-all flex items-center gap-1" aria-label="切换极简白主题" title="极简白">
-                    <span class="w-2.5 h-2.5 rounded-full bg-white border border-gray-400 inline-block"></span>
-                    <span class="hidden sm:inline">极简白</span>
-                </button>
-                <button type="button" onclick="switchTheme('dark')" id="theme-btn-dark" class="px-2.5 py-1 rounded-lg transition-all flex items-center gap-1" aria-label="切换暗夜黑主题" title="暗夜黑">
-                    <span class="w-2.5 h-2.5 rounded-full bg-slate-900 border border-slate-700 inline-block"></span>
-                    <span class="hidden sm:inline">暗夜黑</span>
-                </button>
-            </div>
-        </div>
-    </header>
-
-    <main class="nb-main flex-grow container mx-auto max-w-5xl px-3.5 sm:px-6 py-5 sm:py-8">
+    <header id="home-records-header" class="home-header">
+        <div class="home-brand"><span class="nb-brand-icon"><i class="fa fa-clock-o" aria-hidden="true"></i></span><h1>时间笔记</h1></div>
         <div id="offline-status" class="offline-status" role="status" aria-live="polite">
             <span id="offline-message">正在准备离线使用…</span>
             <button id="offline-retry" type="button" hidden>重试准备</button>
         </div>
-
-        <section class="nb-intro" aria-labelledby="notebook-heading">
-            <div>
-                <p class="nb-kicker">时间笔记 / YOUR EVERYDAY JOURNAL</p>
-                <h2 id="notebook-heading">让时间留下痕迹。</h2>
-                <p>记录当下，回看日常。每一次开始，都值得被记住。</p>
-            </div>
-            <div class="nb-intro-aside" aria-hidden="true"><span>ONE MOMENT AT A TIME</span>记下开始<br>看见积累</div>
-        </section>
-        <nav class="nb-nav" aria-label="功能导航">
-            <a href="pagemain.html" aria-current="page">时间记录</a>
-            <a href="page1.html">备注词条</a>
-            <a href="page2.html">成就徽章</a>
-            <a href="page4.html">时长分析</a>
-            <a href="page3.html">数据修复</a>
-            <a href="page5.html">AI 顾问</a>
-            <a href="page6.html">观察书桌</a>
-            <a href="page0.html">使用指南</a>
-        </nav>
-
-        <!-- 留言独立于本地/云端打卡；未配置子项目时保持隐藏。 -->
-        <div id="timer-feedback-root" hidden></div>
-
+    </header>
+    <main class="nb-main flex-grow">
+        <div hidden><div id="timer-feedback-root" hidden></div></div>
         <div id="home-records-view">
         <!-- 标签页切换 -->
         <div class="nb-mode-tabs max-w-2xl mx-auto mb-6 p-1 rounded-xl grid grid-cols-2 gap-1 border" style="background-color: var(--bg-card); border-color: var(--border-color);" role="tablist" aria-label="数据存储方式">
             <button id="tab-local" role="tab" aria-selected="true" aria-controls="content-local" class="tab-btn active py-2.5 rounded-lg font-semibold text-sm transition-all shadow-sm"><i class="fa fa-laptop mr-1.5 opacity-70"></i>本地记录</button>
-            <button id="tab-gist" role="tab" aria-selected="false" aria-controls="content-gist" class="tab-btn py-2.5 rounded-lg font-semibold text-sm transition-all"><i class="fa fa-cloud mr-1.5 opacity-70"></i>云端同步</button>
+            <button id="tab-gist" role="tab" aria-selected="false" aria-controls="content-gist" class="tab-btn py-2.5 rounded-lg font-semibold text-sm transition-all"><i class="fa fa-cloud mr-1.5 opacity-70"></i>云端记录</button>
         </div>
 
         <!-- 本地版内容 -->
@@ -422,30 +341,29 @@
             <div class="app-stack max-w-3xl mx-auto">
                 <!-- 实时打卡卡片 -->
                 <div class="card-box hero-card rounded-2xl p-5 sm:p-7">
-                    <div class="flex items-center justify-between mb-6">
-                        <div><p class="eyebrow">Local mode</p><p class="text-xs opacity-60 mt-1">专注当下，不让重要时刻溜走</p></div>
-                        <span class="flex items-center gap-2 text-xs font-medium opacity-70"><span class="status-dot"></span>已在本地</span>
+                    <div class="record-clock-label">
+                        <h2>记录此刻</h2>
+                        <span class="record-location"><i class="fa fa-mobile" aria-hidden="true"></i> 保存到本机</span>
                     </div>
-                    <p class="text-xs font-semibold uppercase tracking-wider opacity-60 mb-1">当前时间</p>
-                    <p id="local-current-time" class="text-4xl sm:text-6xl font-extrabold tracking-tight mb-1 font-mono">--:--:--</p>
+                    <p id="local-current-time" class="record-time font-mono" aria-label="当前时间">--:--:--</p>
                     <p id="local-current-date" class="text-xs opacity-60 mb-6">--</p>
                     <button id="local-record-btn" data-mobile-focus-fallback aria-label="记录当前时间" class="w-full sm:w-auto btn-theme-primary font-semibold py-3 px-8 rounded-xl shadow-md flex items-center justify-center gap-2">
                         <i class="fa fa-plus-circle text-lg"></i>
                         <span>记录这一刻</span>
                     </button>
-                    <div class="nb-clock-art" aria-hidden="true"><span></span><span></span></div>
                 </div>
                 <div class="stat-grid" aria-label="本地记录概览">
                     <div class="stat-item"><span class="text-xs opacity-60">今日记录</span><strong id="local-today-count">0</strong></div>
                     <div class="stat-item"><span class="text-xs opacity-60">本周记录</span><strong id="local-week-count">0</strong></div>
-                    <div class="stat-item"><span class="text-xs opacity-60">连续记录</span><strong id="local-streak-count">0 天</strong></div>
+                    <div class="stat-item"><span class="text-xs opacity-60">距上次记录</span><strong id="local-last-record">—</strong></div>
                 </div>
 
                 <!-- 记录列表卡片 -->
                 <div class="record-panel card-box rounded-2xl shadow-sm p-5 sm:p-6">
+                    <section id="local-calendar" class="record-calendar" aria-label="本地记录月历"></section>
                     <div class="flex items-center justify-between mb-3 pb-3 border-b" style="border-color: var(--border-color);">
                         <div class="flex items-center gap-2">
-                            <h2 class="font-bold text-base">记录列表</h2>
+                            <h2 id="local-list-title" class="font-bold text-base">全部记录</h2>
                             <span id="local-record-count-badge" class="px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-500/10 text-blue-500">0</span>
                         </div>
                         <div class="flex items-center gap-1.5">
@@ -486,8 +404,8 @@
                     <div class="space-y-5">
                         <div class="rounded-xl p-3 border" style="border-color: var(--border-color); background-color: var(--table-header);">
                             <div class="flex justify-between items-center">
-                                <span class="text-xs font-medium opacity-80" id="local-summary-label">年度总打卡次数</span>
-                                <span class="text-lg font-bold" id="local-summary-value">0 次</span>
+                                <span class="text-xs font-medium opacity-80" id="local-summary-label">年度记录条数</span>
+                                <span class="text-lg font-bold" id="local-summary-value">0 条</span>
                             </div>
                         </div>
                         <div>
@@ -506,30 +424,29 @@
             <div class="app-stack max-w-3xl mx-auto">
                 <!-- 实时打卡卡片 -->
                 <div class="card-box hero-card rounded-2xl p-5 sm:p-7">
-                    <div class="flex items-center justify-between mb-6">
-                        <div><p class="eyebrow">Cloud mode</p><p class="text-xs opacity-60 mt-1">在设备之间保持同一份时间轨迹</p></div>
+                    <div class="record-clock-label">
+                        <h2>记录此刻</h2>
                         <span id="gist-sync-status" class="flex items-center gap-2 text-xs font-medium opacity-70"><span class="status-dot"></span>等待同步</span>
                     </div>
-                    <p class="text-xs font-semibold uppercase tracking-wider opacity-60 mb-1">当前时间</p>
-                    <p id="gist-current-time" class="text-4xl sm:text-6xl font-extrabold tracking-tight mb-1 font-mono">--:--:--</p>
+                    <p id="gist-current-time" class="record-time font-mono" aria-label="当前时间">--:--:--</p>
                     <p id="gist-current-date" class="text-xs opacity-60 mb-6">--</p>
                     <button id="gist-record-btn" aria-label="记录当前时间并同步到云端" class="w-full sm:w-auto btn-theme-primary font-semibold py-3 px-8 rounded-xl shadow-md flex items-center justify-center gap-2">
                         <i class="fa fa-cloud-upload text-lg"></i>
-                        <span>记录并同步</span>
+                        <span>记录到云端</span>
                     </button>
-                    <div class="nb-clock-art" aria-hidden="true"><span></span><span></span></div>
                 </div>
                 <div class="stat-grid" aria-label="云端记录概览">
                     <div class="stat-item"><span class="text-xs opacity-60">今日记录</span><strong id="gist-today-count">0</strong></div>
                     <div class="stat-item"><span class="text-xs opacity-60">本周记录</span><strong id="gist-week-count">0</strong></div>
-                    <div class="stat-item"><span class="text-xs opacity-60">连续记录</span><strong id="gist-streak-count">0 天</strong></div>
+                    <div class="stat-item"><span class="text-xs opacity-60">距上次记录</span><strong id="gist-last-record">—</strong></div>
                 </div>
 
                 <!-- 记录列表卡片 -->
                 <div class="record-panel card-box rounded-2xl shadow-sm p-5 sm:p-6">
+                    <section id="gist-calendar" class="record-calendar" aria-label="云端记录月历"></section>
                     <div class="flex items-center justify-between mb-3 pb-3 border-b" style="border-color: var(--border-color);">
                         <div class="flex items-center gap-2">
-                            <h2 class="font-bold text-base">云端记录</h2>
+                            <h2 id="gist-list-title" class="font-bold text-base">全部记录</h2>
                             <span id="gist-record-count-badge" class="px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-500/10 text-blue-500">0</span>
                         </div>
                         <div class="flex items-center gap-1.5">
@@ -573,8 +490,8 @@
                     <div class="space-y-5">
                         <div class="rounded-xl p-3 border" style="border-color: var(--border-color); background-color: var(--table-header);">
                             <div class="flex justify-between items-center">
-                                <span class="text-xs font-medium opacity-80" id="gist-summary-label">年度总打卡次数</span>
-                                <span class="text-lg font-bold" id="gist-summary-value">0 次</span>
+                                <span class="text-xs font-medium opacity-80" id="gist-summary-label">年度记录条数</span>
+                                <span class="text-lg font-bold" id="gist-summary-value">0 条</span>
                             </div>
                         </div>
                         <div>
@@ -588,1051 +505,33 @@
             </div>
         </div>
 
-        <!-- 扩展功能快捷入口 -->
-        <div class="nb-tools-heading">
-            <h2>从不同角度，回看日常</h2>
-            <p>你的时间工具箱</p>
-        </div>
-        <div class="nb-tools-grid max-w-3xl mx-auto grid grid-cols-2 sm:grid-cols-3 gap-3">
-<a href="page6.html" aria-label="打开观察书桌" class="quick-link group card-box rounded-2xl p-4 flex items-center justify-between hover:shadow-md hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-200">
-    <div class="min-w-0 pr-2">
-        <h3 class="font-bold text-sm transition-colors">观察书桌</h3>
-        <p class="text-xs opacity-60 mt-0.5 truncate">日历记录与桌边留言</p>
-    </div>
-    <div class="w-8 h-8 rounded-xl bg-blue-500/10 text-blue-500 flex items-center justify-center shrink-0 transition-all duration-200">
-        <i class="fa fa-book text-sm" aria-hidden="true"></i>
-    </div>
-</a>
-           <!-- 数据修复 -->
-<a href="page3.html" aria-label="打开数据修复" class="quick-link group card-box rounded-2xl p-4 flex items-center justify-between hover:shadow-md hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-200">
-    <div class="min-w-0 pr-2">
-        <h3 class="font-bold text-sm group-hover:text-red-500 transition-colors">数据修复</h3>
-        <p class="text-xs opacity-60 mt-0.5 truncate">批量清理与编辑</p>
-    </div>
-    <div class="w-8 h-8 rounded-xl bg-red-500/10 text-red-500 flex items-center justify-center shrink-0 group-hover:scale-110 group-hover:bg-red-500 group-hover:text-white transition-all duration-200">
-        <i class="fa fa-wrench text-sm"></i>
-    </div>
-</a>
-
-<!-- 使用分析 -->
-<a href="page4.html" aria-label="打开使用分析" class="quick-link group card-box rounded-2xl p-4 flex items-center justify-between hover:shadow-md hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-200">
-    <div class="min-w-0 pr-2">
-        <h3 class="font-bold text-sm group-hover:text-emerald-500 transition-colors">使用分析</h3>
-        <p class="text-xs opacity-60 mt-0.5 truncate">使用趋势与记录</p>
-    </div>
-    <div class="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center shrink-0 group-hover:scale-110 group-hover:bg-emerald-500 group-hover:text-white transition-all duration-200">
-        <i class="fa fa-heartbeat text-sm"></i>
-    </div>
-</a>
-
-<!-- AI分析 -->
-<a href="page5.html" aria-label="打开 AI 分析" class="quick-link group card-box rounded-2xl p-4 flex items-center justify-between hover:shadow-md hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-200">
-    <div class="min-w-0 pr-2">
-        <h3 class="font-bold text-sm group-hover:text-purple-500 transition-colors">AI分析</h3>
-        <p class="text-xs opacity-60 mt-0.5 truncate">AI健康建议</p>
-    </div>
-    <div class="w-8 h-8 rounded-xl bg-purple-500/10 text-purple-500 flex items-center justify-center shrink-0 group-hover:scale-110 group-hover:bg-purple-500 group-hover:text-white transition-all duration-200">
-        <i class="fa fa-magic text-sm"></i>
-    </div>
-</a>
-
-<!-- 词条分析 -->
-<a href="page1.html" aria-label="打开词条分析" class="quick-link group card-box rounded-2xl p-4 flex items-center justify-between hover:shadow-md hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-200">
-    <div class="min-w-0 pr-2">
-        <h3 class="font-bold text-sm group-hover:text-teal-500 transition-colors">词条分析</h3>
-        <p class="text-xs opacity-60 mt-0.5 truncate">备注词频统计</p>
-    </div>
-    <div class="w-8 h-8 rounded-xl bg-teal-500/10 text-teal-500 flex items-center justify-center shrink-0 group-hover:scale-110 group-hover:bg-teal-500 group-hover:text-white transition-all duration-200">
-        <i class="fa fa-bar-chart text-sm"></i>
-    </div>
-</a>
-
-<!-- 成就系统 -->
-<a href="page2.html" aria-label="打开成就系统" class="quick-link group card-box rounded-2xl p-4 flex items-center justify-between hover:shadow-md hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-200">
-    <div class="min-w-0 pr-2">
-        <h3 class="font-bold text-sm group-hover:text-amber-500 transition-colors">成就系统</h3>
-        <p class="text-xs opacity-60 mt-0.5 truncate">解锁打卡徽章</p>
-    </div>
-    <div class="w-8 h-8 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center shrink-0 group-hover:scale-110 group-hover:bg-amber-500 group-hover:text-white transition-all duration-200">
-        <i class="fa fa-trophy text-sm"></i>
-    </div>
-</a>
-
-<!-- 进阶网页 -->
-<a href="page0.html" aria-label="打开进阶网页" class="quick-link group card-box rounded-2xl p-4 flex items-center justify-between hover:shadow-md hover:-translate-y-0.5 active:scale-[0.98] transition-all duration-200">
-    <div class="min-w-0 pr-2">
-        <h3 class="font-bold text-sm group-hover:text-blue-500 transition-colors">进阶网页</h3>
-        <p class="text-xs opacity-60 mt-0.5 truncate">升级云端专属版</p>
-    </div>
-    <div class="w-8 h-8 rounded-xl bg-blue-500/10 text-blue-500 flex items-center justify-center shrink-0 group-hover:scale-110 group-hover:bg-blue-500 group-hover:text-white transition-all duration-200">
-        <i class="fa fa-arrow-right text-sm"></i>
-    </div>
-</a>
-        </div>
 
         </div><!-- home-records-view -->
+        <section id="home-tools-view" aria-labelledby="tools-title" hidden>
+            <h1 class="home-heading" id="tools-title">工具</h1>
+            <div id="tool-directory"></div>
+        </section>
+        <section id="home-profile-view" aria-label="个人" hidden></section>
     </main>
-
-    <footer class="mt-auto py-5 text-center text-xs opacity-50 border-t" style="border-color: var(--border-color);">
-        <p>© 时间笔记 · 简单记录每一瞬间</p>
-    </footer>
-
-    <section id="home-desk-view" aria-label="弹幕与观察书桌" hidden>
+    <section id="home-desk-view" aria-label="朋友留言" hidden>
         <div id="home-desk-status" role="status">
-            <p id="home-desk-message">正在打开观察书桌…</p>
+            <p id="home-desk-message">正在打开朋友留言…</p>
             <button type="button" id="home-desk-retry" hidden>重试</button>
-            <a href="page6.html">单独打开观察书桌 ↗</a>
         </div>
     </section>
-    <nav id="mobile-home-nav" aria-label="主页切换" hidden>
-        <button type="button" id="home-show-records" aria-controls="home-records-view" aria-current="page"><i class="fa fa-clock-o" aria-hidden="true"></i>记录</button>
-        <button type="button" id="home-show-feedback" aria-controls="home-desk-view"><i class="fa fa-comments-o" aria-hidden="true"></i>弹幕<span id="home-unread" hidden></span></button>
+    <nav id="mobile-home-nav" aria-label="主导航">
+        <button data-page="records" type="button" id="home-show-records" aria-controls="home-records-view" aria-current="page"><i class="fa fa-calendar-o" aria-hidden="true"></i>记录</button>
+        <button data-page="friends" type="button" id="home-show-feedback" aria-controls="home-desk-view"><i class="fa fa-comment-o" aria-hidden="true"></i>朋友<span id="home-unread" hidden></span></button>
+        <button data-page="tools" type="button" id="home-show-tools" aria-controls="home-tools-view"><i class="fa fa-th-large" aria-hidden="true"></i>工具</button>
+        <button data-page="personal" type="button" id="home-show-profile" aria-controls="home-profile-view"><i class="fa fa-user-o" aria-hidden="true"></i>个人</button>
     </nav>
 
-<script>
-// --- 主题管理 ---
-function switchTheme(theme) {
-    document.documentElement.setAttribute('data-theme', theme);
-    safeSetStorage(localStorage, 'userTheme', theme);
-
-    const themes = ['blue', 'white', 'dark'];
-    themes.forEach(t => {
-        const btn = document.getElementById(`theme-btn-${t}`);
-        if (!btn) return;
-        if (t === theme) {
-            btn.classList.add('bg-white/20', 'shadow-sm');
-            btn.setAttribute('aria-pressed', 'true');
-        } else {
-            btn.classList.remove('bg-white/20', 'shadow-sm');
-            btn.setAttribute('aria-pressed', 'false');
-        }
-    });
-
-    if (localApp.recordsChart) localApp.updateStatistics();
-    if (gistApp.recordsChart) gistApp.updateStatistics();
-}
-
-function initTheme() {
-    const savedTheme = localStorage.getItem('userTheme') || 'blue';
-    switchTheme(savedTheme);
-}
-
-// --- 通用工具函数 ---
-function showToast(message, type = 'info') {
-    const toast = document.getElementById('toast');
-    const toastMessage = document.getElementById('toast-message');
-    const toastIcon = document.getElementById('toast-icon');
-
-    toastMessage.textContent = message;
-    toastIcon.className = 'fa ' + (type === 'success' ? 'fa-check-circle text-green-400' : type === 'error' ? 'fa-times-circle text-red-400' : 'fa-info-circle text-blue-400');
-
-    toast.classList.remove('opacity-0', 'translate-y-10');
-    setTimeout(() => {
-        toast.classList.add('opacity-0', 'translate-y-10');
-    }, 2800);
-}
-
-function updateAllCurrentTime() {
-    const now = new Date();
-    const timeString = now.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
-    const dateString = now.toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' });
-    document.getElementById('local-current-time').textContent = timeString;
-    document.getElementById('gist-current-time').textContent = timeString;
-    document.getElementById('local-current-date').textContent = dateString;
-    document.getElementById('gist-current-date').textContent = dateString;
-}
-
-function formatRecordTime(date = new Date()) {
-    return date.toLocaleString('zh-CN', {
-        year: 'numeric', month: '2-digit', day: '2-digit',
-        hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
-    });
-}
-
-function parseRecordDate(value) {
-    const date = new Date(String(value || '').replace(/\//g, '-'));
-    return Number.isNaN(date.getTime()) ? null : date;
-}
-
-function escapeHTML(value) {
-    return String(value ?? '').replace(/[&<>'"]/g, char => ({
-        '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
-    }[char]));
-}
-
-function parseStoredJson(key, fallback) {
-    try {
-        const raw = localStorage.getItem(key);
-        return raw ? JSON.parse(raw) : fallback;
-    } catch (error) {
-        console.warn(`无法读取 ${key}，已使用空数据`, error);
-        return fallback;
-    }
-}
-
-function safeSetStorage(storage, key, value) {
-    try {
-        storage.setItem(key, value);
-        return true;
-    } catch (error) {
-        console.warn(`无法保存 ${key}`, error);
-        showToast('浏览器存储空间不可用，请检查隐私设置', 'error');
-        return false;
-    }
-}
-
-function parseCsvRows(content) {
-    const rows = [];
-    let row = [];
-    let field = '';
-    let quoted = false;
-    const source = String(content || '').replace(/^\uFEFF/, '');
-
-    for (let i = 0; i < source.length; i++) {
-        const char = source[i];
-        const next = source[i + 1];
-        if (char === '"' && quoted && next === '"') {
-            field += '"';
-            i++;
-        } else if (char === '"') {
-            quoted = !quoted;
-        } else if (char === ',' && !quoted) {
-            row.push(field);
-            field = '';
-        } else if ((char === '\n' || char === '\r') && !quoted) {
-            if (char === '\r' && next === '\n') i++;
-            row.push(field);
-            if (row.some(cell => cell.trim() !== '')) rows.push(row);
-            row = [];
-            field = '';
-        } else {
-            field += char;
-        }
-    }
-
-    if (field || row.length) {
-        row.push(field);
-        if (row.some(cell => cell.trim() !== '')) rows.push(row);
-    }
-    return rows;
-}
-
-function parseRecordCsv(content) {
-    return parseCsvRows(content).slice(1).map(columns => {
-        const time = (columns[1] || '').trim();
-        const remark = columns.slice(2).join(',').trim();
-        return time ? { time, remark } : null;
-    }).filter(Boolean);
-}
-
-function updateRecordMetrics(version, records) {
-    const prefix = version === 'local' ? 'local' : 'gist';
-    const dates = records.map(record => parseRecordDate(record.time)).filter(Boolean);
-    const now = new Date();
-    const dayKey = date => `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
-    const todayKey = dayKey(now);
-    const weekStart = new Date(now);
-    weekStart.setHours(0, 0, 0, 0);
-    weekStart.setDate(weekStart.getDate() - ((weekStart.getDay() + 6) % 7));
-
-    const today = dates.filter(date => dayKey(date) === todayKey).length;
-    const week = dates.filter(date => date >= weekStart).length;
-    const uniqueDays = new Set(dates.map(dayKey));
-    let streak = 0;
-    const cursor = new Date(now);
-    cursor.setHours(0, 0, 0, 0);
-    while (uniqueDays.has(dayKey(cursor))) {
-        streak++;
-        cursor.setDate(cursor.getDate() - 1);
-    }
-
-    const todayElement = document.getElementById(`${prefix}-today-count`);
-    const weekElement = document.getElementById(`${prefix}-week-count`);
-    const streakElement = document.getElementById(`${prefix}-streak-count`);
-    if (todayElement) todayElement.textContent = today;
-    if (weekElement) weekElement.textContent = week;
-    if (streakElement) streakElement.textContent = `${streak} 天`;
-}
-
-let pendingConfirmAction = null;
-
-function syncModalLock() {
-    const open = ['record-modal-overlay', 'confirm-modal-overlay', 'edit-modal-overlay', 'gist-config-overlay']
-        .some(id => !document.getElementById(id).classList.contains('hidden'));
-    document.body.classList.toggle('overflow-hidden', open);
-    window.dispatchEvent(new CustomEvent('timer:feedback-modal', { detail: { open } }));
-}
-
-function showAppDialog(id, onClose, initialFocus) {
-    const dialog = document.getElementById(id);
-    dialog.classList.remove('hidden');
-    syncModalLock();
-    window.TimerMobile?.openDialog(dialog, { onClose, initialFocus });
-}
-
-function hideAppDialog(id) {
-    const dialog = document.getElementById(id);
-    dialog.classList.add('hidden');
-    syncModalLock();
-    window.TimerMobile?.closeDialog(dialog);
-}
-
-function openRecordModal(version) {
-    document.getElementById('record-version').value = version;
-    document.getElementById('record-time-preview').textContent = formatRecordTime();
-    document.getElementById('record-remark').value = '';
-    showAppDialog('record-modal-overlay', closeRecordModal, '#record-remark');
-}
-
-function closeRecordModal() {
-    hideAppDialog('record-modal-overlay');
-}
-
-function openConfirmModal(callback, message = '删除后无法恢复，请确认继续。') {
-    pendingConfirmAction = callback;
-    document.getElementById('confirm-modal-message').textContent = message;
-    showAppDialog('confirm-modal-overlay', closeConfirmModal, '#cancel-confirm-btn');
-}
-
-function closeConfirmModal() {
-    pendingConfirmAction = null;
-    hideAppDialog('confirm-modal-overlay');
-}
-
-function openEditModal(version, index) {
-    const app = version === 'local' ? localApp : gistApp;
-    const record = app.records[index];
-    if (!record) return;
-    document.getElementById('edit-version').value = version;
-    document.getElementById('edit-index').value = index;
-    document.getElementById('edit-time').value = record.time;
-    document.getElementById('edit-remark').value = record.remark || '';
-    showAppDialog('edit-modal-overlay', closeEditModal, '#edit-remark');
-}
-
-function closeEditModal() {
-    hideAppDialog('edit-modal-overlay');
-}
-
-function openGistConfig() {
-    document.getElementById('gist-username').value = gistApp.config.GITHUB_USERNAME || '';
-    document.getElementById('gist-gistId').value = gistApp.config.GIST_ID || '';
-    document.getElementById('gist-pat').value = gistApp.config.GITHUB_PAT || '';
-    document.getElementById('gist-commentId').value = gistApp.config.COMMENT_GIST_ID || '';
-    showAppDialog('gist-config-overlay', closeGistConfig, '#gist-username');
-}
-
-function closeGistConfig() {
-    hideAppDialog('gist-config-overlay');
-    if (!gistApp.config.GIST_ID || !gistApp.config.GITHUB_PAT) {
-        document.getElementById('tab-local').click();
-    }
-}
-
-function renderSharedRecords(version, app) {
-    const prefix = version === 'local' ? 'local' : 'gist';
-    const container = document.getElementById(`${prefix}-records-container`);
-    const badge = document.getElementById(`${prefix}-record-count-badge`);
-    const expandWrapper = document.getElementById(`${prefix}-expand-wrapper`);
-    const expandBtn = document.getElementById(`${prefix}-expand-btn`);
-
-    app.records.sort((a, b) => (parseRecordDate(b.time)?.getTime() || 0) - (parseRecordDate(a.time)?.getTime() || 0));
-    badge.textContent = app.records.length;
-
-    if (app.records.length === 0) {
-        const emptyText = version === 'gist' ? '云端暂无任何记录' : '暂无任何记录';
-        container.innerHTML = `<p class="text-center py-6 text-xs opacity-50">${emptyText}</p>`;
-        container.className = 'space-y-2.5 custom-scrollbar';
-        expandWrapper.classList.add('hidden');
-        app.updateYearOptions();
-        app.updateStatistics();
-        updateRecordMetrics(version, app.records);
-        return;
-    }
-
-    container.className = app.isExpanded
-        ? 'space-y-2.5 max-h-72 overflow-y-auto pr-1.5 custom-scrollbar'
-        : 'space-y-2.5 custom-scrollbar';
-
-    const displayRecords = app.isExpanded ? app.records : app.records.slice(0, 3);
-    container.innerHTML = displayRecords.map((item, idx) => {
-        const time = escapeHTML(item.time);
-        const remark = escapeHTML(item.remark || '无备注');
-        return `
-            <div class="record-item flex items-center justify-between p-3 rounded-xl border transition-all" style="border-color: var(--border-color); background-color: var(--bg-card);">
-                <div class="min-w-0 flex-1 pr-2">
-                    <p class="text-xs sm:text-sm font-semibold font-mono tracking-tight">${time}</p>
-                    <p class="text-xs opacity-60 truncate mt-0.5" title="${remark}">${remark}</p>
-                </div>
-                <div class="flex items-center gap-1 flex-shrink-0">
-                    <button onclick="openEditModal('${version}', ${idx})" aria-label="编辑记录" title="编辑" class="icon-btn w-8 h-8 rounded-lg flex items-center justify-center opacity-70 hover:opacity-100 hover:bg-blue-500/10 text-blue-500"><i class="fa fa-pencil text-xs"></i></button>
-                    <button onclick="${version}App.handleDeleteRecord(${idx})" aria-label="删除记录" title="删除" class="icon-btn w-8 h-8 rounded-lg flex items-center justify-center opacity-70 hover:opacity-100 hover:bg-red-500/10 text-red-500"><i class="fa fa-trash-o text-xs"></i></button>
-                </div>
-            </div>`;
-    }).join('');
-
-    if (app.records.length > 3) {
-        expandWrapper.classList.remove('hidden');
-        expandBtn.innerHTML = app.isExpanded
-            ? '<span>收起</span><i class="fa fa-chevron-up text-[10px]"></i>'
-            : `<span>展开全部数据 (${app.records.length}条)</span><i class="fa fa-chevron-down text-[10px]"></i>`;
-    } else {
-        expandWrapper.classList.add('hidden');
-    }
-
-    app.updateYearOptions();
-    app.updateStatistics();
-    updateRecordMetrics(version, app.records);
-}
-
-// --- 本地版 (Local) 核心逻辑 ---
-const localApp = {
-    records: [],
-    recordsChart: null,
-    isExpanded: false,
-    selectedYear: new Date().getFullYear(),
-
-    init() {
-        this.loadRecordsFromLocal();
-        document.getElementById('local-record-btn').addEventListener('click', () => openRecordModal('local'));
-        document.getElementById('local-download-btn').addEventListener('click', () => this.exportToCsv());
-        document.getElementById('local-import-btn').addEventListener('click', () => document.getElementById('csv-file-input').click());
-        document.getElementById('local-expand-btn').addEventListener('click', () => {
-            this.isExpanded = !this.isExpanded;
-            this.renderRecords();
-        });
-        document.getElementById('local-year-select').addEventListener('change', (e) => {
-            this.selectedYear = parseInt(e.target.value, 10);
-            this.updateStatistics();
-        });
-    },
-
-    loadRecordsFromLocal() {
-        const saved = parseStoredJson('timeRecords', []);
-        this.records = Array.isArray(saved) ? saved : [];
-        this.renderRecords();
-    },
-
-    saveRecordsToLocal(nextRecords) {
-        if (!safeSetStorage(localStorage, 'timeRecords', JSON.stringify(nextRecords))) return false;
-        this.records = nextRecords;
-        return true;
-    },
-
-    handleAddRecord(remark = '') {
-        const nextRecords = [{ time: formatRecordTime(), remark: remark.trim() }, ...this.records];
-        if (!this.saveRecordsToLocal(nextRecords)) return false;
-        this.renderRecords();
-        showToast("已记录当前时间 (本地)", "success");
-        return true;
-    },
-
-    handleDeleteRecord(index) {
-        if (!this.records[index]) return;
-        openConfirmModal(() => {
-            const nextRecords = this.records.filter((_, recordIndex) => recordIndex !== index);
-            if (!this.saveRecordsToLocal(nextRecords)) return false;
-            this.renderRecords();
-            showToast('已删除记录', 'success');
-            return true;
-        });
-    },
-
-    handleEditSave(index, newTime, newRemark) {
-        if (!newTime) return showToast('时间不能为空', 'error');
-        if (!this.records[index]) return showToast('记录不存在，请重新选择', 'error');
-        const nextRecords = [...this.records];
-        nextRecords[index] = { time: newTime, remark: newRemark };
-        if (!this.saveRecordsToLocal(nextRecords)) return false;
-        this.renderRecords();
-        closeEditModal();
-        showToast('本地记录已更新', 'success');
-        return true;
-    },
-
-    importFromCsv(csvContent) {
-        try {
-            const fileRecords = parseRecordCsv(csvContent);
-
-            const map = new Map(this.records.map(r => [r.time, r]));
-            const originSize = map.size;
-            fileRecords.forEach(r => map.set(r.time, r));
-            const newRecords = Array.from(map.values());
-            const added = newRecords.length - originSize;
-
-            if (added > 0) {
-                if (!this.saveRecordsToLocal(newRecords)) return false;
-                this.renderRecords();
-                showToast(`导入成功！新增 ${added} 条记录`, 'success');
-                return true;
-            } else {
-                showToast('数据已是最新，无需导入', 'info');
-            }
-        } catch (e) {
-            showToast(`导入失败: ${e.message}`, 'error');
-        }
-    },
-
-    exportToCsv() {
-        if (this.records.length === 0) return showToast('暂无记录可导出', 'error');
-        let csv = "序号,时间,备注\n";
-        const sorted = [...this.records].sort((a, b) => (parseRecordDate(b.time)?.getTime() || 0) - (parseRecordDate(a.time)?.getTime() || 0));
-        sorted.forEach((r, idx) => {
-            const remarkText = r.remark ? `"${r.remark.replace(/"/g, '""')}"` : '""';
-            csv += `${sorted.length - idx},"${r.time}",${remarkText}\n`;
-        });
-        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.setAttribute('download', `时间记录_本地_${new Date().toISOString().slice(0,10)}.csv`);
-        link.click();
-        setTimeout(() => URL.revokeObjectURL(link.href), 0);
-    },
-
-    renderRecords() {
-        return renderSharedRecords('local', this);
-    },
-
-    updateYearOptions() {
-        const select = document.getElementById('local-year-select');
-        const currentRealYear = new Date().getFullYear();
-        const yearsSet = new Set([currentRealYear]);
-
-        this.records.forEach(r => {
-            const parsed = parseRecordDate(r.time);
-            const y = parsed ? parsed.getFullYear() : NaN;
-            if (!isNaN(y)) yearsSet.add(y);
-        });
-
-        const sortedYears = Array.from(yearsSet).sort((a, b) => b - a);
-        select.innerHTML = sortedYears.map(y => `<option value="${y}" ${y === this.selectedYear ? 'selected' : ''}>${y} 年</option>`).join('');
-    },
-
-    updateStatistics() {
-        const yearRecords = this.records.filter(r => parseRecordDate(r.time)?.getFullYear() === this.selectedYear);
-
-        document.getElementById('local-summary-label').textContent = `${this.selectedYear} 年度总打卡`;
-        document.getElementById('local-summary-value').textContent = `${yearRecords.length} 次`;
-
-        const monthlyCounts = Array(12).fill(0);
-        yearRecords.forEach(r => {
-            const parsed = parseRecordDate(r.time);
-            const m = parsed ? parsed.getMonth() : NaN;
-            if (!isNaN(m)) monthlyCounts[m]++;
-        });
-
-        const ctx = document.getElementById('local-records-chart').getContext('2d');
-        if (this.recordsChart) this.recordsChart.destroy();
-
-        const computedStyle = getComputedStyle(document.documentElement);
-        const chartBorder = computedStyle.getPropertyValue('--chart-border').trim() || '#165DFF';
-        const chartBg = computedStyle.getPropertyValue('--chart-bg').trim() || 'rgba(22, 93, 255, 0.15)';
-        const textSub = computedStyle.getPropertyValue('--text-sub').trim() || '#86909C';
-
-        this.recordsChart = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'],
-                datasets: [{
-                    label: '打卡频次',
-                    data: monthlyCounts,
-                    backgroundColor: chartBg,
-                    borderColor: chartBorder,
-                    borderWidth: 2,
-                    pointRadius: 3,
-                    pointHoverRadius: 5,
-                    tension: 0.3,
-                    fill: true
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                interaction: { mode: 'index', intersect: false },
-                animation: { duration: 550, easing: 'easeOutQuart' },
-                scales: {
-                    x: { grid: { display: false }, ticks: { color: textSub, font: { size: 10 } } },
-                    y: { beginAtZero: true, ticks: { stepSize: 1, color: textSub, font: { size: 10 } }, grid: { color: 'rgba(128,128,128,0.08)' } }
-                },
-                plugins: {
-                    legend: { display: false },
-                    tooltip: { displayColors: false, padding: 10, cornerRadius: 10, callbacks: { label: context => ` ${context.parsed.y} 次` } }
-                }
-            }
-        });
-    }
-};
-
-
-// --- 云端版 (Gist) 核心逻辑 ---
-const gistApp = {
-    isInitialized: false,
-    isLoading: false, // 增加加载状态标识
-    config: {},
-    records: [],
-    recordsChart: null,
-    isExpanded: false,
-    selectedYear: new Date().getFullYear(),
-
-    init() {
-        if (this.loadConfig()) {
-            this.loadRecordsFromGist();
-        }
-        document.getElementById('gist-config-form').addEventListener('submit', (e) => {
-            e.preventDefault();
-            this.saveConfig(
-                document.getElementById('gist-username').value.trim(),
-                document.getElementById('gist-gistId').value.trim(),
-                document.getElementById('gist-pat').value.trim(),
-                document.getElementById('gist-commentId').value.trim()
-            );
-        });
-        document.getElementById('clear-gist-config-btn').addEventListener('click', () => {
-            if (window.confirm('确定清除保存在本地的云端配置吗？')) this.clearConfig();
-        });
-        document.getElementById('gist-record-btn').addEventListener('click', () => openRecordModal('gist'));
-        document.getElementById('gist-download-btn').addEventListener('click', () => this.exportToCsv());
-        document.getElementById('gist-import-btn').addEventListener('click', () => document.getElementById('csv-file-input').click());
-        document.getElementById('gist-config-open-btn').addEventListener('click', openGistConfig);
-        document.getElementById('gist-expand-btn').addEventListener('click', () => {
-            this.isExpanded = !this.isExpanded;
-            this.renderRecords();
-        });
-        document.getElementById('gist-year-select').addEventListener('change', (e) => {
-            this.selectedYear = parseInt(e.target.value, 10);
-            this.updateStatistics();
-        });
-    },
-
-    loadConfig() {
-        this.config = window.TimerConfig.read();
-        if (this.config.GIST_ID && this.config.GITHUB_PAT) {
-            hideAppDialog('gist-config-overlay');
-            return true;
-        } else {
-            showAppDialog('gist-config-overlay', closeGistConfig, '#gist-username');
-            return false;
-        }
-    },
-
-    saveConfig(username, gistId, pat, commentGistId = '') {
-        this.config = { ...this.config, GITHUB_USERNAME: username, GIST_ID: gistId, GITHUB_PAT: pat, COMMENT_GIST_ID: commentGistId };
-        safeSetStorage(localStorage, 'timeRecorderPat', pat);
-        sessionStorage.removeItem('timeRecorderPat');
-        safeSetStorage(localStorage, 'timeRecorderConfig', JSON.stringify({
-            GITHUB_USERNAME: username,
-            GIST_ID: gistId,
-            GITHUB_PAT: pat,
-            COMMENT_GIST_ID: commentGistId
-        }));
-        hideAppDialog('gist-config-overlay');
-        window.dispatchEvent(new CustomEvent('timer:feedback-config'));
-        this.loadRecordsFromGist();
-    },
-
-    clearConfig() {
-        localStorage.removeItem('timeRecorderConfig');
-        localStorage.removeItem('timeRecorderPat');
-        sessionStorage.removeItem('timeRecorderPat');
-        this.config = {};
-        document.getElementById('gist-username').value = '';
-        document.getElementById('gist-gistId').value = '';
-        document.getElementById('gist-pat').value = '';
-        document.getElementById('gist-commentId').value = '';
-        window.dispatchEvent(new CustomEvent('timer:feedback-config'));
-        document.getElementById('gist-records-container').innerHTML = '<p class="text-center py-6 text-xs opacity-50">请先完成云端配置</p>';
-        showAppDialog('gist-config-overlay', closeGistConfig, '#gist-username');
-        showToast('本地云端配置已清除', 'success');
-    },
-
-    async fetchDirectFromApi() {
-        const res = await fetch(`https://api.github.com/gists/${this.config.GIST_ID}`, {
-            headers: {
-                'Authorization': `token ${this.config.GITHUB_PAT}`,
-                'Accept': 'application/vnd.github.v3+json'
-            },
-            cache: 'no-store'
-        });
-        if (!res.ok) {
-            const err = await res.json().catch(() => ({}));
-            throw new Error(err.message || `API 请求错误 (${res.status})`);
-        }
-        const data = await res.json();
-        const file = data.files && data.files['records.json'];
-        if (!file || !file.content) return [];
-        try {
-            const parsed = JSON.parse(file.content);
-            return Array.isArray(parsed) ? parsed : [];
-        } catch (error) {
-            throw new Error('云端记录格式无效');
-        }
-    },
-
-    async loadRecordsFromGist() {
-        if (!this.config.GIST_ID || !this.config.GITHUB_PAT) {
-            document.getElementById('gist-records-container').innerHTML = '<p class="text-center py-6 text-xs opacity-50">请先在弹窗中配置 Gist</p>';
-            const status = document.getElementById('gist-sync-status');
-            if (status) status.innerHTML = '<span class="status-dot" style="background:#F59E0B"></span>未配置';
-            return;
-        }
-        this.isLoading = true;
-        const status = document.getElementById('gist-sync-status');
-        if (status) status.innerHTML = '<i class="fa fa-refresh fa-spin"></i>同步中';
-        showToast("正在连接云端同步数据...", "info");
-        try {
-            const data = await this.fetchDirectFromApi();
-            this.records = Array.isArray(data) ? data : [];
-            this.renderRecords();
-            if (status) status.innerHTML = '<span class="status-dot"></span>已同步';
-            showToast("云端同步完成！", "success");
-        } catch (error) {
-            console.error(error);
-            showToast(`同步失败: ${error.message}`, "error");
-            this.renderRecords();
-            if (status) status.innerHTML = '<span class="status-dot" style="background:#EF4444"></span>同步失败';
-        } finally {
-            this.isLoading = false;
-        }
-    },
-
-    async saveAndVerify(targetRecords) {
-        if (!this.config.GIST_ID || !this.config.GITHUB_PAT) {
-            throw new Error("云端账号配置缺失");
-        }
-        const jsonContent = JSON.stringify(targetRecords, null, 2);
-
-        const res = await fetch(`https://api.github.com/gists/${this.config.GIST_ID}`, {
-            method: 'PATCH',
-            headers: {
-                'Authorization': `token ${this.config.GITHUB_PAT}`,
-                'Accept': 'application/vnd.github.v3+json',
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                files: { 'records.json': { content: jsonContent } }
-            })
-        });
-        if (!res.ok) {
-            const errData = await res.json().catch(() => ({}));
-            throw new Error(errData.message || `上传失败 (${res.status})`);
-        }
-
-        const verified = await this.fetchDirectFromApi();
-        if (JSON.stringify(verified) !== JSON.stringify(targetRecords)) {
-            throw new Error("云端与本地校验不一致，正在重新确认");
-        }
-        return verified;
-    },
-
-    async handleAddRecord(remark = '') {
-        if (this.isLoading) {
-            return showToast("云端数据正在加载中，请稍候再试", "error");
-        }
-
-        const btn = document.getElementById('gist-record-btn');
-        const originHtml = btn.innerHTML;
-        const newRecords = [{ time: formatRecordTime(), remark: remark.trim() }, ...this.records];
-
-        btn.disabled = true;
-        btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i><span>云端保存并校验中...</span>';
-
-        try {
-            const confirmed = await this.saveAndVerify(newRecords);
-            this.records = confirmed;
-            this.renderRecords();
-            showToast("云端已成功保存并完成验证！", "success");
-        } catch (error) {
-            showToast(`保存失败: ${error.message}`, "error");
-        } finally {
-            btn.disabled = false;
-            btn.innerHTML = originHtml;
-        }
-    },
-
-    async handleDeleteRecord(index) {
-        if (this.isLoading) {
-            return showToast("云端数据正在加载中，请稍候再试", "error");
-        }
-        if (!this.records[index]) return;
-        const newRecords = [...this.records];
-        openConfirmModal(async () => {
-            newRecords.splice(index, 1);
-            showToast("正在删除并同步云端...", "info");
-            try {
-                const confirmed = await this.saveAndVerify(newRecords);
-                this.records = confirmed;
-                this.renderRecords();
-                showToast('云端记录已删除', 'success');
-            } catch (error) {
-                showToast(`删除失败: ${error.message}`, 'error');
-            }
-        }, '这条记录会从 Gist 中删除，删除后无法恢复。');
-    },
-
-    async handleEditSave(index, newTime, newRemark) {
-        if (this.isLoading) {
-            return showToast("云端数据正在加载中，请稍候再试", "error");
-        }
-        if (!newTime) return showToast('时间不能为空', 'error');
-
-        const btn = document.getElementById('save-edit-btn');
-        const originText = btn.textContent;
-        btn.disabled = true;
-        btn.innerHTML = '<i class="fa fa-spinner fa-spin mr-1"></i>保存校验中...';
-
-        const newRecords = [...this.records];
-        newRecords[index] = { time: newTime, remark: newRemark };
-
-        try {
-            const confirmed = await this.saveAndVerify(newRecords);
-            this.records = confirmed;
-            this.renderRecords();
-            closeEditModal();
-            showToast('云端记录已更新并验证成功！', 'success');
-        } catch (error) {
-            showToast(`修改失败: ${error.message}`, 'error');
-        } finally {
-            btn.disabled = false;
-            btn.textContent = originText;
-        }
-    },
-
-    async importFromCsv(csvContent) {
-        if (this.isLoading) {
-            return showToast("云端数据正在加载中，请稍候再试", "error");
-        }
-        showToast('正在解析合并并同步云端...', 'info');
-        try {
-            const fileRecords = parseRecordCsv(csvContent);
-
-            const map = new Map(this.records.map(r => [r.time, r]));
-            const originSize = map.size;
-            fileRecords.forEach(r => map.set(r.time, r));
-            const newRecords = Array.from(map.values());
-            const added = newRecords.length - originSize;
-
-            if (added > 0) {
-                const confirmed = await this.saveAndVerify(newRecords);
-                this.records = confirmed;
-                this.renderRecords();
-                showToast(`导入成功！新增并同步 ${added} 条数据`, 'success');
-            } else {
-                showToast('云端数据已是最新', 'info');
-            }
-        } catch (error) {
-            showToast(`导入失败: ${error.message}`, 'error');
-        }
-    },
-
-    exportToCsv() {
-        if (this.isLoading) {
-            return showToast("云端数据正在加载中，请稍候再试", "error");
-        }
-        if (this.records.length === 0) return showToast('暂无记录可导出', 'error');
-        let csv = "序号,时间,备注\n";
-        const sorted = [...this.records].sort((a, b) => (parseRecordDate(b.time)?.getTime() || 0) - (parseRecordDate(a.time)?.getTime() || 0));
-        sorted.forEach((r, idx) => {
-            const remarkText = r.remark ? `"${r.remark.replace(/"/g, '""')}"` : '""';
-            csv += `${sorted.length - idx},"${r.time}",${remarkText}\n`;
-        });
-        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.setAttribute('download', `时间记录_云端_${new Date().toISOString().slice(0,10)}.csv`);
-        link.click();
-        setTimeout(() => URL.revokeObjectURL(link.href), 0);
-    },
-
-    renderRecords() {
-        return renderSharedRecords('gist', this);
-    },
-
-    updateYearOptions() {
-        const select = document.getElementById('gist-year-select');
-        const currentRealYear = new Date().getFullYear();
-        const yearsSet = new Set([currentRealYear]);
-
-        this.records.forEach(r => {
-            const parsed = parseRecordDate(r.time);
-            const y = parsed ? parsed.getFullYear() : NaN;
-            if (!isNaN(y)) yearsSet.add(y);
-        });
-
-        const sortedYears = Array.from(yearsSet).sort((a, b) => b - a);
-        select.innerHTML = sortedYears.map(y => `<option value="${y}" ${y === this.selectedYear ? 'selected' : ''}>${y} 年</option>`).join('');
-    },
-
-    updateStatistics() {
-        const yearRecords = this.records.filter(r => parseRecordDate(r.time)?.getFullYear() === this.selectedYear);
-
-        document.getElementById('gist-summary-label').textContent = `${this.selectedYear} 年度总打卡`;
-        document.getElementById('gist-summary-value').textContent = `${yearRecords.length} 次`;
-
-        const monthlyCounts = Array(12).fill(0);
-        yearRecords.forEach(r => {
-            const parsed = parseRecordDate(r.time);
-            const m = parsed ? parsed.getMonth() : NaN;
-            if (!isNaN(m)) monthlyCounts[m]++;
-        });
-
-        const ctx = document.getElementById('gist-records-chart').getContext('2d');
-        if (this.recordsChart) this.recordsChart.destroy();
-
-        const computedStyle = getComputedStyle(document.documentElement);
-        const chartBorder = computedStyle.getPropertyValue('--chart-border').trim() || '#165DFF';
-        const chartBg = computedStyle.getPropertyValue('--chart-bg').trim() || 'rgba(22, 93, 255, 0.15)';
-        const textSub = computedStyle.getPropertyValue('--text-sub').trim() || '#86909C';
-
-        this.recordsChart = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'],
-                datasets: [{
-                    label: '打卡频次',
-                    data: monthlyCounts,
-                    backgroundColor: chartBg,
-                    borderColor: chartBorder,
-                    borderWidth: 2,
-                    pointRadius: 3,
-                    pointHoverRadius: 5,
-                    tension: 0.3,
-                    fill: true
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                interaction: { mode: 'index', intersect: false },
-                animation: { duration: 550, easing: 'easeOutQuart' },
-                scales: {
-                    x: { grid: { display: false }, ticks: { color: textSub, font: { size: 10 } } },
-                    y: { beginAtZero: true, ticks: { stepSize: 1, color: textSub, font: { size: 10 } }, grid: { color: 'rgba(128,128,128,0.08)' } }
-                },
-                plugins: {
-                    legend: { display: false },
-                    tooltip: { displayColors: false, padding: 10, cornerRadius: 10, callbacks: { label: context => ` ${context.parsed.y} 次` } }
-                }
-            }
-        });
-    }
-};
-
-// --- 启动初始化 ---
-document.addEventListener('DOMContentLoaded', () => {
-    initTheme();
-    localApp.init();
-    updateAllCurrentTime();
-    setInterval(updateAllCurrentTime, 1000);
-
-    const tabLocal = document.getElementById('tab-local');
-    const tabGist = document.getElementById('tab-gist');
-    const contentLocal = document.getElementById('content-local');
-    const contentGist = document.getElementById('content-gist');
-
-    tabLocal.addEventListener('click', () => {
-        tabLocal.classList.add('active');
-        tabGist.classList.remove('active');
-        tabLocal.setAttribute('aria-selected', 'true');
-        tabGist.setAttribute('aria-selected', 'false');
-        contentLocal.classList.remove('hidden');
-        contentGist.classList.add('hidden');
-    });
-
-    tabGist.addEventListener('click', () => {
-        tabGist.classList.add('active');
-        tabLocal.classList.remove('active');
-        tabGist.setAttribute('aria-selected', 'true');
-        tabLocal.setAttribute('aria-selected', 'false');
-        contentGist.classList.remove('hidden');
-        contentLocal.classList.add('hidden');
-
-        if (!gistApp.isInitialized) {
-            gistApp.init();
-            gistApp.isInitialized = true;
-        }
-    });
-
-    const pageParams = new URLSearchParams(window.location.search);
-    if (pageParams.get('tab') === 'gist') {
-        tabGist.click();
-        if (pageParams.get('config') === '1') openGistConfig();
-        try { history.replaceState(null, '', window.location.pathname); } catch (error) { console.warn('无法清理页面参数', error); }
-    }
-
-    document.getElementById('record-form').addEventListener('submit', (e) => {
-        e.preventDefault();
-        const version = document.getElementById('record-version').value;
-        const remark = document.getElementById('record-remark').value.trim();
-        if (version === 'local') {
-            if (localApp.handleAddRecord(remark)) closeRecordModal();
-        } else {
-            closeRecordModal();
-            gistApp.handleAddRecord(remark);
-        }
-    });
-
-    ['cancel-record-btn', 'cancel-record-btn-secondary'].forEach(id => {
-        document.getElementById(id).addEventListener('click', closeRecordModal);
-    });
-    document.getElementById('record-modal-overlay').addEventListener('click', (e) => {
-        if (e.target === e.currentTarget) closeRecordModal();
-    });
-
-    document.getElementById('confirm-action-btn').addEventListener('click', async () => {
-        const action = pendingConfirmAction;
-        closeConfirmModal();
-        if (action) await action();
-    });
-    document.getElementById('cancel-confirm-btn').addEventListener('click', closeConfirmModal);
-    document.getElementById('confirm-modal-overlay').addEventListener('click', (e) => {
-        if (e.target === e.currentTarget) closeConfirmModal();
-    });
-
-    document.getElementById('edit-form').addEventListener('submit', (e) => {
-        e.preventDefault();
-        const ver = document.getElementById('edit-version').value;
-        const idx = parseInt(document.getElementById('edit-index').value, 10);
-        const time = document.getElementById('edit-time').value.trim();
-        const remark = document.getElementById('edit-remark').value.trim();
-
-        if (ver === 'local') localApp.handleEditSave(idx, time, remark);
-        else gistApp.handleEditSave(idx, time, remark);
-    });
-
-    document.getElementById('cancel-edit-btn').addEventListener('click', closeEditModal);
-    document.getElementById('close-edit-btn').addEventListener('click', closeEditModal);
-    document.getElementById('close-gist-config-btn').addEventListener('click', closeGistConfig);
-    document.getElementById('edit-modal-overlay').addEventListener('click', (e) => {
-        if (e.target === e.currentTarget) closeEditModal();
-    });
-    document.getElementById('gist-config-overlay').addEventListener('click', (e) => {
-        if (e.target === e.currentTarget) closeGistConfig();
-    });
-
-    document.getElementById('csv-file-input').addEventListener('change', (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-
-        const reader = new FileReader();
-        reader.onload = function(evt) {
-            const activeTab = document.querySelector('.tab-btn.active').id;
-            if (activeTab === 'tab-local') {
-                localApp.importFromCsv(evt.target.result);
-            } else {
-                if (!gistApp.isInitialized) {
-                    gistApp.init();
-                    gistApp.isInitialized = true;
-                }
-                gistApp.importFromCsv(evt.target.result);
-            }
-        };
-        reader.readAsText(file);
-        e.target.value = null;
-    });
-});
-</script>
+<script src="assets/js/records.js"></script>
 <script src="assets/js/feedback-core.js"></script>
 <script src="assets/js/feedback-ui.js"></script>
+<script src="assets/js/profile.js"></script>
+<script src="assets/js/tool-directory.js"></script>
 <script src="assets/js/home-desk.js"></script>
+<script src="assets/js/home-navigation.js"></script>
 </body>
 </html>

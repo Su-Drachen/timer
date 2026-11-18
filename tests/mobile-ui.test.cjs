@@ -165,11 +165,11 @@ async function screenshot(page, name) {
 const tests = [
   ['all main-project pages fit 320/390 px; common touch controls are at least 44 px', async () => {
     const controls = {
-      'pagemain.html': '#theme-btn-blue,#theme-btn-white,#theme-btn-dark,#local-record-btn,#local-import-btn,#local-download-btn,#local-records-container .icon-btn,#mobile-home-nav button',
+      'pagemain.html': '#local-record-btn,#local-import-btn,#local-download-btn,#local-records-container .icon-btn,#mobile-home-nav button',
       'page0.html': '.nb-back,.btn',
       'page1.html': '.nb-back',
       'page2.html': '.nb-back',
-      'page3.html': '.nb-back,.filter-btn,#batch-clear-remark-btn,#batch-delete-btn,#quick-dedup-btn,#records-table-body button',
+      'page3.html': '.nb-back,.filter-btn,#batch-clear-remark-btn,#batch-delete-btn,#records-table-body button',
       'page4.html': '.nb-back,#refresh-btn,.filter-btn',
       'page5.html': '.topbar button,.attach-btn,#sendButton',
       'page6.html': '#refresh,#viewToggle,#export,#sort,#deskNotesOpen,#deskNotesRefresh,#mobileNoteOpen'
@@ -186,7 +186,7 @@ const tests = [
   ['white theme uses neutral surfaces and accents; blue and dark remain distinct', async () => {
     const t = await setup();
     try {
-      await neutralColors(t.page, 'body,.hero-card,.nb-brand-icon,#local-record-btn,.quick-link > div:last-child,#local-records-container .icon-btn');
+      await neutralColors(t.page, 'body,.hero-card,.nb-brand-icon,#local-record-btn,#local-records-container .icon-btn');
       await screenshot(t.page, 'mobile-white-home.png');
       await t.page.locator('#local-records-container [aria-label="删除记录"]').first().click();
       const confirmButton = t.page.locator('#confirm-action-btn');
@@ -206,11 +206,14 @@ const tests = [
       }
       await t.page.locator('#cancel-confirm-btn').click();
       const white = await t.page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--nb-accent').trim());
-      await t.page.locator('#theme-btn-blue').click();
+      await t.page.locator('#home-show-profile').click();
+      await t.page.locator('[href="#personal/appearance"]').click();
+      await t.page.locator('[data-theme-key="blue"]').click();
       assert.equal(await t.page.locator('html').getAttribute('data-theme'), 'blue');
       const blue = await t.page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--nb-accent').trim());
       assert.notEqual(blue, white);
-      await t.page.locator('#theme-btn-dark').click();
+      await t.page.locator('[data-theme-key="dark"]').click();
+      await t.page.locator('#home-show-records').click();
       assert.equal(await t.page.locator('html').getAttribute('data-theme'), 'dark');
       const surface = await t.page.evaluate(() => getComputedStyle(document.body).backgroundColor);
       assert.notEqual(surface, 'rgb(255, 255, 255)');
@@ -251,32 +254,60 @@ const tests = [
       assert.deepEqual(t.errors, []);
     } finally { await t.close(); }
   }],
-  ['homepage cloud configuration scrolls within keyboard space and can be dismissed', async () => {
-    const t = await setup('pagemain.html', { width: 320 });
+  ['tools catalog and contextual cloud settings return to the selected record list', async () => {
+    const t = await setup('pagemain.html', { width: 320, theme: 'blue' });
     try {
+      const page = t.page;
+      assert.deepEqual(await page.locator('#mobile-home-nav button').evaluateAll(buttons => buttons.map(button => [...button.childNodes].find(node => node.nodeType === Node.TEXT_NODE).textContent)), ['记录', '朋友', '工具', '个人']);
+      await page.locator('#home-show-tools').click();
+      await page.locator('#tools-title').waitFor({ state: 'visible' });
+      assert.equal(await page.locator('#tool-directory a').count(), 5);
+      await assertNoOverflow(page, 'tools at 320px');
+      await screenshot(page, 'mobile-tools.png');
+      await page.locator('#home-show-profile').click();
+      await page.locator('.profile-header h1').waitFor();
+      await assertNoOverflow(page, 'personal at 320px');
+      await screenshot(page, 'mobile-personal.png');
+      await page.locator('#home-show-records').click();
+      await page.locator('#tab-gist').click();
+      await page.waitForFunction(() => gistApp.isInitialized && !gistApp.isLoading);
+      await page.locator('#gist-config-open-btn').click();
+      await page.locator('#profile-gist').waitFor();
+      assert.equal(await page.locator('#profile-gist').inputValue(), MAIN);
+      assert.equal(await page.locator('#profile-token').inputValue(), '');
+      await page.locator('#profile-token').focus();
+      await keyboard(page, 340, 22);
+      assert.equal(await page.locator('#mobile-home-nav').isVisible(), false);
+      assert.ok(await page.locator('#profile-token').evaluate(el => parseFloat(getComputedStyle(el).fontSize) >= 16));
+      await keyboardReset(page);
+      await page.locator('.settings-form button[type=submit]').click();
+      await page.waitForFunction(() => location.hash === '#records');
+      assert.equal(await page.locator('#content-gist').isVisible(), true);
+      assert.equal(await page.locator('#home-show-records').getAttribute('aria-current'), 'page');
+      assert.deepEqual(t.errors, []);
+    } finally { await t.close(); }
+  }],
+  ['a failed cloud read can be retried before writing to the selected account', async () => {
+    const t = await setup();
+    try {
+      let failFirstRead = true;
+      await t.context.route('https://api.github.com/gists/' + MAIN, route => {
+        if (failFirstRead && route.request().method() === 'GET') {
+          failFirstRead = false;
+          return route.fulfill({ status: 503, json: { message: 'Temporarily unavailable' } });
+        }
+        return route.fallback();
+      });
       await t.page.locator('#tab-gist').click();
-      await t.page.waitForFunction(() => gistApp.isInitialized && !gistApp.isLoading);
-      await t.page.locator('#gist-config-open-btn').click();
-      await t.page.locator('#gist-commentId').focus();
-      await keyboard(t.page, 340, 22);
-      await assertPanelWithinKeyboard(t.page, '#gist-config-overlay [data-mobile-panel]', '#gist-config-form button[type="submit"]', 340, 22);
-      for (const field of ['#gist-username', '#gist-gistId', '#gist-pat', '#gist-commentId']) {
-        await t.page.locator(field).focus();
-        const geometry = await t.page.locator(field).evaluate(el => {
-          const input = el.getBoundingClientRect();
-          const panel = el.closest('[data-mobile-panel]').getBoundingClientRect();
-          const actions = el.closest('form').querySelector('[data-mobile-actions]').getBoundingClientRect();
-          return { field: el.id, inputTop: input.top, inputBottom: input.bottom, panelTop: panel.top, actionsTop: actions.top };
-        });
-        assert.ok(geometry.inputTop >= geometry.panelTop - 1 && geometry.inputBottom <= geometry.actionsTop + 1, 'focused configuration field obscured: ' + JSON.stringify(geometry));
-      }
-      await assertFocusContained(t.page, '#gist-config-overlay');
-      assert.ok(await t.page.locator('#gist-pat').evaluate(el => parseFloat(getComputedStyle(el).fontSize) >= 16));
-      await screenshot(t.page, 'mobile-config-keyboard.png');
-      await keyboardReset(t.page);
-      await t.page.keyboard.press('Escape');
-      assert.equal(await t.page.locator('#gist-config-overlay').isVisible(), false);
-      assert.equal(await t.page.evaluate(() => document.activeElement.id), 'gist-config-open-btn');
+      await t.page.locator('.cloud-retry').waitFor();
+      await t.page.locator('#gist-record-btn').click();
+      assert.equal(await t.page.locator('#record-modal-overlay').isVisible(), false);
+      assert.equal(await t.page.evaluate(() => gistApp.saveAndVerify([]).then(() => true, () => false)), false);
+      assert.ok(!t.requests.some(request => request.method === 'PATCH'));
+      await t.page.locator('.cloud-retry').click();
+      await t.page.waitForFunction(() => gistApp.canWrite && gistApp.records.length === 2);
+      await t.page.locator('#gist-record-btn').click();
+      assert.equal(await t.page.locator('#record-modal-overlay').isVisible(), true);
       assert.deepEqual(t.errors, []);
     } finally { await t.close(); }
   }],
@@ -330,21 +361,20 @@ const tests = [
       await keyboardReset(t.page);
       await t.page.getByRole('button', { name: '打开侧栏', exact: true }).click();
       await t.page.locator('button[onclick="openSettings()"]').click();
-      await t.page.locator('#cfgSecret').focus();
+      await t.page.locator('#profile-secret').focus();
+      assert.equal(new URL(t.page.url()).hash, '#personal/ai?return=page5.html');
       await keyboard(t.page, 360, 35);
-      await assertPanelWithinKeyboard(t.page, '#settings [data-mobile-panel]', '#settings .modal-actions button:last-child', 360, 35);
-      await assertFocusContained(t.page, '#settings');
-      await touchTargets(t.page, '#settings button', 'AI settings');
-      await neutralColors(t.page, '.app,.topbar,.composer,.modal,.btn.primary');
-      await screenshot(t.page, 'mobile-ai-settings-keyboard.png');
+      assert.equal(await t.page.locator('#mobile-home-nav').isVisible(), false);
+      await t.page.locator('#profile-key').fill('synthetic-key');
+      await t.page.locator('#profile-secret').fill('synthetic-secret');
       await keyboardReset(t.page);
-      await t.page.keyboard.press('Escape');
-      assert.equal(await t.page.locator('#settings').isVisible(), false);
+      await t.page.locator('.settings-form button[type=submit]').click();
+      await t.page.waitForURL('**/page5.html');
       assert.equal(await t.page.locator('#userInput').inputValue(), '只输入，不发送');
       assert.deepEqual(t.errors, []);
     } finally { await t.close(); }
   }],
-  ['embedded desk composer fits the phone keyboard and restores the home navigation', async () => {
+  ['friends inline composer scrolls above the keyboard and preserves drafts across tabs', async () => {
     const t = await setup('pagemain.html');
     try {
       const page = t.page;
@@ -352,24 +382,19 @@ const tests = [
       const desk = page.frameLocator('#home-desk-frame');
       await desk.locator('#deskNotesOpen').click();
       await desk.locator('#deskText').fill('合成书桌回复草稿');
-      await page.waitForFunction(() => document.getElementById('mobile-home-nav').inert);
+      assert.equal(await desk.locator('#deskComposer').getAttribute('role'), 'region');
       await keyboard(page, 400, 40);
       const frame = await page.locator('#home-desk-frame').elementHandle();
       const documentFrame = await frame.contentFrame();
       // A nested document exposes its own viewport, whose height comes from the host iframe.
       await documentFrame.waitForFunction(() => Math.abs(innerHeight - 400) <= 1);
       await documentFrame.evaluate(() => window.__setMobileViewport({ height: innerHeight, width: innerWidth, offsetTop: 0 }));
-      await documentFrame.waitForFunction(() => {
-        const bounds = document.getElementById('deskComposerPanel').getBoundingClientRect();
-        return bounds.top >= -1 && bounds.bottom <= innerHeight + 1;
-      });
-      const panel = await desk.locator('#deskComposerPanel').boundingBox();
-      assert.ok(panel && panel.y >= 38 && panel.y + panel.height <= 442, 'desk composer must fit in the visible part of the parent: ' + JSON.stringify(panel));
+      assert.equal(await page.locator('#mobile-home-nav').isVisible(), false);
       await desk.locator('#deskSubmit').scrollIntoViewIfNeeded();
       const send = await desk.locator('#deskSubmit').boundingBox();
       assert.ok(send && send.y >= 38 && send.y + send.height <= 442, 'send button must be above the simulated keyboard');
       await keyboardReset(page);
-      await desk.locator('#deskComposerClose').click();
+      assert.equal(await desk.locator('#deskText').inputValue(), '合成书桌回复草稿');
       const deskOpenedAt = await documentFrame.evaluate(() => performance.timeOrigin);
       await page.setViewportSize({ width: 844, height: 390 });
       await keyboardReset(page);
@@ -379,6 +404,8 @@ const tests = [
       await assertNoOverflow(page, 'landscape home with embedded desk');
       await page.getByRole('button', { name: '记录', exact: true }).click();
       assert.equal(await page.locator('#home-records-view').isVisible(), true);
+      await page.locator('#home-show-feedback').click();
+      assert.equal(await desk.locator('#deskText').inputValue(), '合成书桌回复草稿');
       assert.deepEqual(t.errors, []);
     } finally { await t.close(); }
   }],

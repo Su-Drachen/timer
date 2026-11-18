@@ -47,6 +47,7 @@
     <link rel="stylesheet" href="assets/css/notebook.css">
     <link rel="stylesheet" href="assets/css/page-data.css">
     <script src="assets/js/notebook-theme.js"></script>
+    <script src="assets/js/app-config.js"></script>
     <link rel="stylesheet" href="assets/css/mobile-ui.css">
     <script src="assets/js/mobile-ui.js" defer></script>
 </head>
@@ -59,9 +60,9 @@
                 <i class="fa fa-trophy text-gold mr-2 text-lg sm:text-xl"></i>
                 <span>成就与徽章</span>
             </h1>
-            <a href="pagemain.html" class="nb-back bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-700 text-xs sm:text-sm font-medium py-1.5 px-3 rounded-lg transition-colors flex items-center">
+            <a href="pagemain.html#tools" class="nb-back bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-700 text-xs sm:text-sm font-medium py-1.5 px-3 rounded-lg transition-colors flex items-center">
                 <i class="fa fa-arrow-left mr-1.5"></i>
-                返回主页
+                返回工具
             </a>
         </div>
     </header>
@@ -172,17 +173,16 @@
         }
 
         function loadConfig() {
-            const savedConfig = localStorage.getItem('timeRecorderConfig');
-            if (savedConfig) {
-                config = JSON.parse(savedConfig);
+            config = window.TimerConfig.read();
+            if (config.GITHUB_USERNAME && window.TimerConfig.isGistId(config.GIST_ID)) {
                 return true;
             } else {
                 DOMElements.grid.innerHTML = `
                     <div class="col-span-full text-center bg-white p-6 sm:p-8 rounded-xl shadow-sm border border-slate-200">
                         <i class="fa fa-cogs text-3xl text-warning mb-2"></i>
-                        <h2 class="text-sm sm:text-base font-bold text-slate-800 mb-1">未检测到进阶配置</h2>
-                        <p class="text-xs text-slate-500 mb-3">请先同步 Gist 配置以解锁成就系统。</p>
-                        <a href="page0.html" class="inline-block bg-primary-500 text-white text-xs font-medium py-1.5 px-4 rounded-lg hover:bg-primary-600 transition-colors">前往配置</a>
+                        <h2 class="text-sm sm:text-base font-bold text-slate-800 mb-1">连接云端记录后查看成就</h2>
+                        <p class="text-xs text-slate-500 mb-3">成就根据你的云端记录计算。</p>
+                        <a href="pagemain.html#personal/cloud?return=page2.html" class="inline-block bg-primary-500 text-white text-xs font-medium py-1.5 px-4 rounded-lg hover:bg-primary-600 transition-colors">配置云端记录</a>
                     </div>
                 `;
                 return false;

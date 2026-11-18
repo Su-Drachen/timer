@@ -186,6 +186,27 @@ const tests = [
       assert.deepEqual(t.errors, []);
     } finally { await t.close(); }
   }],
+  ['the four-tab shell and unconfigured friends view can open after an offline reload', async () => {
+    const t = await setup({ mobile: true });
+    try {
+      await t.offline(true);
+      await t.page.reload({ waitUntil: 'networkidle' });
+      await t.page.locator('#home-show-tools').click();
+      await t.page.locator('#tool-directory a').first().waitFor();
+      await t.page.locator('#home-show-profile').click();
+      await t.page.locator('[href="#personal/appearance"]').waitFor();
+      const friendsDocument = t.page.waitForResponse(response =>
+        response.url().endsWith('/page6.html?view=friends') && response.request().isNavigationRequest());
+      await t.page.locator('#home-show-feedback').click();
+      assert.equal((await friendsDocument).fromServiceWorker(), true);
+      const friends = t.page.frameLocator('#home-desk-frame');
+      await friends.locator('.notes-unconfigured a').click();
+      await t.page.waitForFunction(() => location.hash.startsWith('#personal/comments'));
+      await t.page.locator('#home-show-records').click();
+      await t.page.locator('#local-record-btn').waitFor();
+      assert.deepEqual(t.errors, []);
+    } finally { await t.close(); }
+  }],
   ['storage failures preserve local records and unsaved input instead of claiming success', async () => {
     const t = await setup();
     try {

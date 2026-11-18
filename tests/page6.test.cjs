@@ -146,9 +146,14 @@ const tests = [
   ['signed reply, pin, and delete each write only a child comment and update locally', async () => {
     const t = await setup();
     try {
-      await t.page.locator('#deskOwnerImport').setInputFiles({ name: 'synthetic-author.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(authorFile)) });
+      assert.match(await t.page.locator('.owner-import').getAttribute('href'), /#personal\/author\?return=page6.html$/);
+      // The personal settings integration is covered in feedback-ui. Here verify
+      // the independently opened desk can sign with the identity saved there.
+      await t.page.evaluate(file => TimerConfig.author().importKey(file), authorFile);
+      await t.page.reload({ waitUntil: 'networkidle' });
       await t.page.waitForFunction(() => document.querySelector('#deskOwnerState').textContent.includes('作者钥匙已启用'));
       const before = t.requests.length;
+      const recordReads = t.mainRequests().length;
       await t.page.locator('.desk-note-reply').first().click();
       assert.equal(await t.page.locator('#deskNickname').inputValue(), 'SyntheticAuthor');
       assert.equal(await t.page.locator('#deskNickname').getAttribute('readonly'), '');
@@ -184,7 +189,7 @@ const tests = [
       assert.equal(await t.page.evaluate(value => TimerFeedbackCore.createAuth().verify(value), deletion), true);
       assert.ok(t.requests.filter(req => req.method !== 'GET').every(req => req.method === 'POST' && req.path === '/gists/' + CHILD + '/comments'));
       assert.equal((await t.page.locator('#total').innerText()).trim(), '2');
-      assert.equal(t.mainRequests().length, 1);
+      assert.equal(t.mainRequests().length, recordReads);
       await t.page.reload({ waitUntil: 'networkidle' });
       await t.page.waitForFunction(() => document.querySelector('#deskOwnerState').textContent.includes('作者钥匙已启用'));
       assert.deepEqual(t.errors, []);

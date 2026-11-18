@@ -5,12 +5,12 @@ const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 
-const html = fs.readFileSync(path.join(__dirname, '../pagemain.html'), 'utf8');
+const source = fs.readFileSync(path.join(__dirname, '../assets/js/records.js'), 'utf8');
 function section(start, end) {
-    const from = html.indexOf(start);
-    const to = html.indexOf(end, from);
+    const from = source.indexOf(start);
+    const to = source.indexOf(end, from);
     assert.ok(from >= 0 && to > from, `source section exists: ${start}`);
-    return html.slice(from, to);
+    return source.slice(from, to);
 }
 
 function setup() {
@@ -124,4 +124,33 @@ test('failed CSV import does not alter records or report success, and can be ret
     assert.equal(app.records[1].remark, 'imported, offline');
     assert.equal(state.saved, JSON.stringify(app.records));
     assert.equal(state.renders, 1);
+});
+
+test('the calendar keeps every record from the same day and measures elapsed time from the latest past record', () => {
+    const context = vm.createContext({});
+    vm.runInContext(fs.readFileSync(path.join(__dirname, '../assets/js/record-calendar.js'), 'utf8'), context);
+    vm.runInContext(section('function parseRecordDate(', 'function escapeHTML('), context);
+    const { indexRecords, metrics } = context.RecordCalendar;
+    const times = [
+        '2026/10/21 09:00:00', '2026-10-21 10:15:00', '2026/10/20 23:00:00',
+        '2026/10/31 11:30:00', '旧的无效时间'
+    ];
+    const index = indexRecords(times.map(time => ({ time })), context.parseRecordDate);
+    assert.deepEqual(Array.from(index.byDay.get('2026-10-21')), [0, 1]);
+    const summary = metrics(index, new Date(2026, 9, 21, 12, 40));
+    assert.deepEqual({ ...summary }, { today: 2, week: 3, elapsed: '2 小时' });
+    assert.equal(metrics(indexRecords([], context.parseRecordDate), new Date()).elapsed, '—');
+});
+
+test('organizing multiple daily entries includes the first one and keeps selections explicit', () => {
+    const repair = fs.readFileSync(path.join(__dirname, '../page3.html'), 'utf8');
+    const start = repair.indexOf('const dataRepairApp =');
+    const end = repair.indexOf("document.addEventListener('DOMContentLoaded'", start);
+    assert.ok(start >= 0 && end > start);
+    const app = vm.runInNewContext(repair.slice(start, end) + '\ndataRepairApp;');
+    app.records = [{ time: '2026/4/3 11:00:00' }, { time: '2026-04-03 19:30:00' }, { time: '2026/04/04 10:00:00' }];
+    app.currentFilter = 'multiple_per_day';
+    assert.deepEqual(Array.from(app.getFilteredRecords(), item => item.originalIdx), [0, 1]);
+    assert.equal(app.selectedIndices.size, 0);
+    assert.equal(app.records.length, 3);
 });

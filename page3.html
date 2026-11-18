@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>数据修复 - 时间笔记</title>
+    <title>记录整理 - 时间笔记</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
     <style>
@@ -137,10 +137,10 @@
     <header class="nb-header header-bg shadow-sm sticky top-0 z-40 border-b" style="border-color: var(--border-color);">
         <div class="nb-header-inner max-w-4xl mx-auto px-4 py-3.5 flex justify-between items-center">
             <div class="flex items-center gap-2.5">
-                <a href="pagemain.html" aria-label="返回主页" class="nb-back w-8 h-8 rounded-xl flex items-center justify-center bg-white/20 backdrop-blur hover:bg-white/30">
+                <a href="pagemain.html#tools" aria-label="返回工具" class="nb-back w-8 h-8 rounded-xl flex items-center justify-center bg-white/20 backdrop-blur hover:bg-white/30">
                     <i class="fa fa-chevron-left text-sm"></i>
                 </a>
-                <h1 class="text-base sm:text-lg font-bold tracking-tight">数据修复</h1>
+                <h1 class="text-base sm:text-lg font-bold tracking-tight">记录整理</h1>
             </div>
             <span class="nb-local-tag text-xs px-2.5 py-1 rounded-lg bg-white/20 font-medium"><i class="fa fa-desktop mr-1.5" aria-hidden="true"></i>本地数据</span>
         </div>
@@ -159,7 +159,7 @@
             <a href="page1.html">备注词条</a>
             <a href="page2.html">成就徽章</a>
             <a href="page4.html">时长分析</a>
-            <a href="page3.html" aria-current="page">数据修复</a>
+            <a href="page3.html" aria-current="page">记录整理</a>
         </nav>
 
         <!-- 操作控制面板 -->
@@ -190,8 +190,8 @@
                     <button class="filter-btn px-3 py-1.5 rounded-xl font-medium" data-filter="no_remark">
                         <i class="fa fa-comment-o mr-1"></i>仅无备注
                     </button>
-                    <button class="filter-btn px-3 py-1.5 rounded-xl font-medium" data-filter="duplicates_only" title="筛选出同一天中除第一条之外的多余打卡">
-                        <i class="fa fa-clone mr-1"></i>同日多余记录 (除每天首条)
+                    <button class="filter-btn px-3 py-1.5 rounded-xl font-medium" data-filter="multiple_per_day" title="查看同一天有两条或以上记录的日期和全部记录">
+                        <i class="fa fa-clone mr-1"></i>同日多条
                     </button>
                 </div>
             </div>
@@ -223,12 +223,7 @@
                     </button>
                 </div>
 
-                <!-- 专项一键修复工具 -->
-                <div>
-                    <button id="quick-dedup-btn" class="px-3 py-2 rounded-xl border text-xs font-semibold hover:opacity-80 flex items-center gap-1.5 text-blue-600 border-blue-500/30 bg-blue-500/10" title="自动保留每天最早的一次记录，清除同日其它打卡">
-                        <i class="fa fa-magic"></i> 一键去重 (每天仅留首条)
-                    </button>
-                </div>
+
             </div>
         </div>
 
@@ -258,7 +253,7 @@
     </main>
 
     <footer class="mt-auto py-5 text-center text-xs opacity-50 border-t" style="border-color: var(--border-color);">
-        <p>© 时间笔记 · 数据修复工具</p>
+        <p>© 时间笔记 · 记录整理工具</p>
     </footer>
 
     <script>
@@ -267,6 +262,10 @@
             const savedTheme = localStorage.getItem('userTheme') || 'blue';
             document.documentElement.setAttribute('data-theme', savedTheme);
         })();
+
+        function escapeRecordText(value) {
+            return String(value ?? '').replace(/[&<>]/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[char]));
+        }
 
         function showToast(message, type = 'info') {
             const toast = document.getElementById('toast');
@@ -286,7 +285,7 @@
             records: [],
             selectedIndices: new Set(),
             searchKeyword: '',
-            currentFilter: 'all', // 'all' | 'has_remark' | 'no_remark' | 'duplicates_only'
+            currentFilter: 'all', // 'all' | 'has_remark' | 'no_remark' | 'multiple_per_day'
             selectedMonth: 'all', // 'all' | 'YYYY-MM'
 
             init() {
@@ -312,6 +311,7 @@
 
                 document.getElementById('search-input').addEventListener('input', (e) => {
                     this.searchKeyword = e.target.value.trim().toLowerCase();
+                    this.selectedIndices.clear();
                     this.render();
                 });
 
@@ -327,9 +327,7 @@
                     this.handleBatchDelete();
                 });
 
-                document.getElementById('quick-dedup-btn').addEventListener('click', () => {
-                    this.handleQuickDedup();
-                });
+
             },
 
             loadRecords() {
@@ -348,8 +346,8 @@
             // 提取日期的 YYYY/MM/DD
             getDateKey(timeStr) {
                 if (!timeStr) return '';
-                const match = timeStr.match(/^(\d{4}[/-]\d{1,2}[/-]\d{1,2})/);
-                return match ? match[1].replace(/-/g, '/') : timeStr.split(' ')[0];
+                const match = /^(\d{4})[/-](\d{1,2})[/-](\d{1,2})(?:\D|$)/.exec(timeStr);
+                return match ? [match[1], match[2].padStart(2, '0'), match[3].padStart(2, '0')].join('/') : '';
             },
 
             // 提取年月的 YYYY-MM
@@ -396,30 +394,16 @@
             },
 
             getFilteredRecords() {
-                // 原数组按时间正序排列标记每天的第一条及同日重复记录
-                const sortedWithIdx = this.records.map((r, originalIdx) => ({ ...r, originalIdx }))
-                    .sort((a, b) => new Date(a.time.replace(/\//g, '-')) - new Date(b.time.replace(/\//g, '-')));
-
-                const seenDates = new Set();
-                const duplicateOriginalIdxSet = new Set();
-                const firstRecordOriginalIdxSet = new Set();
-
-                sortedWithIdx.forEach(item => {
-                    const dateKey = this.getDateKey(item.time);
-                    if (seenDates.has(dateKey)) {
-                        duplicateOriginalIdxSet.add(item.originalIdx);
-                    } else {
-                        seenDates.add(dateKey);
-                        firstRecordOriginalIdxSet.add(item.originalIdx);
-                    }
-                });
-
+                const countByDay = new Map();
+                for (const record of this.records) {
+                    const key = this.getDateKey(record.time);
+                    if (key) countByDay.set(key, (countByDay.get(key) || 0) + 1);
+                }
                 return this.records.map((r, originalIdx) => ({
                     ...r,
                     originalIdx,
                     monthKey: this.getMonthKey(r.time),
-                    isDuplicate: duplicateOriginalIdxSet.has(originalIdx),
-                    isFirstOfDay: firstRecordOriginalIdxSet.has(originalIdx)
+                    dayCount: countByDay.get(this.getDateKey(r.time)) || 0
                 })).filter(item => {
                     // 1. 年月过滤
                     if (this.selectedMonth !== 'all' && item.monthKey !== this.selectedMonth) {
@@ -431,8 +415,8 @@
                         if (!item.remark || !item.remark.trim()) return false;
                     } else if (this.currentFilter === 'no_remark') {
                         if (item.remark && item.remark.trim()) return false;
-                    } else if (this.currentFilter === 'duplicates_only') {
-                        if (!item.isDuplicate) return false;
+                    } else if (this.currentFilter === 'multiple_per_day') {
+                        if (item.dayCount < 2) return false;
                     }
 
                     // 3. 关键词搜索过滤
@@ -490,36 +474,6 @@
                 showToast('已成功批量删除记录', 'success');
             },
 
-            // 智能一键去重：每天只保留最早的一条记录
-            handleQuickDedup() {
-                if (this.records.length <= 1) return showToast('当前记录数无需去重', 'info');
-
-                const sorted = [...this.records].sort((a, b) => new Date(a.time.replace(/\//g, '-')) - new Date(b.time.replace(/\//g, '-')));
-                const uniqueRecords = [];
-                const seenDates = new Set();
-
-                sorted.forEach(r => {
-                    const dateKey = this.getDateKey(r.time);
-                    if (!seenDates.has(dateKey)) {
-                        seenDates.add(dateKey);
-                        uniqueRecords.push(r);
-                    }
-                });
-
-                const deletedCount = this.records.length - uniqueRecords.length;
-                if (deletedCount === 0) {
-                    return showToast('每一天都只有一条记录，无需去重', 'info');
-                }
-
-                if (!confirm(`检测到 ${deletedCount} 条同一天的后续重复打卡。\n\n去重操作将为每一天【保留最早的第一条打卡】，彻底移除其余 ${deletedCount} 条打卡。\n\n是否确认执行？`)) {
-                    return;
-                }
-
-                this.records = uniqueRecords.sort((a, b) => new Date(b.time.replace(/\//g, '-')) - new Date(a.time.replace(/\//g, '-')));
-                this.selectedIndices.clear();
-                this.saveRecords();
-                showToast(`已成功去重，清理了 ${deletedCount} 条同日多余数据`, 'success');
-            },
 
             handleQuickEdit(idx, field) {
                 if (!this.records[idx]) return;
@@ -593,12 +547,11 @@
                             </td>
                             <td class="p-3 font-mono cursor-pointer hover:underline" onclick="dataRepairApp.handleQuickEdit(${item.originalIdx}, 'time')" title="点击修改时间">
                                 <div class="flex items-center gap-1.5 flex-wrap">
-                                    <span>${item.time}</span>
-                                    ${item.isDuplicate ? '<span class="px-1.5 py-0.2 rounded text-[10px] bg-red-500/10 text-red-500 font-sans font-medium">同日多余</span>' : ''}
+                                    <span>${escapeRecordText(item.time)}</span>
                                 </div>
                             </td>
                             <td class="p-3 cursor-pointer hover:opacity-80" onclick="dataRepairApp.handleQuickEdit(${item.originalIdx}, 'remark')" title="点击修改备注">
-                                ${item.remark ? `<span class="break-all font-medium">${item.remark}</span>` : '<span class="opacity-30 italic">无备注 (点击添加)</span>'}
+                                ${item.remark ? `<span class="break-all font-medium">${escapeRecordText(item.remark)}</span>` : '<span class="opacity-30 italic">无备注 (点击添加)</span>'}
                             </td>
                             <td class="p-3 text-right">
                                 <div class="flex items-center justify-end gap-1.5">

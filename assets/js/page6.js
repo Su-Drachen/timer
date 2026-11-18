@@ -6,18 +6,6 @@
     if (root.frameElement && root.frameElement.id === 'home-desk-frame' && root.parent.TimerFeedback) home = root.parent;
   } catch (_) { /* An unrelated host uses the standalone desk. */ }
   var firstFeed = Promise.resolve();
-  var positions = { notes: 0, calendar: 0 };
-  function selectDeskView(view) {
-    if (!home || document.body.dataset.deskView === view) return;
-    var tab = document.body.dataset.deskView;
-    if (tab) positions[tab] = root.scrollY;
-    root.dispatchEvent(new CustomEvent('desk:viewwillchange', { detail: { view: view } }));
-    document.body.dataset.deskView = view;
-    document.getElementById('desk-show-notes').setAttribute('aria-current', view === 'notes' ? 'page' : 'false');
-    document.getElementById('desk-show-calendar').setAttribute('aria-current', view === 'calendar' ? 'page' : 'false');
-    root.scrollTo({ top: positions[view], behavior: 'instant' });
-    root.dispatchEvent(new CustomEvent('desk:viewchange', { detail: { view: view } }));
-  }
   var fields = ['GITHUB_USERNAME', 'GIST_ID', 'COMMENT_GIST_ID', 'GITHUB_PAT'];
   function readConfig() {
     var value = {};
@@ -36,32 +24,48 @@
   var notesReady = Boolean(validId(initial.COMMENT_GIST_ID) && tokenReady);
   if (home) {
     document.documentElement.classList.add('desk-embedded');
+    document.title = '朋友留言 · 时迹';
+    document.body.dataset.deskView = 'notes';
+    document.body.dataset.deskNotesReady = String(notesReady);
     var style = document.createElement('link');
     style.rel = 'stylesheet';
     style.href = 'assets/css/feedback.css';
     document.head.appendChild(style);
     document.querySelector('.desk-embedded-head').hidden = false;
-    document.getElementById('desk-archive').prepend(document.querySelector('.top-actions'));
     document.getElementById('desk-barrage-slot').hidden = !notesReady;
-    document.body.dataset.deskNotesReady = String(notesReady);
-    selectDeskView('notes');
-    document.getElementById('desk-show-notes').addEventListener('click', function () { selectDeskView('notes'); });
-    document.getElementById('desk-show-calendar').addEventListener('click', function () { selectDeskView('calendar'); });
+    document.getElementById('notesTitle').textContent = '朋友留言';
+    var writeButton = document.getElementById('deskNotesOpen');
+    writeButton.textContent = '写留言';
+    writeButton.setAttribute('aria-controls', 'deskComposer');
+    document.querySelector('.desk-embedded-head').appendChild(writeButton);
+    document.querySelector('.owner-settings').hidden = true;
+    document.querySelector('#page6ConfigStatus a').href = 'pagemain.html#personal/comments?return=friends';
+    var composer = document.getElementById('deskComposer');
+    composer.removeAttribute('data-mobile-dialog');
+    composer.removeAttribute('aria-modal');
+    composer.setAttribute('role', 'region');
+    composer.className = 'friends-composer';
+    document.getElementById('deskComposerPanel').removeAttribute('data-mobile-panel');
+    document.getElementById('deskComposerClose').hidden = true;
+    document.querySelector('#deskComposer .composer-bottom > span').textContent = '草稿保存在本机';
+    document.getElementById('deskNotes').appendChild(composer);
+    document.getElementById('deskSubmit').textContent = '发送留言';
+    composer.hidden = !notesReady;
     document.addEventListener('click', function (event) {
-      if (event.target.closest('a[href="pagemain.html?tab=gist&config=1"]')) {
+      if (event.target.closest('a[href*="#personal/comments"]')) {
         event.preventDefault();
-        home.TimerHomeDesk.openConfig();
+        home.TimerHomeDesk.openConfig('comments');
       }
     });
   }
-  var changeMessage = '主页配置已更改。请重新打开此页后继续；当前页面不会再向旧配置发送请求。';
+  var changeMessage = '个人配置已更改。请重新打开此页后继续；当前页面不会再向旧配置发送请求。';
   function configStatus(message, warning) {
     document.getElementById('page6ConfigMessage').textContent = message;
     document.getElementById('page6ConfigStatus').classList.toggle('is-warning', Boolean(warning));
   }
   function lockActions() {
     document.body.classList.add('page6-config-locked');
-    document.querySelectorAll('#refresh, #deskNotesRefresh, #deskNotesOpen, #mobileNoteOpen, #bookmarkNote, #deskSubmit, #deskDeleteConfirm, #deskOwnerImport, #deskOwnerForget, .record-note-button, .desk-note-reply, .desk-note-pin, .desk-note-delete, .desk-reply-manage, .desk-reply-delete-selected').forEach(function (element) { element.disabled = true; });
+    document.querySelectorAll('#refresh, #deskNotesRefresh, #deskNotesOpen, #mobileNoteOpen, #bookmarkNote, #deskSubmit, #deskDeleteConfirm, .record-note-button, .desk-note-reply, .desk-note-pin, .desk-note-delete, .desk-reply-manage, .desk-reply-delete-selected').forEach(function (element) { element.disabled = true; });
     configStatus(changeMessage, true);
   }
   function stableConfig() {
@@ -78,20 +82,20 @@
     return stableConfig() && (area === 'records' ? recordsReady : notesReady);
   }
   function configurationError() {
-    var error = new Error(invalidated ? changeMessage : '连接配置不完整或格式无效，请前往主页配置后重新打开此页。');
+    var error = new Error(invalidated ? changeMessage : '连接配置不完整或格式无效，请前往个人配置后重新打开此页。');
     error.safeMessage = true;
     return error;
   }
   function disableNotes() {
-    ['deskNotesRefresh', 'deskNotesOpen', 'mobileNoteOpen', 'bookmarkNote', 'deskSubmit', 'deskOwnerImport'].forEach(function (id) { document.getElementById(id).disabled = true; });
+    ['deskNotesRefresh', 'deskNotesOpen', 'mobileNoteOpen', 'bookmarkNote', 'deskSubmit'].forEach(function (id) { document.getElementById(id).disabled = true; });
     document.getElementById('deskNotesStatus').textContent = initial.COMMENT_GIST_ID ? '留言配置不完整或格式无效' : '尚未启用桌边纸条';
     document.getElementById('deskOwnerState').textContent = '配置留言连接后，可使用本机保存的作者身份。';
     var message = document.createElement('div');
     message.className = 'notes-unconfigured';
-    message.textContent = initial.COMMENT_GIST_ID ? '请到主页检查留言 Gist ID 和访问令牌，再重新打开此页。' : '留言 Gist ID 为选填。需要查看或回复纸条时，在主页配置中补充即可；开笔记录仍可独立使用。';
+    message.textContent = initial.COMMENT_GIST_ID ? '请检查留言 Gist ID 和访问令牌。' : '连接留言后，就可以看朋友的纸条、留言和回复。';
     var link = document.createElement('a');
-    link.href = 'pagemain.html?tab=gist&config=1';
-    link.textContent = '前往主页配置 ↗';
+    link.href = 'pagemain.html#personal/comments?return=' + (home ? 'friends' : 'page6.html');
+    link.textContent = '配置留言连接 →';
     message.appendChild(link);
     document.getElementById('deskNotesList').replaceChildren(message);
   }
@@ -124,9 +128,10 @@
   ['page6AuthorName', 'page6FooterAuthor'].forEach(function (id) {
     document.getElementById(id).textContent = initial.GITHUB_USERNAME || '我的书桌';
   });
-  configStatus(recordsReady ? (notesReady ? '已连接本机主页配置 · 仅进入页面或手动刷新时读取。' : '记录已连接 · 留言尚未配置，可在主页选填留言 Gist ID。') : '请先在主页配置有效的主项目 Gist ID 和访问令牌，再重新打开此页。', !recordsReady);
+  configStatus(recordsReady ? (notesReady ? '已连接本机个人配置 · 仅进入页面或手动刷新时读取。' : '记录已连接 · 留言尚未配置，可在个人页填写留言 Gist ID。') : '请先在个人配置有效的主项目 Gist ID 和访问令牌，再重新打开此页。', !recordsReady);
   root.addEventListener('storage', function (event) {
     if (event.key === 'observer-desk-author-key-v1') {
+      if (home) return;
       invalidated = true;
       changeMessage = '本机作者钥匙已在其他页面改变。请重新打开此页，确认当前作者身份后继续。';
       lockActions();
@@ -137,6 +142,8 @@
 
   (function(){
     'use strict';
+    // The friends feed contains only messages and previously attached references.
+    if (home) return;
     var GIST_ID=initial.GIST_ID;
     var GITHUB_TOKEN=initial.GITHUB_PAT;
     var recordCacheKey="observer-record-times-v1:"+GIST_ID;
@@ -152,12 +159,12 @@
       if(!guard('records')){
         status('error',invalidated?'配置已更改':'待配置');
         $('refresh').disabled=true;
-        $('errorMessage').textContent=invalidated?changeMessage:'尚未配置有效的记录连接。请通过上方“前往主页配置”填写主项目 Gist ID 和访问令牌。';
+        $('errorMessage').textContent=invalidated?changeMessage:'尚未配置有效的记录连接。请通过上方“前往个人配置”填写主项目 Gist ID 和访问令牌。';
         $('errorMessage').classList.add('show');
         return;
       }
       state.loading=true;$('refresh').disabled=true;status('','读取中');$('errorMessage').classList.remove('show');
-      $('errorMessage').textContent='暂时无法读取写作记录。请检查网络及主页配置后，手动重试。';
+      $('errorMessage').textContent='暂时无法读取写作记录。请检查网络及个人配置后，手动重试。';
       var controller=typeof AbortController==='function'?new AbortController():null;
       var timer=setTimeout(function(){if(controller)controller.abort()},15000);
       fetch('https://api.github.com/gists/'+GIST_ID,{cache:'no-store',signal:controller?controller.signal:undefined,headers:{Authorization:'Bearer '+GITHUB_TOKEN,Accept:'application/vnd.github+json'}})
@@ -180,7 +187,7 @@
         try{localStorage.setItem(recordCacheKey,JSON.stringify(state.records.map(function(item){return item.time})))}catch(_){}
         state.shown=6;updateYears();updateMonths();render();status('ok','已同步');
         window.dispatchEvent(new CustomEvent('observer:records',{detail:{records:state.records}}));
-      }).catch(function(){status('error',invalidated?'配置已更改':state.records.length?'上次记录':'读取失败');if(invalidated)$('errorMessage').textContent=changeMessage;$('errorMessage').classList.add('show');if(!state.records.length){$('list').innerHTML='<div class="empty"><strong>暂时没能翻开记录本</strong>检查主页配置和网络后，重新打开或点击刷新记录。</div>'}})
+      }).catch(function(){status('error',invalidated?'配置已更改':state.records.length?'上次记录':'读取失败');if(invalidated)$('errorMessage').textContent=changeMessage;$('errorMessage').classList.add('show');if(!state.records.length){$('list').innerHTML='<div class="empty"><strong>暂时没能翻开记录本</strong>检查个人配置和网络后，重新打开或点击刷新记录。</div>'}})
       .finally(function(){clearTimeout(timer);state.loading=false;$('refresh').disabled=invalidated||!recordsReady});
     }
     function updateYears(){var field=$('year'),selected=field.value;field.innerHTML='<option value="all">全部年份</option>';Array.from(new Set(state.records.map(function(r){return r.year}))).sort(function(a,b){return b-a}).forEach(function(y){var option=document.createElement('option');option.value=y;option.textContent=y+' 年';field.appendChild(option)});field.value=Array.from(field.options).some(function(o){return o.value===selected})?selected:'all'}
@@ -253,7 +260,6 @@
       getRecords:function(){return state.records.slice()},
       focusRecord:function(time){
         var record=state.records.find(function(item){return item.time===time});if(!record)return false;
-        selectDeskView('calendar');
         state.day=record.date;state.monthKey=record.date.slice(0,7).replace('/','-');state.view='month';
         $('year').value='all';$('search').value='';state.shown=Math.max(6,filtered().findIndex(function(item){return item.time===time})+1);renderCalendar();renderList();
         var row=Array.from($('list').children).find(function(item){return item.dataset.recordTime===time});
@@ -284,7 +290,7 @@
       'deskNotes', 'deskNotesStatus', 'deskNotesWarning', 'deskNotesFilter',
       'deskNotesFilterLabel', 'deskNotesClearFilter', 'deskNotesSort',
       'deskNotesRefresh', 'deskNotesOpen', 'deskNotesList', 'deskNotesMore',
-      'deskOwnerState', 'deskOwnerImport', 'deskOwnerForget', 'deskOwnerStatus',
+      'deskOwnerState', 'deskOwnerStatus',
       'deskComposer', 'deskComposerPanel', 'deskComposerTitle', 'deskComposerClose',
       'deskComposerForm', 'deskComposerTarget', 'deskComposerTargetLabel',
       'deskComposerClearTarget', 'deskNickname', 'deskText', 'deskGestures',
@@ -308,6 +314,13 @@
     if (!notesReady) { disableNotes(); return; }
     var store = createNotesStore();
     var auth = root.TimerFeedbackCore.createAuth(root.TimerFeedbackCore.authorPublicKey);
+    function authorSession() { return home && home.TimerConfig.author ? home.TimerConfig.author() : auth; }
+    async function sign(payload) {
+      if (!home || !home.TimerConfig.author) return auth.sign(payload);
+      // The signature canonicalizer accepts plain objects from its own window.
+      var signed = await authorSession().sign(home.JSON.parse(JSON.stringify(payload)));
+      return JSON.parse(JSON.stringify(signed));
+    }
     var storagePrefix = 'observer.desk.' + String(config.commentGistId || 'notes') + '.';
     var gestureLabels = { coffee: '递一杯咖啡', light: '留一盏灯', sit: '在旁边坐坐' };
     var state = {
@@ -370,7 +383,7 @@
 
     function persistDraft() { writeStorage('draft', JSON.stringify(draft)); }
     function invalidatePending() { draft.pendingPayload = null; draft.pendingFingerprint = null; }
-    function own() { return auth.supported() && auth.isOwner(); }
+    function own() { return authorSession().supported() && authorSession().isOwner(); }
     function canDelete(item) {
       return !!(item && !item.deleted && (own() ||
         (item.ownerId && item.ownerId === ownerId && !state.verified.has(item.id) &&
@@ -572,6 +585,7 @@
       return state.notes.filter(function (item) { return !item.deleted && effectiveRecord(item) === time; }).length;
     }
     function recordLink(time) {
+      if (home) return node('span', 'desk-note-record', '引用记录 · ' + time);
       var missing = state.recordsLoaded && !state.records.has(time);
       var link = button('desk-note-record' + (missing ? ' desk-record-missing' : ''), '关于 ' + time + ' 的开笔' + (missing ? ' · 原记录暂不可用' : ''), function () {
         var observer = window.ObserverRecords;
@@ -774,7 +788,6 @@
       if (invalidated) lockActions();
     }
     function filterRecord(time) {
-      selectDeskView('notes');
       state.filter = typeof time === 'string' && time ? time : null;
       state.shown = 10;
       render();
@@ -804,11 +817,6 @@
       document.body.style.top = prior.top || '';
       document.body.style.width = prior.width || '';
       window.scrollTo({ top: state.scrollY, left: 0, behavior: 'instant' });
-    }
-    function syncOwnerControls() {
-      var busy = state.sending || state.deleting || state.deleteOpen || invalidated;
-      el.deskOwnerImport.disabled = busy || !auth.supported();
-      el.deskOwnerForget.disabled = busy;
     }
     function persistPendingDelete() {
       writeStorage('pendingDelete', state.pendingDelete ? JSON.stringify({
@@ -869,7 +877,6 @@
       el.deskDeletePanel.setAttribute('tabindex', '-1');
       deleteStatus('', false);
       renderDeleteDialog();
-      syncOwnerControls();
       render();
       if (window.TimerMobile) window.TimerMobile.openDialog(el.deskDeleteDialog, {
         initialFocus: el.deskDeleteCancel, onClose: function () { closeDeleteDialog(false); }
@@ -884,7 +891,6 @@
       el.deskDeleteDialog.hidden = true;
       if (window.TimerMobile) window.TimerMobile.closeDialog(el.deskDeleteDialog);
       unlockPage();
-      syncOwnerControls();
       pruneManagerSelection();
       render();
       if (state.deleteRestoreFocus && state.deleteRestoreFocus.isConnected && !state.deleteRestoreFocus.disabled) {
@@ -924,7 +930,6 @@
       }
       var fingerprint = JSON.stringify({ ids: ids.slice().sort(), ownerId: ownerId, owner: own() });
       state.deleting = true;
-      syncOwnerControls();
       renderDeleteDialog();
       render();
       deleteStatus('正在保存删除操作…', false);
@@ -934,7 +939,7 @@
         if (state.pendingDelete && state.pendingDeleteFingerprint === fingerprint) payload = state.pendingDelete;
         else {
           payload = { id: uuid(), kind: 'delete', targetIds: ids, ownerId: ownerId, createdAt: new Date().toISOString() };
-          if (own()) payload = await auth.sign(payload);
+          if (own()) payload = await sign(payload);
           state.pendingDelete = payload;
           state.pendingDeleteFingerprint = fingerprint;
           persistPendingDelete();
@@ -960,7 +965,6 @@
         }
       } finally {
         state.deleting = false;
-        syncOwnerControls();
         renderDeleteDialog();
         render();
       }
@@ -987,7 +991,7 @@
       if (draft.recordTime) parts.push('关于 ' + draft.recordTime + ' 的开笔');
       el.deskComposerTarget.hidden = !parts.length;
       el.deskComposerTargetLabel.textContent = parts.join(' · ');
-      el.deskComposerTitle.textContent = draft.parentId ? '回一张纸条' : '给书桌递张纸条';
+      el.deskComposerTitle.textContent = home ? (draft.parentId ? '回复留言' : '写留言') : (draft.parentId ? '回一张纸条' : '给书桌递张纸条');
       el.deskComposerClearTarget.textContent = '改为普通留言';
     }
     function fillComposer() {
@@ -1000,11 +1004,10 @@
     function setBusy(busy) {
       state.sending = busy;
       el.deskSubmit.disabled = busy || invalidated;
-      el.deskSubmit.textContent = busy ? '正在递出…' : '递出纸条';
+      el.deskSubmit.textContent = busy ? '正在发送…' : (home ? '发送留言' : '递出纸条');
       el.deskText.disabled = busy;
       el.deskNickname.disabled = busy;
       el.deskComposerClearTarget.disabled = busy;
-      syncOwnerControls();
       Array.from(el.deskGestures.querySelectorAll('button')).forEach(function (item) { item.disabled = busy; });
     }
     function focusableItems(panel) {
@@ -1041,6 +1044,11 @@
       persistDraft();
       fillComposer();
       composerStatus(draft.pendingPayload ? '上次发送未确认；内容和身份未改变时会沿用同一编号，请先手动刷新纸条确认送达情况，再重试。' : '', false);
+      if (home) {
+        el.deskComposer.scrollIntoView({ block: 'start', behavior: 'instant' });
+        (el.deskNickname.value.trim() ? el.deskText : el.deskNickname).focus();
+        return;
+      }
       if (!state.open) {
         state.restoreFocus = document.activeElement;
         lockPage();
@@ -1098,7 +1106,7 @@
             author: author, text: message, ownerId: ownerId, createdAt: new Date().toISOString(),
             likes: 0, deleted: false, recordTime: draft.recordTime, gesture: draft.gesture
           };
-          if (own()) payload = await auth.sign(payload);
+          if (own()) payload = await sign(payload);
           draft.pendingPayload = payload;
           draft.pendingFingerprint = fingerprint;
           persistDraft();
@@ -1129,7 +1137,7 @@
         } else {
           persistDraft();
           composerStatus('还没确认纸条是否送达，草稿已保留。请先手动刷新纸条确认送达情况，再重试。' + errorText(error), true);
-          if (!state.open) feedStatus('纸条发送未确认，重新打开输入框可继续重试。', true);
+          if (!home && !state.open) feedStatus('纸条发送未确认，重新打开输入框可继续重试。', true);
         }
       } finally { setBusy(false); }
     }
@@ -1140,7 +1148,7 @@
       render();
       var saved = false;
       try {
-        var event = await auth.sign({ id: uuid(), kind: 'pin', targetId: state.pinnedId === id ? null : id, createdAt: new Date().toISOString() });
+        var event = await sign({ id: uuid(), kind: 'pin', targetId: state.pinnedId === id ? null : id, createdAt: new Date().toISOString() });
         var result = await store.append(event);
         saved = true;
         var payload = result && result.id === event.id ? result : event;
@@ -1156,8 +1164,6 @@
     function renderOwner() {
       var isOwner = own();
       el.deskOwnerState.textContent = isOwner ? '作者钥匙已启用 · 回复会带作者标记' : '当前为本人昵称 · 尚未启用作者签名，认证标记和管理权限不可用';
-      el.deskOwnerForget.hidden = !isOwner;
-      syncOwnerControls();
       if (!auth.supported()) el.deskOwnerStatus.textContent = '此浏览器无法使用作者签名；请换一个支持的浏览器导入钥匙。';
       fillComposer();
       pruneManagerSelection();
@@ -1172,28 +1178,6 @@
         updateReadActions();
       }
     }
-    async function importOwner(event) {
-      if (!guard('notes')) return;
-      var file = event.target.files && event.target.files[0];
-      if (!file || state.sending || state.deleting || state.deleteOpen) return;
-      el.deskOwnerImport.disabled = true;
-      el.deskOwnerStatus.textContent = '正在检查作者钥匙…';
-      try {
-        if (file.size > 65536) throw new Error('Key file too large');
-        await auth.importKey(await file.text());
-        persistDraft();
-        el.deskOwnerStatus.textContent = typeof auth.isPersistent === 'function' && auth.isPersistent() === false ? '作者钥匙已启用；此浏览器仅在本次打开期间保存作者身份，关闭后需要重新导入。' : '作者钥匙已启用。';
-      } catch (_) { el.deskOwnerStatus.textContent = '没有导入成功，请确认选择的是这张书桌的作者钥匙文件。'; }
-      finally { el.deskOwnerImport.value = ''; renderOwner(); }
-    }
-    async function forgetOwner() {
-      if (!guard('notes')) return;
-      if (state.sending || state.deleting || state.deleteOpen) return;
-      await auth.forget();
-      persistDraft();
-      el.deskOwnerStatus.textContent = '已退出作者身份。';
-      renderOwner();
-    }
     function updateRecords(records) {
       if (!Array.isArray(records)) return;
       state.records = new Set(records.map(function (item) { return typeof item === 'string' ? item : item && item.time; }).filter(function (time) { return typeof time === 'string'; }));
@@ -1203,7 +1187,7 @@
 
     el.deskNickname.maxLength = 24;
     el.deskText.maxLength = 2000;
-    el.deskNotesOpen.addEventListener('click', function () { openComposer(); });
+    el.deskNotesOpen.addEventListener('click', function () { openComposer(home ? { parentId: null } : {}); });
     el.deskNotesRefresh.addEventListener('click', function () { refresh(true); });
     el.deskNotesClearFilter.addEventListener('click', clearFilter);
     el.deskNotesSort.addEventListener('change', function () { state.shown = 10; render(); });
@@ -1225,8 +1209,6 @@
       draft.gesture = draft.gesture === target.dataset.gesture ? null : target.dataset.gesture;
       invalidatePending(); persistDraft(); renderGestures();
     });
-    el.deskOwnerImport.addEventListener('change', importOwner);
-    el.deskOwnerForget.addEventListener('click', function () { forgetOwner().catch(function () { el.deskOwnerStatus.textContent = '暂时未能退出作者身份，请重试。'; }); });
     el.deskDeleteConfirm.addEventListener('click', submitDelete);
     el.deskDeleteCancel.addEventListener('click', function () { closeDeleteDialog(false); });
     el.deskDeleteClose.addEventListener('click', function () { closeDeleteDialog(false); });
@@ -1263,10 +1245,13 @@
     if (window.ObserverRecords && typeof window.ObserverRecords.getRecords === 'function') updateRecords(window.ObserverRecords.getRecords());
     fillComposer();
     render();
-    firstFeed = Promise.resolve(auth.initialized).catch(function () {
+    firstFeed = Promise.resolve(authorSession().initialized).catch(function () {
       el.deskOwnerStatus.textContent = '已保存的作者钥匙暂不可用，可以重新导入。';
     }).then(function () { renderOwner(); return refresh(false); });
     if (home) {
+      function authorChanged() { Promise.resolve(authorSession().initialized).then(renderOwner); }
+      home.addEventListener('timer:author-change', authorChanged);
+      window.addEventListener('pagehide', function (event) { if (!event.persisted) home.removeEventListener('timer:author-change', authorChanged); });
       var readAll = document.getElementById('desk-mark-all-read');
       readAll.addEventListener('click', function () {
         if (!guard('notes')) return;
@@ -1284,7 +1269,6 @@
 (function(){
   'use strict';
   document.getElementById('mobileNoteOpen').addEventListener('click',function(){if(window.DeskNotes)window.DeskNotes.open()});
-  document.querySelector('.owner-import').addEventListener('keydown',function(event){if(event.key==='Enter'||event.key===' '){event.preventDefault();document.getElementById('deskOwnerImport').click()}});
 })();
   if (home) {
     function connectHome() {
@@ -1293,7 +1277,6 @@
         reply: function (id) {
           return firstFeed.then(function () {
             if (!root.DeskNotes || !guard('notes')) return;
-            selectDeskView('notes');
             root.DeskNotes.open({ parentId: id });
           });
         }

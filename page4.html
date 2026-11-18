@@ -50,6 +50,7 @@
     <link rel="stylesheet" href="assets/css/notebook.css">
     <link rel="stylesheet" href="assets/css/page-data.css">
     <script src="assets/js/notebook-theme.js"></script>
+    <script src="assets/js/app-config.js"></script>
     <link rel="stylesheet" href="assets/css/mobile-ui.css">
     <script src="assets/js/mobile-ui.js" defer></script>
 </head>
@@ -71,7 +72,7 @@
                     <i class="fa fa-refresh mr-1"></i>
                     <span>刷新</span>
                 </button>
-                <a href="pagemain.html" class="nb-back bg-slate-200 text-slate-700 hover:bg-slate-300 transition-colors flex items-center text-xs sm:text-sm font-semibold py-1.5 px-2.5 sm:px-3 rounded-lg">
+                <a href="pagemain.html#tools" class="nb-back bg-slate-200 text-slate-700 hover:bg-slate-300 transition-colors flex items-center text-xs sm:text-sm font-semibold py-1.5 px-2.5 sm:px-3 rounded-lg">
                     <i class="fa fa-arrow-left mr-1"></i>
                     返回
                 </a>
@@ -130,21 +131,20 @@
 
         // --- 进阶鉴权检查 ---
         function loadConfig() {
-            const savedConfig = localStorage.getItem('timeRecorderConfig');
-            if (savedConfig) {
-                config = JSON.parse(savedConfig);
+            config = window.TimerConfig.read();
+            if (window.TimerConfig.isGistId(config.GIST_ID) && config.GITHUB_PAT) {
                 return true;
             } else {
                 const container = document.getElementById('health-app-container');
                 container.innerHTML = `
                     <div class="bg-white rounded-2xl shadow-sm border border-slate-200 text-center py-10 px-4">
                         <i class="fa fa-lock text-3xl sm:text-4xl text-warning mb-3"></i>
-                        <h3 class="text-base sm:text-lg font-bold text-slate-800">该功能仅对进阶用户开放</h3>
+                        <h3 class="text-base sm:text-lg font-bold text-slate-800">连接云端记录后查看时长</h3>
                         <p class="text-slate-500 my-2 text-xs sm:text-sm max-w-sm mx-auto leading-relaxed">
                             该分析需要依赖「云端同步数据」与「本地打卡数据」进行时序闭环匹配。
                         </p>
-                        <a href="page0.html" class="mt-4 inline-block bg-primary-500 text-white text-xs sm:text-sm py-2.5 px-6 rounded-xl hover:bg-primary-600 transition-colors font-semibold shadow-md">
-                            前往进阶配置
+                        <a href="pagemain.html#personal/cloud?return=page4.html" class="mt-4 inline-block bg-primary-500 text-white text-xs sm:text-sm py-2.5 px-6 rounded-xl hover:bg-primary-600 transition-colors font-semibold shadow-md">
+                            配置云端记录
                         </a>
                     </div>
                 `;
