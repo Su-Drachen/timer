@@ -344,6 +344,6 @@ body.nb-page {
     .nb-home .stat-item { padding: 12px 9px; }
 }
 @media (prefers-reduced-motion: reduce) {
-    .nb-page *, .nb-page *::before, .nb-page *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; }
+    .nb-page, .nb-page *, .nb-page *::before, .nb-page *::after { scroll-behavior: auto !important; transition: none !important; }
     .nb-page .quick-link:hover { transform: none; }
 }

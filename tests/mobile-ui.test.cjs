@@ -276,6 +276,7 @@ const tests = [
       await page.locator('#home-show-tools').click();
       await page.locator('#home-tools-view').waitFor();
       assert.equal(await page.locator('#home-tools-view').evaluate(el => getComputedStyle(el).animationName), 'none');
+      assert.equal(await nav.locator('.home-nav-indicator').evaluate(el => getComputedStyle(el).transitionDuration), '0s');
       assert.equal(await nav.locator('.home-nav-indicator').evaluate(el => el.getAnimations().length), 0);
       await page.goBack();
       await page.locator('#home-profile-view').waitFor();
