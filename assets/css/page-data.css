@@ -354,6 +354,9 @@
     margin-top: 22px;
 }
 
+.nb-page-repair .nb-repair-table .overflow-x-auto {
+    overflow-x: auto;
+}
 .nb-page-repair .nb-repair-table table {
     min-width: 620px;
 }

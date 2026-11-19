@@ -22,7 +22,7 @@ function prepareCache() {
             try {
                 response = await fetch(url, { cache: 'reload', credentials: 'omit', redirect: 'error', signal: controller.signal });
                 if (!response.ok || response.type === 'opaque') throw new Error('Offline resource unavailable');
-                bytes = /\.(html|css|js|json)$/.test(url)
+                bytes = /\.(html|css|js|json|svg)$/.test(url)
                     ? new TextEncoder().encode((await response.clone().text()).replace(/\r\n?/g, '\n'))
                     : await response.clone().arrayBuffer();
             } finally { clearTimeout(timeout); }
@@ -56,6 +56,8 @@ self.addEventListener('fetch', event => {
     if (request.method !== 'GET' || request.headers.has('Authorization') || request.headers.has('Range') || request.cache === 'no-store') return;
     const url = new URL(request.url);
     if (url.origin !== self.location.origin) return;
+    // In-page routes and sprite views address the same public resource offline.
+    url.hash = '';
     if (url.search) {
         // The friends tab navigates to a fixed view of the same cached document.
         if (request.mode !== 'navigate' || url.href !== new URL('page6.html?view=friends', SCOPE).href) return;

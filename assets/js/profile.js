@@ -8,16 +8,15 @@
         comments: ['朋友留言', 'comments-o', '连接存放纸条和回复的 Gist，与记录分开管理。'],
         author: ['作者钥匙', 'key', '在这台设备上导入作者钥匙，可署名回复和管理纸条。'],
         ai: ['AI 服务', 'magic', '使用自己的清言 API 凭据。主动分析时，记录摘要及备注会发送给清言。'],
-        appearance: ['外观', 'adjust', '选择此浏览器使用的主题。']
+        appearance: ['个性化设置', 'adjust', '在示例里试用主题，满意后再应用到这台设备。']
     };
-    const themes = { blue: '清新', white: '极简白', dark: '暗夜黑' };
-    let view, commentsPage;
+    let view, commentsPage, disposePicker;
 
     function route() {
         const [path, query = ''] = location.hash.slice(1).split('?');
         const [tab, parent, child] = path.split('/');
         const nestedAuthor = parent === 'comments' && child === 'author';
-        const section = nestedAuthor ? 'author' : parent;
+        const section = nestedAuthor ? 'author' : parent === 'personalization' ? 'appearance' : parent;
         return {
             active: tab === 'personal',
             section: Object.hasOwn(sections, section || '') ? section : '',
@@ -34,7 +33,7 @@
             comments: gist.COMMENT_GIST_ID && gist.GITHUB_PAT ? '已配置' : '未配置',
             author: config.author()?.isOwner() ? '已启用' : '未启用',
             ai: ai.apiKey && ai.apiSecret && ai.assistantId ? '已配置' : '未配置',
-            appearance: themes[document.documentElement.dataset.theme] || themes.blue
+            appearance: window.TimerThemes.list().find(item => item.id === window.TimerThemes.read().theme)?.name || ''
         };
     }
     function row(key, state, href = '#personal/' + key) {
@@ -202,15 +201,6 @@
         });
     }
 
-    function themeControls(container) {
-        container.innerHTML = `<div class="settings-themes">${Object.entries(themes).map(([key, name]) => `<button type="button" class="settings-secondary" data-theme-key="${key}" aria-pressed="${document.documentElement.dataset.theme === key}">${name}</button>`).join('')}</div>`;
-        container.addEventListener('click', event => {
-            const key = event.target.closest('button')?.dataset.themeKey;
-            if (!Object.hasOwn(themes, key)) return;
-            window.switchTheme(key);
-            container.querySelectorAll('button').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.themeKey === key)));
-        });
-    }
     function syncAuthorState() {
         const { active, section } = route();
         if (!active || !['comments', 'author'].includes(section)) return;
@@ -225,6 +215,8 @@
     }
     function show() {
         if (!view) return;
+        disposePicker?.();
+        disposePicker = null;
         const { active, section, back, nestedAuthor } = route();
         if (!active || (section !== 'comments' && !nestedAuthor)) commentsPage = null;
         if (!active) { view.replaceChildren(); return; }
@@ -245,7 +237,7 @@
             const container = view.querySelector('[data-controls]');
             if (section === 'author') authorControls(container, destination);
             else if (section === 'recording') recordPreferences(container, back);
-            else if (section === 'appearance') themeControls(container);
+            else if (section === 'appearance') disposePicker = window.TimerThemePicker.mount(container);
             else settingsForm(section, container, back);
             if (section === 'comments') {
                 container.insertAdjacentHTML('afterend', `<div class="settings-list">${row('author', statuses().author, '#personal/comments/author' + suffix)}</div>`);
@@ -259,6 +251,10 @@
         if (!view) return;
         window.addEventListener('hashchange', show);
         window.addEventListener('timer:author-change', syncAuthorState);
+        window.addEventListener('timer:theme-change', () => {
+            const state = view.querySelector('[data-state="appearance"]');
+            if (state) state.textContent = statuses().appearance;
+        });
         window.addEventListener('storage', () => {
             const { active, section } = route();
             if (active && !section) show();

@@ -7,6 +7,7 @@
     const status = document.getElementById('home-desk-status');
     const message = document.getElementById('home-desk-message');
     const retry = document.getElementById('home-desk-retry');
+    const appearanceAttributes = ['data-theme', 'data-skin', 'data-decoration'];
     let visible = false;
     let frame, desk, modalObserver, laneObserver;
 
@@ -20,7 +21,13 @@
     }
 
     function updateTheme() {
-        if (desk) desk.document.documentElement.dataset.theme = document.documentElement.dataset.theme;
+        if (!desk) return;
+        const child = desk.document.documentElement;
+        for (const attribute of appearanceAttributes) {
+            const value = document.documentElement.getAttribute(attribute);
+            if (value === null) child.removeAttribute(attribute);
+            else child.setAttribute(attribute, value);
+        }
     }
 
     function ready(source) {
@@ -81,7 +88,7 @@
     }
     window.TimerHomeDesk = { ready, openConfig, setVisible };
     retry.addEventListener('click', resetDesk);
-    new MutationObserver(updateTheme).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+    new MutationObserver(updateTheme).observe(document.documentElement, { attributes: true, attributeFilter: appearanceAttributes });
     window.addEventListener('timer:feedback-summary', event => {
         const unread = event.detail.unread;
         const button = document.getElementById('home-show-feedback');

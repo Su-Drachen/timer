@@ -103,10 +103,12 @@
     </style>
     <link rel="stylesheet" href="assets/css/notebook.css">
     <link rel="stylesheet" href="assets/css/page-data.css">
+    <script src="assets/themes/catalog.js"></script>
     <script src="assets/js/notebook-theme.js"></script>
     <link rel="stylesheet" href="assets/css/mobile-ui.css">
     <script src="assets/js/record-entries.js"></script>
     <script src="assets/js/mobile-ui.js" defer></script>
+    <link rel="stylesheet" href="assets/themes/themes.css">
 </head>
 <body class="nb-page nb-page-repair min-h-screen flex flex-col font-sans antialiased">
 
@@ -258,12 +260,6 @@
     </footer>
 
     <script>
-        // 主题自适应继承
-        (function() {
-            const savedTheme = localStorage.getItem('userTheme') || 'blue';
-            document.documentElement.setAttribute('data-theme', savedTheme);
-        })();
-
         function escapeRecordText(value) {
             return String(value ?? '').replace(/[&<>]/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[char]));
         }

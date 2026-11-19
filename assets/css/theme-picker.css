@@ -1,0 +1,113 @@
+.theme-picker {
+    display: grid;
+    gap: 20px;
+    padding-block: 18px 8px;
+    color: var(--nb-ink);
+    font-family: var(--app-system-font, system-ui, sans-serif);
+}
+.theme-picker [hidden] { display: none !important; }
+.theme-picker fieldset { min-width: 0; margin: 0; padding: 0; border: 0; }
+.theme-picker legend, .theme-picker h2 {
+    margin: 0 0 8px;
+    padding: 0;
+    color: var(--nb-ink);
+    font-size: 1rem;
+    line-height: 1.35;
+    font-weight: 650;
+}
+.theme-picker button { font-family: inherit; cursor: pointer; }
+.theme-picker button:focus-visible { outline: 3px solid var(--nb-accent); outline-offset: 2px; }
+.theme-options { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.theme-options button {
+    display: grid;
+    align-content: start;
+    justify-items: start;
+    min-width: 0;
+    position: relative;
+    padding: 4px 4px 8px;
+    border: 1px solid var(--nb-line);
+    border-radius: 12px;
+    background: var(--nb-surface);
+    color: var(--nb-ink);
+    text-align: start;
+}
+.theme-options button[aria-pressed="true"] { box-shadow: 0 0 0 2px var(--nb-accent); border-color: transparent; }
+.theme-choice-title { padding: 6px 4px 0; font-size: 13px; font-weight: 650; }
+.theme-options [data-applied] { padding-inline: 4px; color: var(--nb-muted); font-size: 11px; }
+.theme-swatch {
+    display: grid;
+    align-content: center;
+    gap: 4px;
+    width: 100%;
+    height: 43px;
+    padding: 6px 12%;
+    border-radius: 8px;
+    background: var(--nb-soft);
+    color: var(--nb-accent);
+}
+.theme-swatch-screen { display: flex; align-items: flex-end; gap: 3px; padding: 3px 5px; border-radius: 4px; background: var(--nb-surface); }
+.theme-swatch-screen i { width: 7px; height: 4px; border-radius: 2px; background: currentColor; }
+.theme-swatch-screen i:nth-child(2) { height: 8px; }
+.theme-swatch-screen i:nth-child(3) { height: 6px; }
+.theme-swatch-keys { width: 28%; height: 3px; margin-inline-start: 2px; background: currentColor; border-radius: 3px; }
+.theme-description { margin: 8px 0 0; }
+.theme-setting .theme-segments { display: flex; gap: 2px; padding: 3px; border-radius: 12px; background: var(--nb-soft); }
+.theme-segments button {
+    flex: 1;
+    min-height: 42px;
+    border: 0;
+    border-radius: 9px;
+    color: var(--nb-muted);
+    background: transparent;
+    font-size: 14px;
+}
+.theme-segments button[aria-pressed="true"] { color: var(--nb-ink); background: var(--nb-surface); box-shadow: 0 1px 3px rgb(0 0 0 / 12%); font-weight: 650; }
+.theme-demo {
+    overflow: hidden;
+    border: 1px solid var(--nb-line);
+    border-radius: 16px;
+    background: var(--nb-bg);
+    color: var(--nb-ink);
+    color-scheme: light;
+}
+.theme-demo[data-theme="dark"] { color-scheme: dark; }
+.theme-demo-body { display: grid; padding: 12px; }
+.theme-demo-body > [data-demo-page] { grid-area: 1 / 1; }
+/* Keep the four sample tabs under the same thumb position when their content changes. */
+.theme-demo-body [data-demo-page="records"][hidden] { display: block !important; visibility: hidden; }
+.theme-demo-screen {
+    position: relative;
+    display: grid;
+    gap: 3px;
+    padding: 10px 14px;
+    border: 1px solid var(--nb-line);
+    border-radius: 11px;
+    background: var(--nb-surface);
+    color: var(--nb-ink);
+}
+.theme-demo-art { display: none; }
+.theme-demo-clock-label { font-size: 11px; color: var(--nb-muted); }
+.theme-demo-clock { font-size: clamp(1.35rem, 6vw, 2rem); line-height: 1.12; font-weight: 650; font-variant-numeric: tabular-nums; }
+.theme-demo-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 10px; margin: 9px 0; }
+.theme-demo-actions button, .theme-apply button { min-height: 44px; padding: 6px 14px; border: 0; border-radius: 10px; background: var(--nb-accent); color: var(--nb-on-accent, var(--nb-surface)); font-size: 14px; font-weight: 650; }
+.theme-demo-actions [data-preview-receipt], .theme-apply span { font-size: 12px; color: var(--nb-muted); }
+.theme-demo-calendar { padding: 7px 10px; background: var(--nb-surface); border: 1px solid var(--nb-line); border-radius: 10px; font-size: 12px; }
+.theme-demo-calendar > strong { display: block; margin-bottom: 2px; font-size: 13px; }
+.theme-demo-calendar [data-demo-grid] { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); text-align: center; font-variant-numeric: tabular-nums; }
+.theme-demo-calendar [data-demo-grid] > * { place-self: center; min-width: 20px; height: 20px; line-height: 20px; }
+.theme-demo-calendar small { color: var(--nb-muted); font-size: 10px; }
+.theme-demo-calendar [data-marked] { border-radius: 6px; background: var(--nb-accent-soft); color: var(--nb-accent); }
+.theme-demo-calendar [data-demo-today] { border-radius: 6px; outline: 1px solid var(--nb-accent); outline-offset: -1px; font-weight: bold; }
+.theme-demo-other { min-height: 180px; padding: 10px 4px; }
+.theme-demo-note { padding: 14px; margin-block-start: 10px; border: 1px solid var(--nb-line); border-radius: 12px; background: var(--nb-surface); font-size: 14px; }
+.theme-demo-note small { display: block; margin-top: 4px; color: var(--nb-muted); }
+.theme-demo-nav { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); padding: 3px; border-top: 1px solid var(--nb-line); background: var(--nb-surface); }
+.theme-demo-nav button { display: grid; place-content: center; justify-items: center; gap: 2px; min-height: 44px; border: 0; border-radius: 8px; background: transparent; color: var(--nb-muted); font-size: 10px; }
+.theme-demo-nav svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.theme-demo-nav button[aria-pressed="true"] { color: var(--nb-accent); background: var(--nb-accent-soft); font-weight: 700; }
+.theme-apply { display: flex; align-items: center; gap: 10px; }
+.theme-apply button:disabled { color: var(--nb-muted); background: var(--nb-soft); cursor: default; }
+
+@media (prefers-reduced-motion: no-preference) {
+    .theme-picker button { transition: color .12s, background-color .12s, box-shadow .12s; }
+}

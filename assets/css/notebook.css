@@ -1,6 +1,6 @@
 /* Shared appearance for the main project only. index.html and see do not load this file. */
 :root,
-:root[data-theme="blue"] {
+:root[data-theme="blue"], :where([data-skin][data-theme="blue"]) {
     color-scheme: light;
     --nb-bg: #f5f7f7;
     --nb-surface: #ffffff;
@@ -15,7 +15,7 @@
     --nb-header: rgba(255, 255, 255, .92);
     --nb-hero: #eef6f3;
 }
-:root[data-theme="white"] {
+:root[data-theme="white"], :where([data-skin][data-theme="white"]) {
     color-scheme: light;
     --nb-bg: #f7f7f7;
     --nb-surface: #ffffff;
@@ -30,7 +30,7 @@
     --nb-header: rgba(255, 255, 255, .94);
     --nb-hero: #f1f1f1;
 }
-:root[data-theme="dark"] {
+:root[data-theme="dark"], :where([data-skin][data-theme="dark"]) {
     color-scheme: dark;
     --nb-bg: #121718;
     --nb-surface: #1d2426;
@@ -45,7 +45,7 @@
     --nb-header: rgba(27, 34, 35, .95);
     --nb-hero: #202e2d;
 }
-:root[data-theme] {
+:root[data-theme], :where([data-skin][data-theme]) {
     --bg-page: var(--nb-bg);
     --bg-card: var(--nb-surface);
     --bg-header: var(--nb-header);

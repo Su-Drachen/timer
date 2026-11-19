@@ -594,6 +594,35 @@ const tests = [
       assert.deepEqual(t.errors, []);
     } finally { await t.close(); }
   }],
+  ['friends inherits the applied skin, decoration and tone without resetting the reply draft or feed', async () => {
+    const t = await setup({ mobile: true });
+    try {
+      await ready(t);
+      const apply = selection => t.page.evaluate(value => window.TimerThemes.apply(value), selection);
+      await apply({ theme: 'pixel', mode: 'light', decoration: 'full' });
+      const desk = await openDesk(t);
+      await desk.locator('html[data-skin="pixel"][data-theme="blue"][data-decoration="full"]').waitFor();
+      const appearance = () => desk.locator('#deskNotesList > article').first().evaluate(el => {
+        const style = getComputedStyle(el);
+        return { background: style.backgroundColor, shadow: style.boxShadow, radius: style.borderTopLeftRadius };
+      });
+      const light = await appearance();
+      assert.equal(light.background, 'rgb(255, 248, 229)');
+      assert.notEqual(light.shadow, 'none');
+      const reads = t.childRequests().length;
+      await desk.getByRole('button', { name: '回复', exact: true }).click();
+      await desk.locator('#deskText').fill('切换外观时保留的草稿');
+      await apply({ theme: 'pixel', mode: 'dark', decoration: 'simple' });
+      await desk.locator('html[data-skin="pixel"][data-theme="dark"][data-decoration="simple"]').waitFor();
+      assert.deepEqual(await appearance(), { background: 'rgb(52, 59, 75)', shadow: 'none', radius: light.radius });
+      await apply({ theme: 'minimal', mode: 'dark', decoration: 'full' });
+      await desk.locator('html[data-skin="minimal"][data-theme="dark"][data-decoration="full"]').waitFor();
+      assert.equal((await appearance()).background, 'rgb(33, 33, 33)');
+      assert.equal(await desk.locator('#deskText').inputValue(), '切换外观时保留的草稿');
+      assert.equal(t.childRequests().length, reads);
+      assert.deepEqual(t.errors, []);
+    } finally { await t.close(); }
+  }],
   ['desktop and mobile feedback fit the viewport in dark mode with readable replies', async () => {
     fs.mkdirSync(path.join(__dirname, 'artifacts'), { recursive: true });
     for (const mobile of [false, true]) {
@@ -650,11 +679,15 @@ const tests = [
     '/assets/css/home.css', '/assets/css/record-calendar.css',
     '/assets/js/app-config.js', '/assets/js/feedback-core.js', '/assets/js/feedback-ui.js',
     '/assets/css/feedback.css', '/assets/css/notebook.css', '/assets/js/notebook-theme.js',
+    '/assets/themes/catalog.js', '/assets/themes/themes.css',
+    ...require('../assets/themes/catalog.js').flatMap(pack =>
+      [...pack.styles, ...pack.assets].map(file => '/assets/themes/' + pack.id + '/' + file)),
+    '/assets/js/theme-picker.js', '/assets/css/theme-picker.css',
     '/assets/css/tailwind.css', '/assets/css/offline.css', '/assets/js/offline.js', '/assets/css/mobile-ui.css', '/assets/js/mobile-ui.js',
     '/assets/vendor/chart.umd.min.js', '/assets/vendor/font-awesome.min.css',
     '/assets/vendor/fonts/fontawesome-webfont.woff2'
   ]);
-  const mime = { '.html': 'text/html; charset=utf-8', '.css': 'text/css', '.js': 'application/javascript', '.woff2': 'font/woff2' };
+  const mime = { '.html': 'text/html; charset=utf-8', '.css': 'text/css', '.js': 'application/javascript', '.woff2': 'font/woff2', '.svg': 'image/svg+xml' };
   server = http.createServer((req, res) => {
     const pathname = new URL(req.url, 'http://localhost').pathname;
     if (pathname === '/feedback-component.html') {

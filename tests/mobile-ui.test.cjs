@@ -19,7 +19,7 @@ const LOCAL = [{ time: '2026/10/26 08:00:00', remark: '合成手机记录' }, { 
 const CLOUD = [{ time: '2026/10/26 08:30:00', remark: '合成云端记录' }, { time: '2026/10/25 08:30:00', remark: '合成历史云端记录' }];
 const note = { id: 101, body: JSON.stringify({ app: 'observer-desk', version: 1, kind: 'note', data: { id: 'mobile-note', kind: 'note', author: '合成访客', text: '手机测试纸条', createdAt: '2026-10-26T05:00:00.000Z', parentId: null, recordTime: null, ownerId: 'synthetic-visitor', deleted: false } }) };
 const HTML = ['pagemain.html', ...Array.from({ length: 7 }, (_, i) => 'page' + i + '.html')];
-const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'application/javascript', '.css': 'text/css', '.woff2': 'font/woff2', '.json': 'application/json' };
+const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'application/javascript', '.css': 'text/css', '.woff2': 'font/woff2', '.json': 'application/json', '.svg': 'image/svg+xml' };
 const allowed = new Set(HTML);
 const legacyCss = new Map();
 let browser, server, origin;
@@ -309,17 +309,56 @@ const tests = [
       const white = await t.page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--nb-accent').trim());
       await t.page.locator('#home-show-profile').click();
       await t.page.locator('[href="#personal/appearance"]').click();
-      await t.page.locator('[data-theme-key="blue"]').click();
+      await t.page.locator('[data-theme-key="classic"]').click();
+      await t.page.locator('[data-mode="light"]').click();
+      await t.page.locator('[data-apply-theme]').click();
       assert.equal(await t.page.locator('html').getAttribute('data-theme'), 'blue');
       const blue = await t.page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--nb-accent').trim());
       assert.notEqual(blue, white);
-      await t.page.locator('[data-theme-key="dark"]').click();
+      await t.page.locator('button[data-mode="dark"]').click();
+      await t.page.locator('[data-apply-theme]').click();
       await t.page.locator('#home-show-records').click();
       assert.equal(await t.page.locator('html').getAttribute('data-theme'), 'dark');
       const surface = await t.page.evaluate(() => getComputedStyle(document.body).backgroundColor);
       assert.notEqual(surface, 'rgb(255, 255, 255)');
       await assertNoOverflow(t.page, 'dark home');
       await screenshot(t.page, 'mobile-dark-home.png');
+      assert.deepEqual(t.errors, []);
+    } finally { await t.close(); }
+  }],
+  ['theme previews are private drafts and only an applied choice survives reload', async () => {
+    const t = await setup('pagemain.html#personal/appearance', { width: 320 });
+    try {
+      const page = t.page, root = page.locator('html'), preview = page.locator('[data-theme-preview]');
+      const records = () => page.evaluate(() => localStorage.getItem('timeRecords'));
+      const before = await records();
+      await page.locator('[data-theme-key="pixel"]').click();
+      await page.locator('button[data-mode="dark"]').click();
+      assert.equal(await preview.getAttribute('data-theme'), 'dark');
+      assert.equal(await root.getAttribute('data-skin'), 'minimal');
+      await page.locator('[data-preview-record]').click();
+      assert.match(await page.locator('[data-preview-receipt]').innerText(), /第 1 次/);
+      await page.locator('[data-preview-tab="friends"]').click();
+      assert.equal(await page.locator('[data-demo-page="friends"]').isVisible(), true);
+      assert.equal(await records(), before);
+      assert.ok(t.requests.every(req => req.method === 'GET'));
+      await assertNoOverflow(page, '320px theme picker');
+      await page.locator('#home-show-records').click();
+      await page.locator('#home-show-profile').click();
+      await page.locator('[href="#personal/appearance"]').click();
+      assert.equal(await preview.getAttribute('data-skin'), 'minimal');
+      await page.locator('[data-theme-key="pixel"]').click();
+      await page.locator('button[data-decoration="simple"]').click();
+      await page.locator('button[data-mode="dark"]').click();
+      await page.locator('[data-apply-theme]').click();
+      await page.reload({ waitUntil: 'networkidle' });
+      assert.equal(await root.getAttribute('data-skin'), 'pixel');
+      assert.equal(await root.getAttribute('data-theme'), 'dark');
+      assert.equal(await root.getAttribute('data-decoration'), 'simple');
+      await page.locator('[data-theme-key="classic"]').click();
+      assert.equal(await preview.getAttribute('data-skin'), 'classic');
+      assert.equal(await root.getAttribute('data-skin'), 'pixel');
+      assert.equal(await records(), before);
       assert.deepEqual(t.errors, []);
     } finally { await t.close(); }
   }],

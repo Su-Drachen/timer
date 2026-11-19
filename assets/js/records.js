@@ -1,17 +1,3 @@
-// --- 主题管理 ---
-function switchTheme(theme) {
-    document.documentElement.setAttribute('data-theme', theme);
-    safeSetStorage(localStorage, 'userTheme', theme);
-
-    if (localApp.recordsChart) updateStatistics('local', localApp);
-    if (gistApp.recordsChart) updateStatistics('gist', gistApp);
-}
-
-function initTheme() {
-    const savedTheme = localStorage.getItem('userTheme') || 'blue';
-    switchTheme(savedTheme);
-}
-
 // --- 通用工具函数 ---
 function showToast(message, type = 'info') {
     const toast = document.getElementById('toast');
@@ -539,7 +525,10 @@ const gistApp = {
 
 // --- 启动初始化 ---
 document.addEventListener('DOMContentLoaded', () => {
-    initTheme();
+    window.addEventListener('timer:theme-change', () => {
+        if (localApp.recordsChart) updateStatistics('local', localApp);
+        if (gistApp.recordsChart) updateStatistics('gist', gistApp);
+    });
     localApp.init();
     updateAllCurrentTime();
     setInterval(updateAllCurrentTime, 1000);

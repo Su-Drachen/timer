@@ -1,11 +1,21 @@
 // Keep this allowlist explicit: never enumerate project files or include user data.
 import { readFile, writeFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
+import themes from '../assets/themes/catalog.js';
+
+const root = new URL('../', import.meta.url);
+const themeStyles = themes.flatMap(pack => pack.styles.map(file => pack.id + '/' + file));
+const themeAssets = themes.flatMap(pack => pack.assets.map(file => pack.id + '/' + file));
+const skinSheet = '/* Generated from catalog.js by scripts/build-offline.mjs. */\n'
+  + themeStyles.map(file => '@import url("./' + file + '");').join('\n') + '\n';
+await writeFile(new URL('assets/themes/themes.css', root), skinSheet);
 
 const files = [
   'index.html', 'pagemain.html', 'page6.html', 'manifest.json',
   'assets/css/tailwind.css', 'assets/css/notebook.css', 'assets/css/feedback.css', 'assets/css/offline.css', 'assets/css/mobile-ui.css',
   'assets/js/notebook-theme.js', 'assets/js/app-config.js', 'assets/js/feedback-core.js',
+  'assets/themes/catalog.js', 'assets/themes/themes.css', 'assets/css/theme-picker.css', 'assets/js/theme-picker.js',
+  ...[...themeStyles, ...themeAssets].map(file => 'assets/themes/' + file),
   'assets/css/page6.css', 'assets/js/page6.js', 'assets/js/home-desk.js',
   'assets/css/home.css', 'assets/css/record-calendar.css', 'assets/js/record-calendar.js', 'assets/js/records.js',
   'assets/css/tools-profile.css', 'assets/js/preferences.js', 'assets/js/record-entries.js', 'assets/js/record-actions.js',
@@ -14,12 +24,11 @@ const files = [
   'assets/vendor/chart.umd.min.js', 'assets/vendor/font-awesome.min.css',
   'assets/vendor/fonts/fontawesome-webfont.woff2'
 ];
-const root = new URL('../', import.meta.url);
 const hash = bytes => createHash('sha256').update(bytes).digest('hex');
 const hashes = {};
 for (const file of files) {
   const bytes = await readFile(new URL(file, root));
-  hashes[file] = hash(/\.(html|css|js|json)$/.test(file) ? bytes.toString('utf8').replace(/\r\n?/g, '\n') : bytes);
+  hashes[file] = hash(/\.(html|css|js|json|svg)$/.test(file) ? bytes.toString('utf8').replace(/\r\n?/g, '\n') : bytes);
 }
 const worker = (await readFile(new URL('sw.js', root), 'utf8')).replace(/\r\n?/g, '\n');
 const version = hash(JSON.stringify(hashes) + worker).slice(0, 20);

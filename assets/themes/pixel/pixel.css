@@ -1,0 +1,224 @@
+/* The actual skin and an independently themed settings preview share this palette. */
+:root[data-skin="pixel"][data-theme],
+[data-skin="pixel"]:not(html) {
+    color-scheme: light;
+    --pixel-case: #e9e3d4;
+    --pixel-panel: #fff8e5;
+    --pixel-edge: #514b53;
+    --pixel-shadow: #9c9291;
+    --pixel-screen: #d7e39e;
+    --pixel-screen-lit: #eff4c0;
+    --pixel-screen-mid: #547149;
+    --pixel-screen-ink: #263f30;
+    --pixel-key: #864440;
+    --pixel-key-ink: #fff8e5;
+    --pixel-rim: #c9c29d;
+    --pixel-glint: #fff9e9;
+    --pixel-art: url("clocktrail.svg#day");
+    --nb-ink: #342f37;
+    --nb-muted: #615b59;
+    --nb-accent-hover: #703531;
+    --nb-accent-soft: #f3ddc8;
+    --nb-soft: #ede7d8;
+    --nb-line: #b7ae9c;
+    --nb-bg: var(--pixel-case);
+    --nb-surface: var(--pixel-panel);
+    --nb-accent: var(--pixel-key);
+    --nb-hero: var(--pixel-screen);
+    --nb-header: var(--pixel-panel);
+    --nb-shadow: 2px 3px 0 var(--pixel-shadow);
+    --ui-hairline: var(--nb-line);
+}
+:root[data-skin="pixel"][data-theme="dark"],
+[data-skin="pixel"][data-theme="dark"]:not(html) {
+    color-scheme: dark;
+    --pixel-case: #282e3f;
+    --pixel-panel: #343b4b;
+    --pixel-edge: #151b2a;
+    --pixel-shadow: #141927;
+    --pixel-screen: #203e43;
+    --pixel-screen-lit: #355d5d;
+    --pixel-screen-mid: #81b99d;
+    --pixel-screen-ink: #b7f4c5;
+    --pixel-key: #efaa84;
+    --pixel-key-ink: #302e38;
+    --pixel-rim: #50605b;
+    --pixel-glint: #545d70;
+    --pixel-art: url("clocktrail.svg#night");
+    --nb-ink: #fff0d5;
+    --nb-muted: #c4bdab;
+    --nb-soft: #404657;
+    --nb-line: #686f7a;
+    --nb-accent-hover: #ffd1b1;
+    --nb-accent-soft: #57463f;
+}
+
+:root[data-skin="pixel"][data-decoration="simple"],
+[data-skin="pixel"][data-decoration="simple"]:not(html) { --pixel-art: none; }
+
+:root[data-skin="pixel"][data-decoration="full"] body.nb-home {
+    background-color: var(--pixel-case);
+    background-image: radial-gradient(color-mix(in srgb, var(--nb-muted) 16%, transparent) .65px, transparent .75px);
+    background-size: 6px 6px;
+}
+:root[data-skin="pixel"] .home-header .nb-brand-icon {
+    width: 36px;
+    height: 36px;
+    border: 2px solid var(--pixel-edge);
+    border-radius: 5px;
+    background: var(--pixel-screen);
+    box-shadow: inset 1px 2px 0 var(--pixel-rim), 2px 2px 0 var(--pixel-shadow);
+}
+:root[data-skin="pixel"] .home-brand .nb-brand-icon i { display: none; }
+:root[data-skin="pixel"] .home-brand .nb-brand-icon::after {
+    content: "";
+    width: 22px;
+    height: 22px;
+    background: var(--pixel-screen-ink);
+    mask: url("clocktrail.svg#dial") center / 100% 100% no-repeat;
+    image-rendering: pixelated;
+}
+:root[data-skin="pixel"] .home-brand h1 { letter-spacing: .035em; }
+:root[data-skin="pixel"] #home-records-view .nb-mode-tabs {
+    border: 2px solid var(--pixel-edge);
+    border-radius: 5px;
+    background: var(--nb-soft) !important;
+    box-shadow: inset 1px 1px 0 var(--pixel-shadow);
+}
+:root[data-skin="pixel"] #home-records-view .nb-mode-tabs button { border-radius: 2px; }
+:root[data-skin="pixel"] #home-records-view .nb-mode-tabs [aria-selected="true"] {
+    color: var(--pixel-screen-ink);
+    background: var(--pixel-screen);
+    box-shadow: inset 0 0 0 1px var(--pixel-screen-mid), 1px 2px 0 var(--pixel-edge);
+}
+:root[data-skin="pixel"] #home-records-view :is(.entry-card, .record-panel, .stats-panel),
+:root[data-skin="pixel"] :is(#record-modal-overlay, #edit-modal-overlay, #confirm-modal-overlay) [data-mobile-panel] {
+    border: 2px solid var(--pixel-edge);
+    border-radius: 7px;
+    background: var(--pixel-panel);
+    box-shadow: inset 0 2px 0 var(--pixel-glint), 2px 3px 0 var(--pixel-shadow);
+}
+:root[data-skin="pixel"] #home-records-view .entry-card {
+    color: var(--pixel-screen-ink);
+    background: var(--pixel-screen);
+    border: 4px solid var(--pixel-edge);
+    box-shadow: inset 2px 3px 0 var(--pixel-rim), inset -1px -1px 0 var(--pixel-screen-lit),
+        2px 3px 0 var(--pixel-shadow);
+}
+:root[data-skin="pixel"][data-decoration="full"] #home-records-view .entry-top {
+    align-items: center;
+    justify-content: space-between;
+}
+:root[data-skin="pixel"][data-decoration="full"] #home-records-view .entry-top::after {
+    content: "";
+    order: 1;
+    flex: 1 1 auto;
+    min-width: 0;
+    height: 48px;
+    background: var(--pixel-art) center / contain no-repeat;
+    image-rendering: pixelated;
+    pointer-events: none;
+}
+:root[data-skin="pixel"][data-decoration="full"] #home-records-view .entry-top > :last-child { order: 2; }
+:root[data-skin="pixel"] #home-records-view :is(.entry-top, .entry-summary, .entry-summary time,
+    .entry-summary b, .entry-now strong, .entry-receipt, .entry-receipt button, .entry-timer) { color: var(--pixel-screen-ink); }
+:root[data-skin="pixel"] #home-records-view #gist-sync-status { color: var(--pixel-screen-ink); opacity: 1; }
+:root[data-skin="pixel"] #home-records-view .entry-receipt { border-color: var(--pixel-screen-mid); }
+:root[data-skin="pixel"] #home-records-view :is(.entry-now strong, .entry-summary time, .calendar-week, .calendar-days button),
+:root[data-skin="pixel"] #record-time-preview {
+    font-family: ui-monospace, "SFMono-Regular", Consolas, "Microsoft YaHei", monospace;
+    font-variant-numeric: tabular-nums;
+}
+:root[data-skin="pixel"] #home-records-view .entry-now strong { letter-spacing: -.045em; }
+:root[data-skin="pixel"] #home-records-view .entry-now button,
+:root[data-skin="pixel"] :is(#record-form, #edit-form) .btn-theme-primary {
+    border: 2px solid var(--pixel-edge);
+    border-radius: 4px;
+    background: var(--pixel-key);
+    color: var(--pixel-key-ink);
+    box-shadow: inset 1px 1px 0 color-mix(in srgb, var(--pixel-key-ink) 32%, transparent), 2px 3px 0 var(--pixel-edge);
+}
+:root[data-skin="pixel"] #home-records-view :is(.record-panel, .stats-panel) h2 { letter-spacing: .02em; }
+:root[data-skin="pixel"] #home-records-view .record-calendar { border-bottom: 1px dashed var(--nb-line); }
+@media (max-width: 350px) {
+    :root[data-skin="pixel"] #home-records-view .record-panel { padding-inline: 14px; }
+    :root[data-skin="pixel"] #home-records-view .calendar-heading { flex-wrap: wrap; gap: 0 4px; }
+    :root[data-skin="pixel"] #home-records-view .calendar-month { white-space: nowrap; letter-spacing: normal; }
+}
+:root[data-skin="pixel"] #home-records-view .calendar-week {
+    color: var(--pixel-screen-ink);
+    background: var(--pixel-screen);
+    border-block: 1px solid var(--pixel-rim);
+}
+:root[data-skin="pixel"] #home-records-view .calendar-days button span {
+    border-radius: 0;
+    clip-path: polygon(0 4px, 4px 4px, 4px 0, calc(100% - 4px) 0, calc(100% - 4px) 4px, 100% 4px,
+        100% calc(100% - 4px), calc(100% - 4px) calc(100% - 4px), calc(100% - 4px) 100%, 4px 100%, 4px calc(100% - 4px), 0 calc(100% - 4px));
+}
+:root[data-skin="pixel"] #home-records-view .calendar-days button[aria-current="date"] span {
+    color: var(--pixel-screen-ink);
+    background: var(--pixel-screen);
+    box-shadow: inset 0 0 0 2px var(--pixel-screen-mid);
+}
+:root[data-skin="pixel"] #home-records-view .calendar-days button[aria-pressed="true"] span {
+    color: var(--pixel-key-ink);
+    background: var(--pixel-key);
+    box-shadow: none;
+    outline: 0;
+}
+:root[data-skin="pixel"] #home-records-view .calendar-days button[aria-current="date"][aria-pressed="true"] span {
+    box-shadow: inset 0 -3px 0 color-mix(in srgb, var(--pixel-key-ink) 48%, var(--pixel-key));
+}
+:root[data-skin="pixel"] #home-records-view :is(.calendar-days i, .calendar-footer i) { border-radius: 0; }
+:root[data-skin="pixel"] #home-records-view :is(.entry-backfill, .record-item, .record-item button, .calendar-actions button,
+    [id$="-record-count-badge"], [id$="-import-btn"], [id$="-download-btn"], [id$="-expand-btn"], [id$="-year-select"]),
+:root[data-skin="pixel"] :is(#record-modal-overlay, #edit-modal-overlay, #confirm-modal-overlay) :is(button, textarea, input) { border-radius: 4px; }
+:root[data-skin="pixel"] :is(#record-modal-overlay, #edit-modal-overlay) :is(input:not([type="hidden"]), textarea) {
+    color: var(--nb-ink);
+    box-shadow: inset 1px 2px 0 color-mix(in srgb, var(--pixel-shadow) 55%, transparent);
+}
+:root[data-skin="pixel"] #mobile-home-nav {
+    border-top: 2px solid var(--pixel-edge);
+    background: var(--pixel-panel);
+    box-shadow: inset 0 2px 0 var(--pixel-glint);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+}
+:root[data-skin="pixel"] .home-nav-indicator::before {
+    border: 1px solid var(--pixel-edge);
+    border-radius: 4px;
+    background: var(--pixel-screen);
+    box-shadow: inset 1px 1px 0 var(--pixel-rim), 1px 2px 0 var(--pixel-shadow);
+}
+:root[data-skin="pixel"] #mobile-home-nav [aria-current="page"] { color: var(--nb-ink); }
+:root[data-skin="pixel"] #mobile-home-nav [aria-current="page"] .home-tab-icon { color: var(--pixel-screen-ink); }
+:root[data-skin="pixel"] #mobile-home-nav .home-tab-icon svg { display: none; }
+:root[data-skin="pixel"] #mobile-home-nav .home-tab-icon::before {
+    content: "";
+    width: 19px;
+    height: 19px;
+    background: currentColor;
+    mask: var(--pixel-nav-icon) center / 100% 100% no-repeat;
+    image-rendering: pixelated;
+}
+:root[data-skin="pixel"] #home-show-records { --pixel-nav-icon: url("clocktrail.svg#records"); }
+:root[data-skin="pixel"] #home-show-feedback { --pixel-nav-icon: url("clocktrail.svg#friends"); }
+:root[data-skin="pixel"] #home-show-tools { --pixel-nav-icon: url("clocktrail.svg#tools"); }
+:root[data-skin="pixel"] #home-show-profile { --pixel-nav-icon: url("clocktrail.svg#personal"); }
+:root[data-skin="pixel"] #home-show-records.has-active-timer > i::after { border-radius: 0; }
+
+:root[data-skin="pixel"][data-decoration="simple"] #home-records-view :is(.entry-card, .record-panel, .stats-panel),
+:root[data-skin="pixel"][data-decoration="simple"] .home-header .nb-brand-icon { box-shadow: none; }
+@media (prefers-reduced-motion: no-preference) {
+    :root[data-skin="pixel"] #home-records-view .entry-now button:active:not(:disabled),
+    :root[data-skin="pixel"] :is(#record-form, #edit-form) .btn-theme-primary:active:not(:disabled) {
+        transform: translate(1px, 2px);
+        box-shadow: inset 1px 1px 0 var(--pixel-edge), 1px 1px 0 var(--pixel-edge);
+    }
+}
+@media (forced-colors: active) {
+    :root[data-skin="pixel"] #mobile-home-nav .home-tab-icon::before,
+    :root[data-skin="pixel"] .home-brand .nb-brand-icon::after { forced-color-adjust: none; background: ButtonText; }
+    :root[data-skin="pixel"] #mobile-home-nav [aria-current="page"],
+    :root[data-skin="pixel"] #home-records-view .calendar-days [aria-pressed="true"] { outline: 2px solid Highlight; outline-offset: -2px; }
+}

@@ -1,0 +1,27 @@
+[data-skin="minimal"][data-theme="dark"] {
+    color-scheme: dark;
+    --nb-bg: #151515;
+    --nb-surface: #212121;
+    --nb-soft: #2d2d2d;
+    --nb-ink: #f2f2f2;
+    --nb-muted: #b7b7b7;
+    --nb-line: #424242;
+    --nb-accent: #e4e4e4;
+    --nb-accent-hover: #fff;
+    --nb-accent-soft: #363636;
+    --nb-header: rgba(28, 28, 28, .95);
+    --nb-hero: #252525;
+    --ui-hairline: rgba(235, 235, 235, .14);
+}
+:root.desk-embedded[data-skin="minimal"][data-theme="dark"] {
+    --bg: var(--nb-bg);
+    --panel: var(--nb-surface);
+    --line: var(--ui-hairline);
+    --text: var(--nb-ink);
+    --ink: var(--nb-ink);
+    --muted: var(--nb-muted);
+    --soft: var(--nb-soft);
+    --accent: var(--nb-accent);
+    --accent-soft: var(--nb-accent-soft);
+}
+.theme-swatch[data-skin="minimal"] .theme-swatch-screen { border: 1px solid var(--nb-line); }

@@ -197,12 +197,23 @@ const tests = [
       await t.page.locator('#home-show-tools').click();
       await t.page.locator('#tool-directory a').first().waitFor();
       await t.page.locator('#home-show-profile').click();
-      await t.page.locator('[href="#personal/appearance"]').waitFor();
+      await t.page.locator('[href="#personal/appearance"]').click();
+      await t.page.locator('[data-theme-key="pixel"]').click();
+      await t.page.locator('button[data-mode="dark"]').click();
+      await t.page.locator('[data-apply-theme]').click();
+      await t.page.reload({ waitUntil: 'networkidle' });
+      assert.equal(await t.page.locator('html').getAttribute('data-skin'), 'pixel');
+      const cachedArt = await t.page.evaluate(async () => {
+        const response = await fetch('assets/themes/pixel/clocktrail.svg');
+        return response.ok && (await response.text()).includes('<svg');
+      });
+      assert.ok(cachedArt, 'pixel art is available from the offline cache');
       const friendsDocument = t.page.waitForResponse(response =>
         response.url().endsWith('/page6.html?view=friends') && response.request().isNavigationRequest());
       await t.page.locator('#home-show-feedback').click();
       assert.equal((await friendsDocument).fromServiceWorker(), true);
       const friends = t.page.frameLocator('#home-desk-frame');
+      await friends.locator('html[data-skin="pixel"][data-theme="dark"]').waitFor({ state: 'attached' });
       await friends.locator('.notes-unconfigured a').click();
       await t.page.waitForFunction(() => location.hash.startsWith('#personal/comments'));
       await t.page.locator('#home-show-records').click();

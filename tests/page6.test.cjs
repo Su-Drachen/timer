@@ -237,6 +237,28 @@ const tests = [
     } finally { await t.close(); }
     }
   }],
+  ['standalone desk restores the pixel pack on entry and reload in both tones', async () => {
+    const t = await setup({ mobile: true, cache: {
+      'timer.appearance.v1': { theme: 'pixel', mode: 'light', decoration: 'full' }
+    } });
+    try {
+      const page = t.page;
+      const background = selector => page.locator(selector).first().evaluate(el => getComputedStyle(el).backgroundColor);
+      await page.locator('html[data-skin="pixel"][data-theme="blue"][data-decoration="full"]').waitFor();
+      assert.equal(await background('body'), 'rgb(233, 227, 212)');
+      assert.equal(await background('.desk-note'), 'rgb(255, 248, 229)');
+      await page.evaluate(() => window.TimerThemes.apply({ theme: 'pixel', mode: 'dark', decoration: 'simple' }));
+      await page.reload({ waitUntil: 'networkidle' });
+      await page.locator('html[data-skin="pixel"][data-theme="dark"][data-decoration="simple"]').waitFor();
+      assert.equal(await background('body'), 'rgb(40, 46, 63)');
+      assert.equal(await background('.desk-note'), 'rgb(52, 59, 75)');
+      await page.locator('#deskNotesOpen').click();
+      assert.equal(await background('#deskComposerPanel'), 'rgb(52, 59, 75)');
+      assert.equal(await page.locator('#deskSubmit').isVisible(), true);
+      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+      assert.deepEqual(t.errors, []);
+    } finally { await t.close(); }
+  }],
   ['desktop/mobile views and composer fit viewport', async () => {
     fs.mkdirSync(path.join(__dirname, 'artifacts'), { recursive: true });
     for (const mobile of [false, true]) {
@@ -258,13 +280,21 @@ const tests = [
 (async () => {
   for (const file of ['assets/js/app-config.js', 'assets/js/page6.js']) new vm.Script(fs.readFileSync(path.join(ROOT, file), 'utf8'), { filename: file });
   console.log('PASS JavaScript syntax');
-  const allowed = new Set(['/page6.html', '/assets/js/app-config.js', '/assets/js/feedback-core.js', '/assets/js/page6.js', '/assets/js/notebook-theme.js', '/assets/css/notebook.css', '/assets/css/page6.css', '/assets/js/mobile-ui.js', '/assets/css/mobile-ui.css']);
+  const allowed = new Set([
+    '/page6.html', '/assets/js/app-config.js', '/assets/js/feedback-core.js', '/assets/js/page6.js', '/assets/js/notebook-theme.js',
+    '/assets/css/notebook.css', '/assets/css/page6.css', '/assets/js/mobile-ui.js', '/assets/css/mobile-ui.css',
+    '/assets/themes/catalog.js', '/assets/themes/themes.css',
+    ...require('../assets/themes/catalog.js').flatMap(pack =>
+      [...pack.styles, ...pack.assets].map(file => '/assets/themes/' + pack.id + '/' + file)),
+    '/assets/js/theme-picker.js', '/assets/css/theme-picker.css'
+  ]);
+  const mime = { '.html': 'text/html; charset=utf-8', '.css': 'text/css', '.js': 'application/javascript', '.svg': 'image/svg+xml' };
   server = http.createServer((req, res) => {
     const pathname = new URL(req.url, 'http://localhost').pathname;
     if (!allowed.has(pathname)) { res.writeHead(404).end(); return; }
     let body = fs.readFileSync(path.join(ROOT, pathname.slice(1)), 'utf8');
     if (pathname === '/assets/js/feedback-core.js') body += '\n(function(){var original=TimerFeedbackCore.createAuth;TimerFeedbackCore.authorPublicKey=' + JSON.stringify(publicKey) + ';TimerFeedbackCore.createAuth=function(key){return original(key||TimerFeedbackCore.authorPublicKey)}})();';
-    res.writeHead(200, { 'Content-Type': pathname.endsWith('.html') ? 'text/html; charset=utf-8' : pathname.endsWith('.css') ? 'text/css' : 'application/javascript' });
+    res.writeHead(200, { 'Content-Type': mime[path.extname(pathname)] });
     res.end(body);
   });
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
