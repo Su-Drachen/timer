@@ -135,6 +135,20 @@ html[data-skin="pixel"] .nb-page-chat .send {
     color: var(--text);
     background: var(--bg);
 }
+:root[data-skin="pixel"][data-theme] body:not(.nb-page) :is(.composer-heading > button, .gesture-picker button) {
+    border-color: var(--line);
+    border-radius: 4px;
+    color: var(--text);
+    background: var(--bg);
+}
+:root[data-skin="pixel"][data-theme] body:not(.nb-page) .gesture-picker button[aria-pressed="true"] {
+    border-color: var(--pixel-screen-mid);
+    background: var(--pixel-screen);
+    color: var(--pixel-screen-ink);
+    box-shadow: var(--pixel-page-inset);
+}
+:root[data-skin="pixel"][data-theme] body:not(.nb-page) .gesture-caption > span,
+:root[data-skin="pixel"][data-theme] body:not(.nb-page) :is(#deskText, #deskNickname)::placeholder { color: var(--muted); }
 :root.desk-embedded[data-skin="pixel"] .desk-note-read::after,
 :root.desk-embedded[data-skin="pixel"] #friends-more summary::before { border-radius: 0; }
 

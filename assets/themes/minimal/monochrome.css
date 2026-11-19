@@ -20,7 +20,7 @@
     --text: var(--nb-ink);
     --ink: var(--nb-ink);
     --muted: var(--nb-muted);
-    --soft: var(--nb-soft);
+    --soft: var(--nb-muted);
     --accent: var(--nb-accent);
     --accent-soft: var(--nb-accent-soft);
 }
